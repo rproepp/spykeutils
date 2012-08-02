@@ -5,12 +5,6 @@ from guiqwt.builder import make
 
 import neo
 
-class PlotException(Exception):
-    """ Exception thrown by plotting functions if something goes wrong
-    """
-    pass
-
-
 class MarkerName:
     """ Helper class to create marker name functions for different strings
     """

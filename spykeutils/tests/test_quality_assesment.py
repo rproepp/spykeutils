@@ -8,7 +8,7 @@ import scipy as sp
 import quantities as pq
 import neo
 from neo.test.tools import assert_arrays_equal
-import sorting_quality_assesment as qa
+import spykeutils.sorting_quality_assesment as qa
 
 class TestQualityAssessment(ut.TestCase):
     def test_refperiod_violations(self):

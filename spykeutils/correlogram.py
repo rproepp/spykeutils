@@ -4,6 +4,7 @@ from collections import OrderedDict
 import quantities as pq
 
 from progress_indicator import ProgressIndicator
+from spyke_exception import SpykeException
 
 def correlogram(trains, bin_size, cut_off, border_correction,
                 unit=pq.ms, progress=ProgressIndicator()):
@@ -43,13 +44,16 @@ def correlogram(trains, bin_size, cut_off, border_correction,
     bins = sp.array(all_bins) * unit
     middle_bin = len(bins) / 2 - 1
 
-    indices = sorted(trains.keys(), key=lambda (u):u.name)
-    num_trials = len(trains[indices[0]])
+    indices = sorted(trains.keys(), key=lambda (u):u.name if u else None)
+    num_trains = len(trains[indices[0]])
+    if not num_trains:
+        raise SpykeException('Could not create correlogram: No spike trains!')
     for u in range(1, len(indices)):
-        if len(trains[indices[u]]) != num_trials:
-            return False
+        if len(trains[indices[u]]) != num_trains:
+            raise SpykeException('Could not create correlogram: All units ' +
+                                 'need the same number of spike trains!')
 
-    progress.set_ticks(sp.sum(range(len(trains) + 1) * num_trials))
+    progress.set_ticks(sp.sum(range(len(trains) + 1) * num_trains))
 
     corrector = 1
     if border_correction:
@@ -81,7 +85,7 @@ def correlogram(trains, bin_size, cut_off, border_correction,
         # For all later indices, including itself
         for i2 in xrange(i1, len(indices)):
             histogram = sp.zeros(len(bins) - 1)
-            for t in xrange(num_trials):
+            for t in xrange(num_trains):
                 train2 = trains[indices[i2]][t].rescale(unit)
                 for s in trains[indices[i1]][t]:
                     histogram += sp.histogram(train2,
@@ -90,7 +94,7 @@ def correlogram(trains, bin_size, cut_off, border_correction,
                     histogram[middle_bin] -= len(train2)
 
                 progress.step()
-            crg = corrector*histogram/num_trials
+            crg = corrector*histogram/num_trains
             if indices[i1] not in correlograms:
                 correlograms[indices[i1]] = OrderedDict()
             correlograms[indices[i1]][indices[i2]] = crg

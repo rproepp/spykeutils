@@ -58,7 +58,10 @@ def binned_spike_trains(trains, bin_size, start=0*pq.ms, stop=None):
     # Create dictionary for all SpikeTrain lists
     binned = {}
     for s in trains:
-        binned[s] = _binned_spike_trains(trains[s], bins)
+        b = _binned_spike_trains(trains[s], bins)
+        if b:
+            binned[s] = b
+
 
     return binned, bins
 

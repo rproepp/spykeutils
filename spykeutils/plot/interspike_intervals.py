@@ -9,13 +9,14 @@ import quantities as pq
 
 from dialogs import PlotDialog
 import helper
+from spykeutils.spyke_exception import SpykeException
 
 def _ISI_plot(win, trains, bin_size, cut_off, diagram_type, unit):
     """ Fill a plot window with a interspike interval histogram of units
     """
-    bin_size.cut_off(unit)
+    bin_size.rescale(unit)
     cut_off.rescale(unit)
-    bins = sp.arange(0, cut_off, bin_size) * unit
+    bins = sp.arange(0*unit, cut_off, bin_size) * unit
 
     pW = BaseCurveWidget(win)
     plot = pW.plot
@@ -37,15 +38,22 @@ def _ISI_plot(win, trains, bin_size, cut_off, diagram_type, unit):
 
         (isi, bins) = sp.histogram(intervals, bins)
 
+        if isinstance(u, neo.Unit):
+            color = helper.get_unit_color(u)
+            name = u.name
+        else:
+            name = 'No unit'
+            color = 'k'
+
         if diagram_type == 1: # Curve ISI
-            curve = make.curve(bins, isi, u.name,
-                color=helper.get_unit_color(u))
+            curve = make.curve(bins, isi, name,
+                color=color)
             legend_items.append(curve)
             plot.add_item(curve)
         else: # Bar ISI
             show_isi = list(isi)
             show_isi.insert(0, show_isi[0])
-            curve = make.curve(bins, show_isi, u.name, color='k',
+            curve = make.curve(bins, show_isi, name, color='k',
                 curvestyle="Steps", shade=1.0)
             plot.add_item(curve)
             break
@@ -91,7 +99,7 @@ def ISI(trains, bin_size, cut_off, diagram_type, unit=pq.ms):
     :param Quantity unit: Unit of X-Axis. If None, milliseconds are used.
     """
     if not trains:
-        raise helper.PlotException('No spike trains for ISI histogram')
+        raise SpykeException('No spike trains for ISI histogram')
 
     win_title = 'ISI Histogram | Bin size: %3.3f ms' % bin_size
     win = PlotDialog(toolbar=True, wintitle=win_title)

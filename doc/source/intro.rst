@@ -5,8 +5,8 @@ package. This means it also carries neo's dependencies -
 `scipy <http://scipy.org>`_ and :mod:`quantities`.
 In addition, Python 2.7 or newer is required.
 
-For the :mod:`plot` subpackage, :mod:`guiqwt` is required. The main
-:mod:`spykeutils` can be used without guiqwt, but plotting will be
+For the :mod:`spykeutils.plot` subpackage, :mod:`guiqwt` is required. The
+main :mod:`spykeutils` can be used without guiqwt, but plotting will be
 unavailable. However, many spykeutils functions return data that can
 easily be plotted with an arbitrary plotting library, e.g.
 `matplotlib <http://matplotlib.sourceforge.net>`_.

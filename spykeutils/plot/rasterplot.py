@@ -9,6 +9,7 @@ import quantities as pq
 
 from dialogs import PlotDialog
 import helper
+from spykeutils.spyke_exception import SpykeException
 
 @helper.needs_qt
 def raster_plot(trains, unit=None, show_lines=True, events=None):
@@ -25,7 +26,7 @@ def raster_plot(trains, unit=None, show_lines=True, events=None):
 
     """
     if not trains:
-        raise helper.PlotException('No spike trains for rasterplot')
+        raise SpykeException('No spike trains for rasterplot')
 
     if not unit:
         unit = pq.ms
