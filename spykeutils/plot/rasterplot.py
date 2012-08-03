@@ -12,34 +12,34 @@ import helper
 from spykeutils.spyke_exception import SpykeException
 
 @helper.needs_qt
-def raster_plot(trains, unit=None, show_lines=True, events=None):
-    """ Create a new plotting window with a rasterplot of spiketrains
+def raster_plot(trains, units=None, show_lines=True, events=None):
+    """ Create a new plotting window with a rasterplot of spiketrains.
 
         :param dict trains: Dictionary of spike trains indexed by a
-            Neo object (`Unit` or `Segment`)
-        :param Quantity unit: Unit of X-Axis. If None, milliseconds are
+            Neo object (`Unit` or `Segment`).
+        :param Quantity units: Unit of X-Axis. If None, milliseconds are
             used.
         :param bool show_lines: Determines if a horizontal line is shown
-            for each spike train
+            for each spike train.
         :param sequence events: A sequence of neo `Event` objects that will
-            be marked on the plot
+            be marked on the plot.
 
     """
     if not trains:
         raise SpykeException('No spike trains for rasterplot')
 
-    if not unit:
-        unit = pq.ms
+    if not units:
+        units = pq.ms
 
     win_title = 'Spike Trains'
     win = PlotDialog(toolbar=True, wintitle=win_title)
     trial_length = None
     if show_lines:
         trial_length = max([t.t_stop - t.t_start for t in trains.itervalues()])
-        trial_length.units = unit
-    _spike_trains_plot(win, trains, unit, trial_length, events)
+        trial_length.units = units
+    _spike_trains_plot(win, trains, units, trial_length, events)
 
-def _spike_trains_plot(win, trains, unit, trial_length, events):
+def _spike_trains_plot(win, trains, units, trial_length, events):
     pW = BaseCurveWidget(win)
     plot = pW.plot
 
@@ -49,11 +49,11 @@ def _spike_trains_plot(win, trains, unit, trial_length, events):
     offset = len(trains)
     legend_items = []
     for u, t in sorted(trains.iteritems(), key=lambda (u,v):u.name):
-        if not unit:
+        if not units:
             unit = t.units
             t2 = t
         else:
-            t2 = t.rescale(unit)
+            t2 = t.rescale(units)
 
         color = helper.get_unit_color(u)
 
@@ -72,11 +72,10 @@ def _spike_trains_plot(win, trains, unit, trial_length, events):
         offset -= 1
 
     # Copy events in order to not modify originals
-    evts = [neo.Event(e.time.rescale(unit), e.label) for e in events]
-    helper.add_markers(plot, evts)
+    helper.add_events(plot, events, units)
 
     plot.set_axis_title(BasePlot.X_BOTTOM, 'Time')
-    plot.set_axis_unit(BasePlot.X_BOTTOM, unit.dimensionality.string)
+    plot.set_axis_unit(BasePlot.X_BOTTOM, units.dimensionality.string)
 
     win.add_plot_widget(pW, 0)
 

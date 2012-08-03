@@ -4,6 +4,7 @@ import scipy as sp
 import quantities as pq
 import neo
 from spykeutils.progress_indicator import ProgressIndicator
+from spyke_exception import SpykeException
 
 def _binned_spike_trains(trains, bins):
     """ Return a binned representation of SpikeTrain objects.
@@ -87,6 +88,9 @@ def psth(trains, bin_size, rate_correction=True, start=0*pq.ms, stop=None):
             and the bin borders.
         :rtype: dict, Quantity 1D
     """
+    if not trains:
+        raise SpykeException('No spike trains for PSTH!')
+
     binned, bins = binned_spike_trains(trains, bin_size, start, stop)
 
     cumulative = {}
