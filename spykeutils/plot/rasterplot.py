@@ -12,7 +12,7 @@ import helper
 from spykeutils.spyke_exception import SpykeException
 
 @helper.needs_qt
-def raster_plot(trains, units=None, show_lines=True, events=None):
+def raster_plot(trains, units=None, show_lines=True, events=None, epochs=None):
     """ Create a new plotting window with a rasterplot of spiketrains.
 
         :param dict trains: Dictionary of spike trains indexed by a
@@ -37,41 +37,31 @@ def raster_plot(trains, units=None, show_lines=True, events=None):
     if show_lines:
         trial_length = max([t.t_stop - t.t_start for t in trains.itervalues()])
         trial_length.units = units
-    _spike_trains_plot(win, trains, units, trial_length, events)
+    _spike_trains_plot(win, trains, units, trial_length, events, epochs)
 
-def _spike_trains_plot(win, trains, units, trial_length, events):
+def _spike_trains_plot(win, trains, units, trial_length, events, epochs):
     pW = BaseCurveWidget(win)
     plot = pW.plot
 
     if events is None:
         events = []
+    if epochs is None:
+        epochs = []
 
     offset = len(trains)
     legend_items = []
     for u, t in sorted(trains.iteritems(), key=lambda (u,v):u.name):
-        if not units:
-            unit = t.units
-            t2 = t
-        else:
-            t2 = t.rescale(units)
+        color = helper.get_object_color(u)
 
-        color = helper.get_unit_color(u)
+        train = helper.add_spikes(plot, t, color, 2, 21, offset, units)
 
-        train = make.curve(t2, sp.zeros(len(trains[u])) + offset,
-            u.name, 'k', 'NoPen', linewidth=1, marker='Rect',
-            markerfacecolor=color, markeredgecolor=color)
-
-        s = train.symbol()
-        s.setSize(1, 21)
-        train.setSymbol(s)
-        plot.add_item(train)
         if u.name:
             legend_items.append(train)
         if trial_length:
             plot.add_item(make.curve([0, trial_length], [offset, offset], color='k'))
         offset -= 1
 
-    # Copy events in order to not modify originals
+    helper.add_epochs(plot, epochs, units)
     helper.add_events(plot, events, units)
 
     plot.set_axis_title(BasePlot.X_BOTTOM, 'Time')

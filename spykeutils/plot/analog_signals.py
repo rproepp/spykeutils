@@ -1,6 +1,8 @@
 from __future__ import division
 
 import scipy as sp
+import neo
+import quantities as pq
 
 from guiqwt.builder import make
 from guiqwt.baseplot import BasePlot
@@ -11,73 +13,30 @@ from dialogs import PlotDialog
 import helper
 
 @helper.needs_qt
-def plot_signal(signal, events=None, epochs=None, spike_trains=None):
+def plot_signal(signal, events=None, epochs=None, spike_trains=None,
+                spike_waveforms=None):
     """ Create a plot from a signal
     """
-    if signal is None:
-        raise SpykeException('Cannot create signal plot: No signal data provided!')
-    if events is None:
-        events = []
-    if epochs is None:
-        epochs = []
-    if spike_trains is None:
-        spike_trains = []
-
-    # X-Axis
-    sample = (1 / signal.sampling_rate).simplified
-    x = sp.arange(signal.shape[0]) * sample
-
     # Plot title
     win_title = 'Analog Signal'
     if signal.recordingchannel:
-        win_title += ' | Recording Channel: %s' %\
+        win_title += ' | Recording Channel: %s' % \
                      signal.recordingchannel.name
     if signal.segment:
-        win_title += ' | Segment: %s' %\
-                     signal.segment.name
+        win_title += ' | Segment: %s' % signal.segment.name
     win = PlotDialog(toolbar=True, wintitle=win_title)
 
+    signalarray = neo.AnalogSignalArray(sp.atleast_2d(sp.asarray(signal)).T,
+        units=signal.units, sampling_rate=signal.sampling_rate)
 
-    pW = BaseCurveWidget(win)
-    plot = pW.plot
-    helper.add_epochs(plot, epochs, x.units)
-
-    plot.add_item(make.curve(x, signal))
-    #for s in spike_trains:
-    #    self._add_templates(plot, spikes[u], templates[u][:, c] + offset, spike_offsets[u], self._get_color(u))
-
-    helper.add_events(plot, events, x.units)
-    #for s in spike_trains:
-    #    self._add_spikes(plot, spikes[u], self._get_color(u))
-
-    win.add_plot_widget(pW, 0)
-
-    plot.set_axis_title(BasePlot.X_BOTTOM, 'Time')
-    plot.set_axis_unit(BasePlot.X_BOTTOM, x.dimensionality.string)
-    #plot.set_axis_title(BasePlot.Y_LEFT, 'Voltage')
-    plot.set_axis_unit(BasePlot.Y_LEFT, signal.dimensionality.string)
-
-    win.add_custom_curve_tools(False)
-
-    #self._make_unit_legend(win, units)
-    win.show()
-
+    _plot_signal_array_on_window(win, signalarray, events, epochs,
+        spike_trains, spike_waveforms, False)
 
 @helper.needs_qt
-def plot_signal_array(signalarray, events=None, epochs=None, spike_trains=None, plot_separate=True):
+def plot_signal_array(signalarray, events=None, epochs=None,
+                      spike_trains=None, spike_waveforms=None,
+                      plot_separate=True):
     """ Create a plot dialog from a signal array """
-    if signalarray is None:
-        raise SpykeException('Cannot create signal plot: No signal data provided!')
-    if events is None:
-        events = []
-    if epochs is None:
-        epochs = []
-    if spike_trains is None:
-        spike_trains = []
-
-    # X-Axis
-    sample = (1 / signalarray.sampling_rate).simplified
-    x = sp.arange(signalarray.shape[0]) * sample
 
     # Plot title
     win_title = 'Analog Signals'
@@ -85,11 +44,51 @@ def plot_signal_array(signalarray, events=None, epochs=None, spike_trains=None, 
         win_title += ' | Recording Channel Group: %s' % \
                      signalarray.recordingchannelgroup.name
     if signalarray.segment:
-        win_title += ' | Segment: %s' %\
-                     signalarray.segment.name
+        win_title += ' | Segment: %s' % signalarray.segment.name
     win = PlotDialog(toolbar=True, wintitle=win_title)
 
+    _plot_signal_array_on_window(win, signalarray, events, epochs,
+        spike_trains, spike_waveforms, plot_separate)
 
+
+def _add_spike_waveforms(plot, spikes, x_units, channel, offset):
+    for spike in spikes:
+        color = helper.get_object_color(spike.unit)
+        # TODO: Is this usage of Spike.left_sweep correct?
+        if spike.left_sweep:
+            lsweep = spike.left_sweep
+        else:
+            lsweep = 0.0 * pq.ms
+        start = (spike.time-lsweep).rescale(x_units)
+        stop = (spike.waveform.shape[0] / spike.sampling_rate +
+                spike.time - lsweep).rescale(x_units)
+        spike_x = sp.arange(start, stop,
+            (1.0 / spike.sampling_rate).rescale(x_units)) * x_units
+
+        plot.add_item(make.curve(spike_x,
+            spike.waveform[:, channel] + offset,
+            color=color, linewidth=2))
+
+def _plot_signal_array_on_window(win, signalarray, events=None, epochs=None,
+                                 spike_trains=None, spikes=None,
+                                 plot_separate=True):
+    if signalarray is None:
+        raise SpykeException(
+            'Cannot create signal plot: No signal data provided!')
+    if events is None:
+        events = []
+    if epochs is None:
+        epochs = []
+    if spike_trains is None:
+        spike_trains = {}
+    if spikes is None:
+        spikes = {}
+
+    # X-Axis
+    sample = (1 / signalarray.sampling_rate).simplified
+    x = sp.arange(signalarray.shape[0]) * sample
+
+    offset = 0 * signalarray.units
     channels = range(signalarray.shape[1])
     if plot_separate:
         plot = None
@@ -100,14 +99,16 @@ def plot_signal_array(signalarray, events=None, epochs=None, spike_trains=None, 
             helper.add_epochs(plot, epochs, x.units)
             plot.add_item(make.curve(x, signalarray[:, c]))
             helper.add_events(plot, events, x.units)
-            #for s in spike_trains:
-            #    if show_templates:
-            #        self._add_templates(pl, spikes[u], templates[u][:, c], spike_offsets[u], self._get_color(u))
-            #    if show_spikes:
-            #        self._add_spikes(pl, spikes[u], self._get_color(u))
+
+            _add_spike_waveforms(plot, spikes, x.units, c, offset)
+
+            for train in spike_trains:
+                color = helper.get_object_color(train.unit)
+                helper.add_spikes(plot, train, color, units=x.units)
+
             win.add_plot_widget(pW, c)
-            #plot.set_axis_title(BasePlot.Y_LEFT, 'Voltage')
-            plot.set_axis_unit(BasePlot.Y_LEFT, signalarray.dimensionality.string)
+            plot.set_axis_unit(BasePlot.Y_LEFT,
+                signalarray.dimensionality.string)
 
         plot.set_axis_title(BasePlot.X_BOTTOM, 'Time')
         plot.set_axis_unit(BasePlot.X_BOTTOM, x.dimensionality.string)
@@ -123,34 +124,36 @@ def plot_signal_array(signalarray, events=None, epochs=None, spike_trains=None, 
         helper.add_epochs(plot, epochs, x.units)
 
         # Find plot y offset
-        maxOffset = 0
+        max_offset = 0 * signalarray.units
         for i, c in enumerate(channels[1:], 1):
-            offset = signalarray[:, channels[i - 1]].max() - \
-                     signalarray[:, c].min()
-            if offset > maxOffset:
-                maxOffset = offset
-
-        offset = 0
+            cur_offset = signalarray[:, channels[i - 1]].max() -\
+                         signalarray[:, c].min()
+            if cur_offset > max_offset:
+                max_offset = cur_offset
 
         offset -= signalarray[:, channels[0]].min()
 
         for c in channels:
             plot.add_item(make.curve(x, signalarray[:, c] + offset))
-            #for s in spike_trains:
-            #    self._add_templates(plot, spikes[u], templates[u][:, c] + offset, spike_offsets[u], self._get_color(u))
-            offset += maxOffset
+            _add_spike_waveforms(plot, spikes, x.units, c, offset)
+            offset += max_offset
+
         helper.add_events(plot, events, x.units)
-        #for s in spike_trains:
-        #    self._add_spikes(plot, spikes[u], self._get_color(u))
+
+        for train in spike_trains:
+            color = helper.get_object_color(train.unit)
+            helper.add_spikes(plot, train, color, units=x.units)
 
         win.add_plot_widget(pW, 0)
 
         plot.set_axis_title(BasePlot.X_BOTTOM, 'Time')
         plot.set_axis_unit(BasePlot.X_BOTTOM, x.dimensionality.string)
-        #plot.set_axis_title(BasePlot.Y_LEFT, 'Voltage')
         plot.set_axis_unit(BasePlot.Y_LEFT, signalarray.dimensionality.string)
 
     win.add_custom_curve_tools(False)
 
-    #self._make_unit_legend(win, units)
+    units = set([s.unit for s in spike_trains])
+    units = units.union([s.unit for s in spikes])
+
+    helper.make_unit_legend(win, units, False)
     win.show()

@@ -39,7 +39,7 @@ def _ISI_plot(win, trains, bin_size, cut_off, diagram_type, unit):
         (isi, bins) = sp.histogram(intervals, bins)
 
         if isinstance(u, neo.Unit):
-            color = helper.get_unit_color(u)
+            color = helper.get_object_color(u)
             name = u.name
         else:
             name = 'No unit'

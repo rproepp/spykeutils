@@ -11,7 +11,7 @@ from guiqwt.tools import (SelectTool, RectZoomTool, BasePlotMenuTool,
                           ItemCenterTool, SignalStatsTool)
 from PyQt4.QtCore import Qt
 from PyQt4.QtGui import (QDialog, QGridLayout, QToolBar, QHBoxLayout,
-                         QVBoxLayout, QFrame)
+                         QVBoxLayout, QFrame, QWidget)
 from guidata.configtools import get_icon
 from guiqwt.config import _
         
@@ -24,8 +24,8 @@ class PlotDialog(QDialog, PlotManager):
         be added which provide callbacks when the checkbox state changes.
     """
 
-    def __init__(self, wintitle="guiqwt plot", icon="guiqwt.png", toolbar=False, 
-                 options=None, parent=None, panels=None):
+    def __init__(self, wintitle="guiqwt plot", icon="guiqwt.png",
+                 toolbar=False, options=None, parent=None, panels=None):
         QDialog.__init__(self, parent)
         self.setWindowFlags(Qt.Window)
 
@@ -194,16 +194,22 @@ class PlotDialog(QDialog, PlotManager):
         """
         label = QtGui.QLabel(self)
         label.setText(legend_string)
-        self.plot_layout.addWidget(label, 0, self.plot_layout.columnCount(), -1, 1)
+        self.plot_layout.addWidget(label, 0, self.plot_layout.columnCount(),
+            -1, 1)
 
-    def add_color_legend(self, legend):
+    def add_color_legend(self, legend, show_option=None):
         """ Create a legend on the right of the plots with colors and names.
 
         :param sequence legend: List of (color, text) tuples, where `color`
             is a Qt color name (e.g. '#ff0000') and `text` is the
             corresponding text to display in the legend.
+        :param bool show_option: Determines whether a toggle for the legend
+            will be shown (if the parameter is not ``None``) and if the legend
+            is visible initially (``True``/``False``).
         """
-        layout = QGridLayout()
+        widget = QWidget(self)
+        layout = QGridLayout(widget)
+        widget.setLayout(layout)
         for l in legend:
             label = QtGui.QLabel(self)
             label.setStyleSheet('background-color:' + str(l[0]))
@@ -214,7 +220,14 @@ class PlotDialog(QDialog, PlotManager):
             label = QtGui.QLabel(self)
             label.setText(l[1])
             layout.addWidget(label, layout.rowCount()-1, 1, 1, 1)
-        self.plot_layout.addLayout(layout, 0, self.plot_layout.columnCount(), -1, 1)
+
+        self.plot_layout.addWidget(widget, 0, self.plot_layout.columnCount(),
+            -1, 1)
+        if show_option is not None:
+            widget.setVisible(show_option)
+            self.add_option('Show legend sidebar',
+                lambda w,s : widget.setVisible(s),
+                show_option)
     
     def add_legend_option(self, legends, active):
         """ Create a user option to show or hide a list of legend objects.

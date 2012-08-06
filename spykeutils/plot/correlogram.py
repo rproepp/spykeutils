@@ -62,14 +62,14 @@ def _correlogram_plot(win, trains, bin_size, cut_off, border_correction,
         plot.add_item(make.curve(x, c[0]))
 
         # Create legend
-        color = helper.get_unit_color(c[1])
+        color = helper.get_object_color(c[1])
         color_curve = make.curve([], [], c[1].name,
             color, 'NoPen', linewidth=1, marker='Rect',
             markerfacecolor=color, markeredgecolor=color)
         legend_items.append(color_curve)
         plot.add_item(color_curve)
         if c[1] != c[2]:
-            color = helper.get_unit_color(c[2])
+            color = helper.get_object_color(c[2])
             color_curve = make.curve([], [], c[2].name,
                 color, 'NoPen', linewidth=1, marker='Rect',
                 markerfacecolor=color, markeredgecolor=color)
