@@ -29,18 +29,22 @@ def needs_qt(function):
             app.exec_()
     return inner
 
-_color = ['#00ffff', # Cyan
-    '#ff00ff', # Magenta
-   '#ff0000', # Red
-   '#00ff00', # Green
-   '#0000ff', # Blue
-   '#cccc00', # Dark yellow
-   '#000077', # Navy
-   '#770000', # Maroon
-   '#007777', # Teal
-   '#777700', # Olive
-   '#770077', # Purple
-   '#a146ff'] # Violet
+# Optimum contrast color palette (without white and black), see
+# http://web.media.mit.edu/~wad/color/palette.html
+_color = ['#575757', # Dark Gray
+    '#ad2323', # Red
+   '#2a4bd7', # Blue
+   '#296914', # Green
+   '#614a19', # Brown (lower R to better distinguish from purple)
+   '#8126c0', # Purple
+   '#a0a0a0', # Light Gray
+   '#81c57a', # Light Green
+   '#9dafff', # Light Blue
+   '#29d0d0', # Cyan
+   '#ff9233', # Orange
+   '#ffee33',# Yellow
+   '#e9debb', # Tan
+   '#ffcdf3'] # Pink
 
 def get_color(entity_id):
     """ Return a color for an int.
