@@ -9,9 +9,9 @@ import quantities as pq
 
 from dialogs import PlotDialog
 import helper
-from spykeutils.spyke_exception import SpykeException
+from ..spyke_exception import SpykeException
 
-def _ISI_plot(win, trains, bin_size, cut_off, diagram_type, unit):
+def _ISI_plot(win, trains, bin_size, cut_off, bar_plot, unit):
     """ Fill a plot window with a interspike interval histogram of units
     """
     bin_size.rescale(unit)
@@ -21,7 +21,7 @@ def _ISI_plot(win, trains, bin_size, cut_off, diagram_type, unit):
     pW = BaseCurveWidget(win)
     plot = pW.plot
     legend_items = []
-    if diagram_type == 2:
+    if bar_plot:
         u = trains.keys()[0]
         if 'unique_id' in u.annotations:
             color = helper.get_color(u.annotations['unique_id'])
@@ -45,12 +45,12 @@ def _ISI_plot(win, trains, bin_size, cut_off, diagram_type, unit):
             name = 'No unit'
             color = 'k'
 
-        if diagram_type == 1: # Curve ISI
+        if not bar_plot:
             curve = make.curve(bins, isi, name,
                 color=color)
             legend_items.append(curve)
             plot.add_item(curve)
-        else: # Bar ISI
+        else:
             show_isi = list(isi)
             show_isi.insert(0, show_isi[0])
             curve = make.curve(bins, show_isi, name, color='k',
@@ -60,7 +60,7 @@ def _ISI_plot(win, trains, bin_size, cut_off, diagram_type, unit):
 
     win.add_plot_widget(pW, 0)
 
-    if diagram_type == 1:
+    if not bar_plot:
         legend = make.legend(restrict_items=legend_items)
         plot.add_item(legend)
         win.add_legend_option([legend], True)
@@ -71,7 +71,7 @@ def _ISI_plot(win, trains, bin_size, cut_off, diagram_type, unit):
     win.add_custom_curve_tools()
     win.show()
 
-    if diagram_type == 0: # Rescale Bar ISI
+    if bar_plot: # Rescale Bar ISI
         scale = plot.axisScaleDiv(BasePlot.Y_LEFT)
         plot.setAxisScale(BasePlot.Y_LEFT, 0, scale.upperBound())
         plot.set_antialiasing(False)
@@ -81,7 +81,7 @@ def _ISI_plot(win, trains, bin_size, cut_off, diagram_type, unit):
     return True
 
 @helper.needs_qt
-def ISI(trains, bin_size, cut_off, diagram_type, unit=pq.ms):
+def ISI(trains, bin_size, cut_off, bar_plot=False, unit=pq.ms):
     """ Create a plot dialog with a interspike interval histogram of units
     for a list of trials. Read required data from database.
 
@@ -91,19 +91,17 @@ def ISI(trains, bin_size, cut_off, diagram_type, unit=pq.ms):
     :type bin_size: Quantity scalar
     :param cut_off: End of histogram (time)
     :type bin_size: Quantity scalar
-    :param int diagram_type: One of the following:
-
-        * 1: Create line ISI histogram
-        * 2: Create bars ISI histogram (automatically limits plot to
-          just the first of the given units)
+    :param bool bar_plot: If ``True``, create a bar ISI histogram
+        (automatically limits plot to just the first of the given units).
+        Else, create a line ISI histogram.
     :param Quantity unit: Unit of X-Axis. If None, milliseconds are used.
     """
     if not trains:
         raise SpykeException('No spike trains for ISI histogram')
 
-    win_title = 'ISI Histogram | Bin size: %3.3f ms' % bin_size
+    win_title = 'ISI Histogram | Bin size: %.3f ms' % bin_size
     win = PlotDialog(toolbar=True, wintitle=win_title)
-    _ISI_plot(win, trains, bin_size, cut_off, diagram_type, unit)
+    _ISI_plot(win, trains, bin_size, cut_off, bar_plot, unit)
 
 if __name__ == '__main__':
     import guidata
@@ -121,5 +119,5 @@ if __name__ == '__main__':
     train2 = neo.SpikeTrain(sp.arange(20)*20*32, units=samples, t_stop=320000)
     train2.unit = unit2
 
-    ISI({unit1:[train1], unit2:[train2]}, 1, 25, 1)
+    ISI({unit1:[train1], unit2:[train2]}, 1, 25, False)
     app.exec_()

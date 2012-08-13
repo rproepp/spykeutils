@@ -7,7 +7,7 @@ from dialogs import PlotDialog
 import helper
 from ..progress_indicator import ProgressIndicator
 from ..correlogram import correlogram
-from spykeutils.spyke_exception import SpykeException
+from ..spyke_exception import SpykeException
 
 @helper.needs_qt
 def cross_correlogram(trains, bin_size, cut_off, border_correction,

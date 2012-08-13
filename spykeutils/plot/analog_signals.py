@@ -15,7 +15,21 @@ import helper
 @helper.needs_qt
 def plot_signal(signal, events=None, epochs=None, spike_trains=None,
                 spike_waveforms=None):
-    """ Create a plot from a signal
+    """ Create a plot from an AnalogSignal.
+
+    :param AnalogSignal signal: The signal to plot.
+    :param sequence events: A list of Event objects to be included in the
+        plot.
+    :param sequence epochs: A list of Epoch objects to be included in the
+        plot.
+    :param dict spike_trains: A dictionary of SpikeTrain objects to be
+        included in the plot. Spikes are plotted as vertical lines.
+        Indices of the dictionary (typically Unit objects) are used
+        for color and legend entries.
+    :param sequence spike_waveforms: A dictionary of lists of Spike objects
+        to be included in the plot. Waveforms of spikes are overlaid on
+        the signal. Indices of the dictionary (typically Unit objects) are
+        used for color and legend entries.
     """
     # Plot title
     win_title = 'Analog Signal'
@@ -36,8 +50,24 @@ def plot_signal(signal, events=None, epochs=None, spike_trains=None,
 def plot_signal_array(signalarray, events=None, epochs=None,
                       spike_trains=None, spike_waveforms=None,
                       plot_separate=True):
-    """ Create a plot dialog from a signal array """
+    """ Create a plot dialog from an AnalogSignalArray.
 
+    :param AnalogSignalArray signalarray: The signal array to plot.
+    :param sequence events: A list of Event objects to be included in the
+        plot.
+    :param sequence epochs: A list of Epoch objects to be included in the
+        plot.
+    :param dict spike_trains: A dictionary of SpikeTrain objects to be
+        included in the plot. Spikes are plotted as vertical lines.
+        Indices of the dictionary (typically Unit objects) are used
+        for color and legend entries.
+    :param sequence spike_waveforms: A dictionary of lists of Spike objects
+        to be included in the plot. Waveforms of spikes are overlaid on
+        the signal. Indices of the dictionary (typically Unit objects) are
+        used for color and legend entries.
+    :param bool plot_separate: Determines if a separate plot for is created
+        each channel in ``signalarray``.
+    """
     # Plot title
     win_title = 'Analog Signals'
     if signalarray.recordingchannelgroup:

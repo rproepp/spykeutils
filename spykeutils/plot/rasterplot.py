@@ -9,17 +9,17 @@ import quantities as pq
 
 from dialogs import PlotDialog
 import helper
-from spykeutils.spyke_exception import SpykeException
+from ..spyke_exception import SpykeException
 
 @helper.needs_qt
 def raster_plot(trains, units=None, show_lines=True, events=None, epochs=None):
     """ Create a new plotting window with a rasterplot of spiketrains.
 
         :param dict trains: Dictionary of spike trains indexed by a
-            Neo object (`Unit` or `Segment`).
+            Neo object (Unit or Segment).
         :param Quantity units: Unit of X-Axis. If None, milliseconds are
             used.
-        :param bool show_lines: Determines if a horizontal line is shown
+        :param bool show_lines: Determines if a horizontal line will be shown
             for each spike train.
         :param sequence events: A sequence of neo `Event` objects that will
             be marked on the plot.
@@ -53,7 +53,8 @@ def _spike_trains_plot(win, trains, units, trial_length, events, epochs):
     for u, t in sorted(trains.iteritems(), key=lambda (u,v):u.name):
         color = helper.get_object_color(u)
 
-        train = helper.add_spikes(plot, t, color, 2, 21, offset, units)
+        train = helper.add_spikes(plot, t, color, 2, 21, offset,
+            u.name, units)
 
         if u.name:
             legend_items.append(train)

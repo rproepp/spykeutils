@@ -31,7 +31,7 @@ def needs_qt(function):
 
 # Optimum contrast color palette (without white and black), see
 # http://web.media.mit.edu/~wad/color/palette.html
-_color = ['#575757', # Dark Gray
+__default_colors = ['#575757', # Dark Gray
     '#ad2323', # Red
    '#2a4bd7', # Blue
    '#296914', # Green
@@ -42,23 +42,43 @@ _color = ['#575757', # Dark Gray
    '#9dafff', # Light Blue
    '#29d0d0', # Cyan
    '#ff9233', # Orange
-   '#ffee33',# Yellow
-   '#e9debb', # Tan
-   '#ffcdf3'] # Pink
+   '#ffee33', # Yellow
+   '#b6ab88', # Tan (darkened for better visibility on white background)
+   '#ff89d1'] # Pink (darkened for better visibility on white background)
+
+__colors = __default_colors
 
 def get_color(entity_id):
     """ Return a color for an int.
     """
-    return _color[entity_id % len(_color)]
+    return __colors[entity_id % len(__colors)]
 
 def get_object_color(unit):
     """ Return a color for a Neo object, based on the 'unique_id'
     annotation. If the annotation is not present, return a color based
     on the hash of the object.
     """
-    if 'unique_id' in unit.annotations:
-        return get_color(unit.annotations['unique_id'])
+    try:
+        if 'unique_id' in unit.annotations:
+            return get_color(unit.annotations['unique_id'])
+    except Exception:
+        return get_color(hash(unit))
     return get_color(hash(unit))
+
+def set_color_scheme(colors):
+    """ Set the color scheme used in plots.
+
+    :param sequence colors: A list of strings with HTML-style color codes
+        (e.g. ``'#ffffff'`` for white). If this is ``None`` or empty,
+        the default color scheme will be set.
+    """
+    global __colors
+    global __default_colors
+    if not colors:
+        __colors = __default_colors
+    else:
+        __colors = colors
+
 
 def add_events(plot, events, units=None):
     """ Add Event markers to a guiqwt plot.
@@ -79,7 +99,7 @@ def add_events(plot, events, units=None):
             linewidth=1))
 
 def add_spikes(plot, train, color='k', spike_width=1, spike_height=20000,
-               y_offset = 0, units=None):
+               y_offset = 0, name='', units=None):
     """ Add all spikes from a spike train to a guiqwt plot as vertical lines.
 
     :param :class:`guiqwt.baseplot.BasePlot` plot: The plot object.
@@ -89,17 +109,13 @@ def add_spikes(plot, train, color='k', spike_width=1, spike_height=20000,
     :param int spike_width: The width of the shown spikes in pixels.
     :param int spike_height: The height of the shown spikes in pixels.
     :param float y_offset: An offset for the drawing position on the y-axis.
+    :param str name: The name of the spike train.
     :param Quantity units: The x-scale of the plot. If this is ``None``,
         the time unit of the events will be use.
     :returns: The plot item added for the spike train
     """
     if units:
         train = train.rescale(units)
-
-    if train.unit and train.unit.name:
-        name = train.unit.name
-    else:
-        name = ''
 
     spikes = make.curve(train, sp.zeros(len(train)) + y_offset,
         name, 'k', 'NoPen', linewidth=0, marker='Rect',
