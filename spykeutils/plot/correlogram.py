@@ -13,20 +13,20 @@ from ..spyke_exception import SpykeException
 def cross_correlogram(trains, bin_size, cut_off, border_correction,
                       unit=pq.ms, progress=ProgressIndicator()):
     """ Create (cross-)correlograms from a dictionary of SpikeTrain
-        lists for different units
+        lists for different units.
 
     :param dict trains: Dictionary of SpikeTrain lists indexed by Unit
-        objectss
-    :param bin_size: Bin size (time)
+        objectss.
+    :param bin_size: Bin size (time).
     :type bin_size: Quantity scalar
-    :param cut_off: Cut off (end time of calculated correlogram)
+    :param cut_off: Cut off (end time of calculated correlogram).
     :type cut_off: Quantity scalar
     :param bool border_correction: Apply correction for less data at higher
         timelags (WARNING: Not perfect for bin_size != 1, especially
-        with large `cut_off`)
-    :param quantity unit: Unit of X-Axis. If None, milliseconds are
+        with large `cut_off`).
+    :param Quantity unit: Unit of X-Axis. If None, milliseconds are
         used.
-    :param progress: A `ProgressIndicator` object for the operation
+    :param progress: Set this parameter to report progress.
     :type progress: :class:`spykeutils.progress_indicator.ProgressIndicator`
     """
     if not trains:
@@ -41,7 +41,7 @@ def cross_correlogram(trains, bin_size, cut_off, border_correction,
 
 def _correlogram_plot(win, trains, bin_size, cut_off, border_correction,
                       progress, unit):
-    """ Fill a plot window with correlograms
+    """ Fill a plot window with correlograms.
     """
     correlograms, bins = correlogram(trains, bin_size, cut_off,
         border_correction, unit, progress)

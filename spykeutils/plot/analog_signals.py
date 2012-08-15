@@ -13,7 +13,7 @@ from dialogs import PlotDialog
 import helper
 
 @helper.needs_qt
-def plot_signal(signal, events=None, epochs=None, spike_trains=None,
+def signal(signal, events=None, epochs=None, spike_trains=None,
                 spike_waveforms=None):
     """ Create a plot from an AnalogSignal.
 
@@ -47,7 +47,7 @@ def plot_signal(signal, events=None, epochs=None, spike_trains=None,
         spike_trains, spike_waveforms, False)
 
 @helper.needs_qt
-def plot_signal_array(signalarray, events=None, epochs=None,
+def signal_array(signalarray, events=None, epochs=None,
                       spike_trains=None, spike_waveforms=None,
                       plot_separate=True):
     """ Create a plot dialog from an AnalogSignalArray.

@@ -191,7 +191,8 @@ def spike_density_estimation(trains, start=0*pq.ms, stop=None,
     :param dict trains: A dictionary of SpikeTrain lists.
     :param start: The desired time for the start of the first bin. It
         will be recalculated if there are spike trains which start later
-        than this time.
+        than this time. This parameter can be negative (which could be
+        useful when aligning on events).
     :type start: Quantity scalar
     :param stop: The desired time for the end of the last bin. It will
         be recalculated if there are spike trains which end earlier
@@ -213,7 +214,7 @@ def spike_density_estimation(trains, start=0*pq.ms, stop=None,
         considered in the kernel width optimization. Note that the
         optimization assumes a Gaussian kernel and will most likely
         not give the optimal kernel size if another kernel is used.
-        If None, the parameter kernel_size will be used.
+        If None, ``kernel_size`` will be used.
     :type optimize_steps: Quantity 1D
     :param progress: Set this parameter to report progress.
     :type progress: :class:`spykeutils.progress_indicator.ProgressIndicator`

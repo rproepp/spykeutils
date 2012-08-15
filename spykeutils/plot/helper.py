@@ -16,9 +16,7 @@ class _MarkerName:
         return self.name
 
 
-def needs_qt(function):
-    """ Decorator for functions making sure that an initialized PyQt exists.
-    """
+def _needs_qt(function):
     @functools.wraps(function)
     def inner(*args, **kwargs):
         app = None
@@ -28,6 +26,23 @@ def needs_qt(function):
         if app:
             app.exec_()
     return inner
+
+# Make need_qt decorator preserve signature if decorator package is available
+try:
+    from decorator import FunctionMaker
+
+    def decorator_apply(dec, func):
+        return FunctionMaker.create(
+            func, 'return decorated(%(signature)s)',
+            dict(decorated=dec(func)), __wrapped__=func)
+
+    def needs_qt(func):
+        """ Decorator for functions making sure that an initialized PyQt exists.
+        """
+        return decorator_apply(_needs_qt, func)
+except ImportError:
+    needs_qt = _needs_qt
+
 
 # Optimum contrast color palette (without white and black), see
 # http://web.media.mit.edu/~wad/color/palette.html
@@ -83,7 +98,8 @@ def set_color_scheme(colors):
 def add_events(plot, events, units=None):
     """ Add Event markers to a guiqwt plot.
 
-    :param :class:`guiqwt.baseplot.BasePlot` plot: The plot object.
+    :param plot: The plot object.
+    :type plot: :class:`guiqwt.baseplot.BasePlot`
     :param sequence events: The events (neo :class:`neo.Event` objects).
     :param Quantity units: The x-scale of the plot. If this is ``None``,
         the time unit of the events will be use.
@@ -102,9 +118,10 @@ def add_spikes(plot, train, color='k', spike_width=1, spike_height=20000,
                y_offset = 0, name='', units=None):
     """ Add all spikes from a spike train to a guiqwt plot as vertical lines.
 
-    :param :class:`guiqwt.baseplot.BasePlot` plot: The plot object.
-    :param :class:`neo.core.SpikeTrain` train: A spike train with the spike
-        times to show.
+    :param plot: The plot object.
+    :type plot: :class:`guiqwt.baseplot.BasePlot`
+    :param train: A spike train with the spike times to show.
+    :type train: :class:`neo.core.SpikeTrain`
     :param str color: The color for the spikes.
     :param int spike_width: The width of the shown spikes in pixels.
     :param int spike_height: The height of the shown spikes in pixels.
@@ -131,7 +148,8 @@ def add_spikes(plot, train, color='k', spike_width=1, spike_height=20000,
 def add_epochs(plot, epochs, units=None):
     """ Add Epoch markers to a guiqwt plot.
 
-    :param :class:`guiqwt.baseplot.BasePlot` plot: The plot object.
+    :param plot: The plot object.
+    :type plot: :class:`guiqwt.baseplot.BasePlot`
     :param sequence epochs: The epochs (neo :class:`neo.Epoch` objects).
     :param units: The x-scale of the plot. If this is ``None``,
         the time unit of the events will be use.
