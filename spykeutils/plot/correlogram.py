@@ -10,22 +10,21 @@ from ..correlogram import correlogram
 from ..spyke_exception import SpykeException
 
 @helper.needs_qt
-def cross_correlogram(trains, bin_size, cut_off, border_correction,
+def cross_correlogram(trains, bin_size, max_lag=500*pq.ms, border_correction=True,
                       unit=pq.ms, progress=ProgressIndicator()):
     """ Create (cross-)correlograms from a dictionary of SpikeTrain
         lists for different units.
 
-    :param dict trains: Dictionary of SpikeTrain lists indexed by Unit
-        objectss.
+    :param dict trains: Dictionary of SpikeTrain lists.
     :param bin_size: Bin size (time).
     :type bin_size: Quantity scalar
-    :param cut_off: Cut off (end time of calculated correlogram).
-    :type cut_off: Quantity scalar
+    :param max_lag: Maximum time lag for which spikes are considered
+        (end time of calculated correlogram).
+    :type max_lag: Quantity scalar
     :param bool border_correction: Apply correction for less data at higher
-        timelags (WARNING: Not perfect for bin_size != 1, especially
-        with large `cut_off`).
-    :param Quantity unit: Unit of X-Axis. If None, milliseconds are
-        used.
+        timelags. Not perfect for bin_size != 1*``unit``, especially with
+        large ``max_lag`` compared to length of spike trains.
+    :param Quantity unit: Unit of X-Axis.
     :param progress: Set this parameter to report progress.
     :type progress: :class:`spykeutils.progress_indicator.ProgressIndicator`
     """
@@ -36,14 +35,14 @@ def cross_correlogram(trains, bin_size, cut_off, border_correction,
     progress.begin('Creating correlogram')
     progress.set_status('Calculating...')
     win = PlotDialog(toolbar=True, wintitle=win_title)
-    _correlogram_plot(win, trains, bin_size, cut_off, border_correction,
+    _correlogram_plot(win, trains, bin_size, max_lag, border_correction,
         progress, unit)
 
-def _correlogram_plot(win, trains, bin_size, cut_off, border_correction,
+def _correlogram_plot(win, trains, bin_size, max_lag, border_correction,
                       progress, unit):
     """ Fill a plot window with correlograms.
     """
-    correlograms, bins = correlogram(trains, bin_size, cut_off,
+    correlograms, bins = correlogram(trains, bin_size, max_lag,
         border_correction, unit, progress)
     x = bins[:-1] + bin_size / 2
 

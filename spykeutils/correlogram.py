@@ -6,27 +6,25 @@ import quantities as pq
 from progress_indicator import ProgressIndicator
 from spyke_exception import SpykeException
 
-def correlogram(trains, bin_size, cut_off, border_correction,
+def correlogram(trains, bin_size, max_lag=500*pq.ms, border_correction=True,
                 unit=pq.ms, progress=ProgressIndicator()):
     """ Return (cross-)correlograms from a dictionary of SpikeTrain
         lists for different units.
 
-    :param dict trains: Dictionary of SpikeTrain lists indexed by neo `Unit`
-        objects.
+    :param dict trains: Dictionary of SpikeTrain lists.
     :param bin_size: Bin size (time).
     :type bin_size: Quantity scalar
-    :param cut_off: Cut off (end time of calculated correlogram).
-    :type cut_off: Quantity scalar
+    :param max_lag: Cut off (end time of calculated correlogram).
+    :type max_lag: Quantity scalar
     :param bool border_correction: Apply correction for less data at higher
-        timelags (WARNING: Not perfect for bin_size != 1, especially
-        with large `cut_off`).
-    :param Quantity unit: Unit of X-Axis. If None, milliseconds are
-        used.
+        timelags. Not perfect for bin_size != 1*``unit``, especially with
+        large ``max_lag`` compared to length of spike trains.
+    :param Quantity unit: Unit of X-Axis.
     :param progress: A ProgressIndicator object for the operation.
     :type progress: :class:`spykeutils.progress_indicator.ProgressIndicator`
     :returns: Two values:
 
-        * An ordered dictionary indexed with the indices of `trains` of
+        * An ordered dictionary indexed with the indices of ``trains`` of
           ordered dictionaries indexed with the same indices. Entries of
           the inner dictionaries are the resulting (cross-)correlograms as
           numpy arrays. All crosscorrelograms can be indexed in two
@@ -35,10 +33,10 @@ def correlogram(trains, bin_size, cut_off, border_correction,
     :rtype: dict, Quantity 1D
     """
     bin_size.rescale(unit)
-    cut_off.rescale(unit)
+    max_lag.rescale(unit)
 
     # Create bins, making sure that 0 is at the center of central bin
-    half_bins = sp.arange(bin_size / 2, cut_off, bin_size)
+    half_bins = sp.arange(bin_size / 2, max_lag, bin_size)
     all_bins = list(reversed(-half_bins))
     all_bins.extend(half_bins)
     bins = sp.array(all_bins) * unit
@@ -64,7 +62,7 @@ def correlogram(trains, bin_size, cut_off, border_correction,
             return max(seq)
         def safe_min(seq):
             if len(seq) < 1:
-                return 1073741824 #Some arbitrary large value (2**20)
+                return 2**20 #Some arbitrary large value
             return min(seq)
 
         max_w = max([max([safe_max(t) for t in l])

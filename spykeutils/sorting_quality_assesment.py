@@ -1,5 +1,5 @@
-""" Functions for estimating the rate instantaneous rate of neurons from
-spike trains.
+""" Functions for estimating the quality of spike sorting results. These
+functions estimate a false positive and false negative fractions for
 """
 
 from __future__ import division
@@ -7,6 +7,7 @@ from __future__ import division
 import scipy as sp
 from scipy.spatial.distance import cdist
 import quantities as pq
+import neo
 
 from spykeutils.progress_indicator import ProgressIndicator
 
@@ -15,18 +16,17 @@ def get_refperiod_violations(spike_trains, refperiod,
     """ Return the refractory period violations in the given spike trains
     for the specified refractory period.
 
-    :param dict spike_trains: Dictionary of lists of `SpikeTrain` objects,
-        indexed by unit.
+    :param dict spike_trains: Dictionary of lists of SpikeTrain objects.
     :param refperiod: The refractory period (time).
     :type refperiod: Quantity scalar
-    :param progress: A `ProgressIndicator` object for the operation.
+    :param progress: Set this parameter to report progress.
     :type progress: :class:`spykeutils.progress_indicator.ProgressIndicator`
     :returns: Two values:
 
         * The total number of violations.
-        * A dictionary (with the same indices as `spike_trains`) of
-          lists with violation times (Quantity 1D with the same unit as
-          `refperiod`) for each spike train.
+        * A dictionary (with the same indices as ``spike_trains``) of
+          arrays with violation times (Quantity 1D with the same unit as
+          ``refperiod``) for each spike train.
     :rtype: int, dict """
 
     if type(refperiod) != pq.Quantity or \
@@ -52,7 +52,7 @@ def get_refperiod_violations(spike_trains, refperiod,
 def calculate_refperiod_fp(num_spikes, refperiod, violations, total_time):
     """ Return the rate of false positives calculated from refractory period
     calculations for each unit. The equation used is described in
-    (Hill et al. The Journal of Neuroscience. 2011)
+    (Hill et al. The Journal of Neuroscience. 2011).
 
     :param dict num_spikes: Dictionary of total number of spikes,
         indexed by unit.
@@ -62,7 +62,7 @@ def calculate_refperiod_fp(num_spikes, refperiod, violations, total_time):
         period before passing it to this function.
     :type refperiod: Quantity scalar
     :param dict violations: Dictionary of total number of violations,
-        indexed by unit.
+        indexed the same as num_spikes.
 
     :returns: A dictionary of false positive rates indexed by unit.
         Note that values above 0.5 can not be directly interpreted as a
@@ -88,9 +88,11 @@ def calculate_refperiod_fp(num_spikes, refperiod, violations, total_time):
 
     return fp
 
-def calculate_overlap_fp_fn(templates, spikes):
+def calculate_overlap_fp_fn(means, spikes):
     """ Return a dict of tuples (False positive rate, false negative rate)
-    indexed by unit. Details for the calculation can be found in
+    indexed by unit.
+
+    Details for the calculation can be found in
     (Hill et al. The Journal of Neuroscience. 2011). This function works on
     prewhitened data, which means it assumes that all clusters have a uniform
     normal distribution. Data can be prewhitened using the noise covariance
@@ -101,22 +103,31 @@ def calculate_overlap_fp_fn(templates, spikes):
     simple addition of pairwise probabilities is proposed. Instead, the
     total error probabilities are estimated using all clusters at once.
 
-    :param dict templates: Dictionary of prewhitened templates (cluster means)
-        as numpy arrays for all units.
-    :param dict spikes: Dictionary of lists of prewhitened spike waveforms
-        as numpy arrays for all units.
+    :param dict means: Dictionary of prewhitened cluster means
+        (e.g. unit templates) indexed by unit as Spike objects or
+        numpy arrays for all units.
+    :param dict spikes: Dictionary, indexed by unit, of lists of prewhitened
+        spike waveforms as Spike objects or numpy arrays for all units.
     :returns: Two values:
 
-        * A dictionary (indexed by unit of total
+        * A dictionary (indexed by unit) of total
           (false positives, false negatives) tuples.
         * A dictionary of dictionaries, both indexed by units,
           of pairwise (false positives, false negatives) tuples.
     :rtype: dict, dict
     """
-    units = templates.keys()
+    units = means.keys()
+    if not units:
+        return {}, {}
+
+    if len(units) == 1:
+        return {units[0]: (0.0, 0.0)}, {}
+
     prior = {}
     total_spikes = 0
-    for u, mean in templates.iteritems():
+    for u, mean in means.iteritems():
+        if isinstance(mean, neo.Spike):
+            means[u] = sp.asarray(mean.waveform.rescale(pq.uV)).reshape(-1)
         total_spikes += len(spikes[u])
 
     false_positive = {}
@@ -130,15 +141,28 @@ def calculate_overlap_fp_fn(templates, spikes):
     # for all units
     posterior = {}
 
+    # Convert Spike objects to arrays
+    for u, spks in spikes.iteritems():
+        spikelist = []
+        for s in spks:
+            if isinstance(s, neo.Spike):
+                spikelist.append(
+                    sp.asarray(s.waveform.rescale(pq.uV)).reshape(-1))
+            else:
+                spikelist.append(s)
+        spikes[u] = spikelist
+
+
     # Calculate posteriors
     for u1 in units[:]:
         if not spikes[u1]:
             units.remove(u1)
             continue
         posterior[u1] = {}
-        for u2, mean in templates.iteritems():
+        for u2, mean in means.iteritems():
             llh = _multi_norm(sp.array(spikes[u1]), mean)
             posterior[u1][u2] = llh*prior[u2]
+            #print posterior[u1][u2]
 
     # Calculate pairwise false positives/negatives
     singles = {u:{} for u in units}
@@ -148,14 +172,10 @@ def calculate_overlap_fp_fn(templates, spikes):
             f1 = sp.sum(posterior[u1][u2] /
                         (posterior[u1][u1] + posterior[u1][u2]),
                 dtype=sp.double)
-            #false_positive[u1] += f1
-            #false_negative[u2] += f1
 
             f2 = sp.sum(posterior[u2][u1] /
                         (posterior[u2][u1] + posterior[u2][u2]),
                 dtype=sp.double)
-            #false_negative[u1] += f2
-            #false_positive[u2] += f1
 
             singles[u1][u2] = (f1 / len(spikes[u1]) if spikes[u1] else 0,
                                f2 / len(spikes[u1]) if spikes[u1] else 0)
@@ -192,35 +212,4 @@ def _multi_norm(x, mean):
     d = x.shape[1]
     fac = (2*sp.pi) ** (-d/2.0)
     y = cdist(x, sp.atleast_2d(mean), 'sqeuclidean') * -0.5
-
     return fac * sp.exp(sp.longdouble(y))
-
-if __name__ == '__main__':
-    import matplotlib.pyplot as plt
-
-    sp.random.seed(123)
-    dimension = 3
-    offset = sp.zeros((dimension,1))
-    offset[0] = 4
-    cluster1 = sp.randn(dimension,10)
-    cluster2 = sp.randn(dimension,100) + offset
-    #cluster3 = sp.randn(dimension,500) + offset
-
-
-    clusterList1 = [cluster1[:,i] for i in xrange(sp.size(cluster1,1))]
-    clusterList2 = [cluster2[:,i] for i in xrange(sp.size(cluster2,1))]
-    #clusterList3 = [cluster3[:,i] for i in xrange(sp.size(cluster3,1))]
-
-    f, f2 = calculate_overlap_fp_fn({1: sp.zeros(dimension),
-                                   2: offset.flatten()},
-            {1:clusterList1, 2:clusterList2})
-    print f[1]
-    print f[2]
-    print f2[1]
-    print f2[2]
-    #print f[3]
-
-    plt.scatter(cluster1[0,:], cluster1[1,:], c='b')
-    plt.scatter(cluster2[0,:], cluster2[1,:], c='g')
-    #plt.scatter(cluster3[0,:], cluster3[1,:], c='r')
-    plt.show()
