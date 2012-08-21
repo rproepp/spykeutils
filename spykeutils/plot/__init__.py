@@ -44,6 +44,13 @@ package can not be used.
     :members:
     :show-inheritance:
 
+:mod:`spike_waveforms` Module
+------------------
+
+.. automodule:: spykeutils.plot.spike_waveforms
+    :members:
+    :show-inheritance:
+
 :mod:`dialogs` Module
 ---------------------
 
@@ -66,3 +73,4 @@ from correlogram import cross_correlogram
 from analog_signals import signal, signal_array
 from psth import psth
 from sde import sde
+from spike_waveforms import spikes

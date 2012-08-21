@@ -39,8 +39,7 @@ def psth(trains, events=None, start=0*pq.ms, stop=None, bin_size=100*pq.ms,
     :param bool bar_plot: Determines if a bar plot (``True``) or a line
         plot (``False``) will be created. In case of a bar plot, only
         the first index in ``trains`` will be shown in the plot.
-    :param Quantity unit: Unit of X-Axis. If None, milliseconds are
-        used.
+    :param Quantity unit: Unit of X-Axis.
     :param progress: Set this parameter to report progress.
     :type progress: :class:`spykeutils.progress_indicator.ProgressIndicator`
     """

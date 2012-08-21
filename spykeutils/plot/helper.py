@@ -177,13 +177,12 @@ def add_epochs(plot, epochs, units=None):
             movable=False, markerstyle='|', color='k', linestyle='NoPen',
             linewidth=1))
 
-def make_unit_legend(win, units, show_option=None):
-    """ Create a legend in a PlotDialog for a given sequence of
-    units.
+def make_window_legend(win, units, show_option=None):
+    """ Create a legend in a PlotDialog for a given sequence of neo objects.
 
     :param win: The window where the legend will be added.
     :type win: :class:`spykeutils.plot.dialogs.PlotDialog`
-    :param sequence units: A list of Unit objects which will be included in
+    :param sequence units: A list of neo objects which will be included in
         the legend.
     :param bool show_option: Determines whether a toggle for the legend
         will be shown (if the parameter is not ``None``) and if the legend
