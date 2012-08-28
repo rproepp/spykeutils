@@ -67,7 +67,7 @@ package can not be used.
 """
 
 from interspike_intervals import ISI
-from dialogs import PlotDialog
+from dialog import PlotDialog
 from rasterplot import raster_plot
 from correlogram import cross_correlogram
 from analog_signals import signal, signal_array

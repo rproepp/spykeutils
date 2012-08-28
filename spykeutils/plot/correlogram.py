@@ -3,7 +3,7 @@ from guiqwt.baseplot import BasePlot
 from guiqwt.plot import BaseCurveWidget
 import quantities as pq
 
-from dialogs import PlotDialog
+from dialog import PlotDialog
 import helper
 from ..progress_indicator import ProgressIndicator
 from ..correlogram import correlogram

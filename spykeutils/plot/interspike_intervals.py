@@ -7,7 +7,7 @@ from guiqwt.plot import BaseCurveWidget
 import neo
 import quantities as pq
 
-from dialogs import PlotDialog
+from dialog import PlotDialog
 import helper
 from ..spyke_exception import SpykeException
 

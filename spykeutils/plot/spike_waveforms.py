@@ -8,7 +8,7 @@ from guiqwt.baseplot import BasePlot
 from guiqwt.plot import BaseCurveWidget
 
 from ..spyke_exception import SpykeException
-from dialogs import PlotDialog
+from dialog import PlotDialog
 import helper
 
 @helper.needs_qt

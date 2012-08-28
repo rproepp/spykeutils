@@ -90,7 +90,7 @@ class PlotDialog(QDialog, PlotManager):
         self.add_tool(BasePlotMenuTool, "item")
         self.add_tool(ExportItemDataTool)
         try:
-            import spyderlib.widgets.objecteditor  # analysis:ignore
+            import spyderlib.widgets.objecteditor
             self.add_tool(EditItemDataTool)
         except ImportError:
             pass

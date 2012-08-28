@@ -9,7 +9,7 @@ import quantities as pq
 from .. import rate_estimation
 from ..progress_indicator import ProgressIndicator
 from ..spyke_exception import SpykeException
-from dialogs import PlotDialog
+from dialog import PlotDialog
 import helper
 
 @helper.needs_qt

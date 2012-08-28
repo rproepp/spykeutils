@@ -5,7 +5,7 @@ from guiqwt.builder import make
 from guiqwt.baseplot import BasePlot
 from guiqwt.plot import BaseCurveWidget
 
-from dialogs import PlotDialog
+from dialog import PlotDialog
 import helper
 from .. import rate_estimation
 from ..spyke_exception import SpykeException

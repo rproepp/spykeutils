@@ -10,7 +10,7 @@ from guiqwt.plot import BaseCurveWidget
 
 from ..spyke_exception import SpykeException
 from .. import conversions
-from dialogs import PlotDialog
+from dialog import PlotDialog
 import helper
 
 
@@ -151,7 +151,6 @@ def _plot_signal_array_on_window(win, signalarray, events=None, epochs=None,
     sample = (1 / signalarray.sampling_rate).simplified
     x = sp.arange(signalarray.shape[0]) * sample
     x.units = time_unit
-    print time_unit
 
     offset = 0 * signalarray.units
     channels = range(signalarray.shape[1])
