@@ -8,7 +8,10 @@ from guiqwt.tools import (SelectTool, RectZoomTool, BasePlotMenuTool,
                           DeleteItemTool, ItemListPanelTool,
                           AntiAliasingTool, AxisScaleTool, DisplayCoordsTool,
                           ExportItemDataTool, EditItemDataTool,
-                          ItemCenterTool, SignalStatsTool)
+                          ItemCenterTool, SignalStatsTool, ColormapTool,
+                          ReverseYAxisTool, AspectRatioTool, ContrastPanelTool,
+                          XCSPanelTool, YCSPanelTool, CrossSectionTool,
+                          AverageCrossSectionTool)
 from PyQt4.QtCore import Qt
 from PyQt4.QtGui import (QDialog, QGridLayout, QToolBar, QHBoxLayout,
                          QVBoxLayout, QFrame, QWidget)
@@ -108,6 +111,30 @@ class PlotDialog(QDialog, PlotManager):
         if antialiasing:
             self.add_tool(AntiAliasingTool)
         self.add_tool(AxisScaleTool)
+        self.add_separator_tool()
+        self.register_other_tools()
+        self.add_separator_tool()
+        self.get_default_tool().activate()
+
+    def add_custom_image_tools(self):
+        """ Adds typically needed image tools to the window.
+        """
+        self.add_toolbar(self.toolbar)
+
+        self.register_standard_tools()
+        self.add_separator_tool()
+
+        self.add_tool(ColormapTool)
+        self.add_tool(ReverseYAxisTool)
+        self.add_tool(AspectRatioTool)
+        if self.get_contrast_panel():
+            self.add_tool(ContrastPanelTool)
+        if self.get_xcs_panel() and self.get_ycs_panel():
+            self.add_tool(XCSPanelTool)
+            self.add_tool(YCSPanelTool)
+            self.add_tool(CrossSectionTool)
+            self.add_tool(AverageCrossSectionTool)
+
         self.add_separator_tool()
         self.register_other_tools()
         self.add_separator_tool()
@@ -225,7 +252,7 @@ class PlotDialog(QDialog, PlotManager):
             -1, 1)
         if show_option is not None:
             widget.setVisible(show_option)
-            self.add_option('Show legend sidebar',
+            self.add_option('Show Legend Sidebar',
                 lambda w,s : widget.setVisible(s),
                 show_option)
     

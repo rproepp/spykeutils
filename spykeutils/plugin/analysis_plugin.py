@@ -79,7 +79,7 @@ class AnalysisPlugin(gui_data.DataSet):
         if self._items:
             self.edit()
 
-    def serialize_parameters(self):
+    def get_parameters(self):
         """ Return a dictionary of the configuration that can
         be read with :func:`deserialize_parameters`. Override both if
         non-guidata attributes need to be serialized or if some guidata
@@ -89,12 +89,6 @@ class AnalysisPlugin(gui_data.DataSet):
         :returns: A dictionary of all configuration parameters.
         :rtype: dict
         """
-        #c = UserConfig({})
-        #io = StringIO.StringIO()
-        #self.write_config(c,'Config','')
-        #c.write(io)
-        #return io.getvalue()
-
         if not hasattr(self, '_items'):
             return {}
 
@@ -107,7 +101,7 @@ class AnalysisPlugin(gui_data.DataSet):
                 ret[i._name] = v
         return ret
 
-    def deserialize_parameters(self, parameters):
+    def set_parameters(self, parameters):
         """ Load configuration from a dictionary that has been
         created by :func:`serialize_parameters`. Override both if
         non-guidata attributes need to be serialized or if some guidata
@@ -117,10 +111,6 @@ class AnalysisPlugin(gui_data.DataSet):
         :param dict parameters: A dictionary of all configuration
             parameters.
         """
-        #c = UserConfig({})
-        #io = StringIO.StringIO(parameters)
-        #c.readfp(io)
-        #self.read_config(c,'Config','')
         for n,v in parameters.iteritems():
             setattr(self, '_' + n, v)
 
@@ -130,7 +120,7 @@ class AnalysisPlugin(gui_data.DataSet):
         (guidata,selections,params)
         """
         if use_guiparams:
-            guidata_string = repr(sorted(self.serialize_parameters().items()))
+            guidata_string = repr(sorted(self.get_parameters().items()))
         else:
             guidata_string = ''
         selection_string = json.dumps([s.data_dict() for s in selections])
@@ -203,7 +193,7 @@ class AnalysisPlugin(gui_data.DataSet):
 
         # Save guidata parameters
         paramgroup = h5.createGroup('/', 'guiparams')
-        guiparams = self.serialize_parameters()
+        guiparams = self.get_parameters()
         for p,v in guiparams.iteritems():
             t = type(v)
             if t == int or t == float:

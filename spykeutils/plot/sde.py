@@ -48,8 +48,7 @@ def sde(trains, events=None, start=0*pq.ms, stop=None,
     :type minimum_kernel: Quantity scalar
     :param maximum_kernel: The maximum kernel size to try in optimization.
     :type maximum_kernel: Quantity scalar
-    :param Quantity unit: Unit of X-Axis. If None, milliseconds are
-        used.
+    :param Quantity unit: Unit of X-Axis.
     :param progress: Set this parameter to report progress.
     :type progress: :class:`spykeutils.progress_indicator.ProgressIndicator`
     """

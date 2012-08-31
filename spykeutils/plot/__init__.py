@@ -51,6 +51,13 @@ package can not be used.
     :members:
     :show-inheritance:
 
+:mod:`spike_amp_hist` Module
+------------------
+
+.. automodule:: spykeutils.plot.spike_amplitude_histogram
+    :members:
+    :show-inheritance:
+
 :mod:`dialogs` Module
 ---------------------
 
@@ -74,3 +81,4 @@ from analog_signals import signal, signal_array
 from psth import psth
 from sde import sde
 from spike_waveforms import spikes
+from spike_amp_hist import spike_amplitude_histogram
