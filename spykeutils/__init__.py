@@ -39,3 +39,5 @@
     :undoc-members:
     :show-inheritance:
 """
+
+__version__ = '0.1.0'

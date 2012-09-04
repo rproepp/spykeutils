@@ -41,8 +41,6 @@ def spike_amplitude_histogram(trains, num_bins, uniform_y_scale=True,
 
     columns = int(round(sp.sqrt(num_channels)))
 
-
-
     win = PlotDialog(toolbar=True, wintitle="Spike Amplitude Histogram")
     for c in xrange(num_channels):
         pW = BaseImageWidget(win, yreverse=False,
