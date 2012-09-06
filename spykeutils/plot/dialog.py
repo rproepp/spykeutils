@@ -57,6 +57,7 @@ class PlotDialog(QDialog, PlotManager):
         # Options
         self.option_callbacks = {}
         self.legend = None
+        self.axis_syncplots = {}
         
     def _setup_widget_properties(self, wintitle, icon):
         self.setWindowTitle(wintitle)
@@ -163,8 +164,9 @@ class PlotDialog(QDialog, PlotManager):
             initially.
         :param sequence ids: List of plot ids to synchronize.
         """
+        self.axis_syncplots[BasePlot.X_BOTTOM] = ids
         if active and ids:
-            self.synchronize_axis(BasePlot.X_BOTTOM, ids)
+            self.synchronize_axis(BasePlot.X_BOTTOM)
         self.add_option('Synchronize X Axes',
             PlotDialog._synchronization_option_x, active)
 
@@ -175,8 +177,9 @@ class PlotDialog(QDialog, PlotManager):
             initially
         :param sequence ids: List of plot ids to synchronize.
         """
+        self.axis_syncplots[BasePlot.Y_LEFT] = ids
         if active and ids:
-            self.synchronize_axis(BasePlot.Y_LEFT, ids)
+            self.synchronize_axis(BasePlot.Y_LEFT)
         self.add_option('Synchronize Y Axes',
             PlotDialog._synchronization_option_y, active)
 
@@ -303,12 +306,18 @@ class PlotDialog(QDialog, PlotManager):
         
     def synchronize_axis(self, axis, plots = None):
         if plots is None:
-            plots = self.plots.keys()
+            if axis in self.axis_syncplots:
+                plots = self.axis_syncplots[axis]
+            else:
+                plots = self.plots.keys()
         PlotManager.synchronize_axis(self, axis, plots)
         
     def unsynchronize_axis(self, axis, plots = None):
         if plots is None:
-            plots = self.plots.keys()
+            if axis in self.axis_syncplots:
+                plots = self.axis_syncplots[axis]
+            else:
+                plots = self.plots.keys()
         for plot_id in plots:
             if not plot_id in self.synchronized_plots:
                 continue

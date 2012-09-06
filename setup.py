@@ -23,7 +23,7 @@ if __name__ == "__main__":
         name="spykeutils",
         version=find_version(),
         packages=['spykeutils', 'spykeutils.plot', 'spykeutils.plugin'],
-        requires=['scipy', 'neo'],
+        requires=['scipy', 'quantities', 'neo'],
         author='Robert Pröpper',
         maintainer='Robert Pröpper',
         description='spykeutils: Utilities for analyzing electrophysiological data',
