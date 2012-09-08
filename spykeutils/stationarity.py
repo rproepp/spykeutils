@@ -34,7 +34,7 @@ def spike_amplitude_histogram(trains, num_bins, uniform_y_scale=True,
           will be equal if ``uniform_y_scale`` is true).
     :rtype: (ndarray, list, list)
     """
-    num_channels = 0
+    num_channels = 1
     for t in trains:
         if not t:
             continue
