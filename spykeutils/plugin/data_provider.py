@@ -126,7 +126,7 @@ class DataProvider(object):
 
     def spikes_by_unit_and_segment(self):
         """ Return a dictionary (indexed by Unit) of dictionaries
-        (indexed by Segment) of Spike objects.
+        (indexed by Segment) of Spike lists.
 
         If there are multiple spikes in one Segment for the same Unit,
         only the first will be contained in the returned dictionary. If
@@ -138,7 +138,7 @@ class DataProvider(object):
 
     def spikes_by_segment_and_unit(self):
         """ Return a dictionary (indexed by Segment) of dictionaries
-        (indexed by Unit) of lists of Spike objects.
+        (indexed by Unit) of lists of Spike lists.
 
         If spikes not attached to a Unit or Segment are selected, their
         dictionary key will be ``DataProvider.no_unit`` or
@@ -204,7 +204,7 @@ class DataProvider(object):
 
     def analog_signals_by_channel_and_segment(self):
         """ Return a dictionary (indexed by RecordingChannel) of
-        dictionaries (indexed by Segment) of AnalogSignal objects.
+        dictionaries (indexed by Segment) of AnalogSignal lists.
 
         If analog signals not attached to a Segment or
         RecordingChannel are selected, their dictionary key will be
@@ -215,7 +215,7 @@ class DataProvider(object):
 
     def analog_signals_by_segment_and_channel(self):
         """ Return a dictionary (indexed by Segment) of
-        dictionaries (indexed by RecordingChannel) of AnalogSignal objects.
+        dictionaries (indexed by RecordingChannel) of AnalogSignal lists.
 
         If analog signals not attached to a Segment or
         RecordingChannel are selected, their dictionary key will be

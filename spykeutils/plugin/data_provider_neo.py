@@ -42,7 +42,7 @@ class NeoDataProvider(DataProvider):
         if filename in cls.loaded_blocks:
             return cls.loaded_blocks[filename]
         io, blocks = cls._load_neo_file(filename, lazy)
-        if io:
+        if io and hasattr(io, 'close'):
             io.close()
         return blocks
 
@@ -195,7 +195,8 @@ class NeoDataProvider(DataProvider):
         trains = []
         units = self.units()
         for s in self.segments():
-            trains.extend([t for t in s.spiketrains if t.unit in units])
+            trains.extend([t for t in s.spiketrains if t.unit in units or
+                                                       t.unit is None])
         for u in self.units():
             trains.extend([t for t in u.spiketrains if t.segment is None])
 
@@ -321,7 +322,8 @@ class NeoDataProvider(DataProvider):
         spikes = []
         units = self.units()
         for s in self.segments():
-            spikes.extend([t for t in s.spikes if t.unit in units])
+            spikes.extend([t for t in s.spikes if t.unit in units or
+                                                  t.unit is None])
         for u in self.units():
             spikes.extend([t for t in u.spikes if t.segment is None])
 
@@ -363,7 +365,7 @@ class NeoDataProvider(DataProvider):
 
     def spikes_by_unit_and_segment(self):
         """ Return a dictionary (indexed by Unit) of dictionaries
-        (indexed by Segment) of Spike objects.
+        (indexed by Segment) of Spike lists.
         """
         spikes = {}
         segments = self.segments()
@@ -373,18 +375,18 @@ class NeoDataProvider(DataProvider):
                 if segtrains:
                     if u not in spikes:
                         spikes[u] = {}
-                    spikes[u][s] = segtrains[0]
+                    spikes[u][s] = segtrains
             nonespikes = [t for t in u.spikes if t.segment is None]
             if nonespikes:
                 if u not in spikes:
                     spikes[u] = {}
-                spikes[u][self.no_segment] = nonespikes[0]
+                spikes[u][self.no_segment] = nonespikes
 
         nonespikes = {}
         for s in self.segments():
-            segtrains = [t for t in s.spikes if t.unit is None]
-            if segtrains:
-                nonespikes[s] = segtrains[0]
+            segspikes = [t for t in s.spikes if t.unit is None]
+            if segspikes:
+                nonespikes[s] = segspikes
         if nonespikes:
             spikes[self.no_unit] = nonespikes
 
@@ -438,7 +440,7 @@ class NeoDataProvider(DataProvider):
         channels = self.recording_channels()
         for s in self.segments():
             signals.extend([t for t in s.analogsignals
-                           if t.recordingchannel in channels])
+                           if t.recordingchannel in channels or t.recordingchannel is None])
         for u in self.recording_channels():
             signals.extend([t for t in u.analogsignals if t.segment is None])
 
@@ -484,7 +486,7 @@ class NeoDataProvider(DataProvider):
 
     def analog_signals_by_channel_and_segment(self):
         """ Return a dictionary (indexed by RecordingChannel) of
-        dictionaries (indexed by Segment) of AnalogSignal objects.
+        dictionaries (indexed by Segment) of AnalogSignal lists.
         """
         signals = {}
         segments = self.segments()
@@ -494,19 +496,19 @@ class NeoDataProvider(DataProvider):
                 if segsignals:
                     if c not in signals:
                         signals[c] = {}
-                    signals[c][s] = segsignals[0]
+                    signals[c][s] = segsignals
             nonesignals = [t for t in c.analogsignals if t.segment is None]
             if nonesignals:
                 if c not in signals:
                     signals[c] = {}
-                signals[c][self.no_segment] = nonesignals[0]
+                signals[c][self.no_segment] = nonesignals
 
         nonesignals = {}
         for s in self.segments():
             segsignals = [t for t in s.analogsignals
                           if t.recordingchannel is None]
             if segsignals:
-                nonesignals[s] = segsignals[0]
+                nonesignals[s] = segsignals
         if nonesignals:
             signals[self.no_channel] = nonesignals
 
@@ -524,7 +526,8 @@ class NeoDataProvider(DataProvider):
         channelgroups = self.recording_channel_groups()
         for s in self.segments():
             signals.extend([t for t in s.analogsignalarrays
-                            if t.recordingchannelgroup in channelgroups])
+                            if t.recordingchannelgroup in channelgroups or
+                            t.recordingchannelgroup is None])
         for u in channelgroups:
             signals.extend([t for t in u.analogsignalarrays
                             if t.segment is None])
