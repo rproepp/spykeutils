@@ -1,0 +1,4 @@
+# Compulsory line, this is a version 3 file
+version=3
+opts="filenamemangle=s/.*\/(.*)/spykeutils-$1\.tar\.gz/" \
+  http://github.com/rproepp/spykeutils/tags .*tarball/(\d[\d\.a-z]+)

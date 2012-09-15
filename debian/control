@@ -1,0 +1,34 @@
+Source: spykeutils
+Section: python
+Priority: extra
+Maintainer: NeuroDebian Team <team@neuro.debian.net>
+Uploaders:  Robert Pröpper <robert.proepper@gmail.com>,
+            Michael Hanke <michael.hanke@gmail.com>,
+            Yaroslav Halchenko <debian@onerussian.com>,
+Build-Depends: debhelper (>= 7.2.18),
+               python-all (>= 2.7),
+               python-neo,
+               python-nose,
+               python-scipy,
+               python-sphinx,
+               python-guidata,
+               python-guiqwt,
+Standards-Version: 3.9.3.1
+Homepage: https://github.com/rproepp/spykeutils
+Vcs-Browser: https://github.com/rproepp/spykeutils
+Vcs-Git: git://github.com/rproepp/spykeutils.git
+
+Package: python-spykeutils
+Architecture: all
+Depends: ${misc:Depends}, ${python:Depends},
+         python-neo,
+         python-nose,
+         python-scipy,
+         python-sphinx
+Recommends: python-guidata, python-guiqwt, libjs-jquery
+Provides: ${python:Provides}
+Description: utilities for analyzing electrophysiological data
+ spykeutils is a Python library for analyzing and plotting data from
+ neurophysiological recordings. It can be used by itself or in
+ conjunction with Spyke Viewer, a multi-platform GUI application for
+ navigating electrophysiological datasets.
