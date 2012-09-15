@@ -13,6 +13,7 @@ Build-Depends: debhelper (>= 7.2.18),
                python-sphinx,
                python-guidata,
                python-guiqwt,
+               python-tables,
 Standards-Version: 3.9.3.1
 Homepage: https://github.com/rproepp/spykeutils
 Vcs-Browser: https://github.com/rproepp/spykeutils
@@ -26,7 +27,10 @@ Depends: ${misc:Depends}, ${python:Depends},
          python-nose,
          python-scipy,
          python-sphinx
-Recommends: python-guidata, python-guiqwt, libjs-jquery
+Recommends: python-guidata,
+            python-guiqwt,
+            python-tables,
+            libjs-jquery,
 Provides: ${python:Provides}
 Description: utilities for analyzing electrophysiological data
  spykeutils is a Python library for analyzing and plotting data from
