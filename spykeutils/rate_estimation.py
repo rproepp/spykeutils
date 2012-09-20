@@ -140,7 +140,7 @@ def aligned_spike_trains(trains, events, copy=True):
 
         for t in it:
             if copy:
-                st = t.copy()
+                st = t.rescale(t.units)
             else:
                 st = t
 

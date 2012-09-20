@@ -31,7 +31,7 @@ class NeoDataProvider(DataProvider):
         if filename in cls.loaded_blocks:
             return cls.loaded_blocks[filename][index]
         io, blocks = cls._load_neo_file(filename, lazy)
-        if io:
+        if io and hasattr(io, 'close'):
             io.close()
         return blocks[index]
 
@@ -58,8 +58,8 @@ class NeoDataProvider(DataProvider):
         """
         if os.path.isdir(filename):
             for io in neo.io.iolist:
-                if io.mode == 'dir': # For now, only one directory io exists
-                    n_io = io(dirname=filename)
+                if io.mode == 'dir':
+                    n_io = io(filename)
                     block = n_io.read(lazy=lazy)
                     cls.block_indices[block] = 0
                     cls.loaded_blocks[filename] = [block]
@@ -101,6 +101,7 @@ class NeoDataProvider(DataProvider):
         selected_blocks = viewer.neo_blocks()
         block_files = viewer.neo_block_file_names()
         for b in selected_blocks:
+            print b
             block_indices[b] = len(block_list)
             block_list.append([NeoDataProvider.block_indices[b],
                                block_files[b]])
@@ -114,6 +115,7 @@ class NeoDataProvider(DataProvider):
         for rcg in selected_rcg:
             rcg_indices[rcg] = len(rcg_list)
             idx = rcg.block.recordingchannelgroups.index(rcg)
+            print rcg.block
             rcg_list.append([idx, block_indices[rcg.block]])
         data['channel_groups'] = rcg_list
 
@@ -220,29 +222,53 @@ class NeoDataProvider(DataProvider):
         return trains
 
     def _active_block(self, old):
+        """ Return a copy of all selected elements in the given block
+        """
         block = copy(old)
 
         block.segments = []
         selected_segments = self.segments()
+        selected_rcgs = self.recording_channel_groups()
+        selected_channels = self.recording_channels()
+        selected_units = self.units()
         for s in old.segments:
             if s in selected_segments:
                 segment = copy(s)
+                segment.analogsignals = [sig for sig in s.analogsignals
+                                         if sig.recordingchannel
+                                         in selected_channels]
+                segment.analogsignalarrays = \
+                    [asa for asa in s.analogsignalarrays
+                     if asa.recordingchannelgroup in selected_rcgs]
+                segment.irregularlysampledsignals = \
+                    [iss for iss in s.irregularlysampledsignals
+                     if iss.recordingchannel in selected_channels]
+                segment.spikes = [sp for sp in s.spikes
+                                  if sp.unit in selected_units]
+                segment.spiketrains = [st for st in s.spiketrains
+                                        if st.unit in selected_units]
                 segment.block = block
                 block.segments.append(segment)
 
         block.recordingchannelgroups = []
-        selected_rcgs = self.recording_channel_groups()
-        selected_channels = self.recording_channels()
-        selected_units = self.units()
         for old_rcg in old.recordingchannelgroups:
             if old_rcg in selected_rcgs:
                 rcg = copy(old_rcg)
+                rcg.analogsignalarrays =\
+                    [asa for asa in old_rcg.analogsignalarrays
+                     if asa.segment in selected_segments]
 
                 rcg.recordingchannels = []
                 for c in old_rcg.recordingchannels:
                     if not c in selected_channels:
                         continue
                     channel = copy(c)
+                    channel.analogsignals = [sig for sig in c.analogsignals
+                                             if sig.segment
+                                             in selected_segments]
+                    channel.irregularlysampledsignals =\
+                        [iss for iss in c.irregularlysampledsignals
+                         if iss.segment in selected_segments]
                     channel.recordingchannelgroups = copy(
                         c.recordingchannelgroups)
                     channel.recordingchannelgroups.insert(
@@ -256,6 +282,10 @@ class NeoDataProvider(DataProvider):
                         continue
 
                     unit = copy(u)
+                    unit.spikes = [sp for sp in u.spikes
+                                   if sp.segment in selected_segments]
+                    unit.spiketrains = [st for st in u.spiketrains
+                                         if st.segment in selected_segments]
                     unit.recordingchannelgroup = rcg
                     rcg.units.append(unit)
 
