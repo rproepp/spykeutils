@@ -28,7 +28,7 @@ if __name__ == "__main__":
         maintainer='Robert Pröpper',
         description='spykeutils: Utilities for analyzing electrophysiological data',
         long_description=open('README.rst', 'r').read(),
-        license='MIT License',
+        license='License :: OSI Approved :: BSD License',
         url='https://github.com/rproepp/spykeutils',
         classifiers=[
             'Development Status :: 4 - Beta',
