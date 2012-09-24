@@ -129,6 +129,8 @@ def calculate_overlap_fp_fn(means, spikes):
         if isinstance(mean, neo.Spike):
             means[u] = sp.asarray(mean.waveform.rescale(pq.uV)).reshape(-1)
         total_spikes += len(spikes[u])
+    if total_spikes < 1:
+        return {u: (0.0, 0.0) for u in units}, {}
 
     false_positive = {}
     false_negative = {}
