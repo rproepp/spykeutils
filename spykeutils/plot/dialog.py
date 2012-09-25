@@ -2,7 +2,13 @@
 """
 
 from PyQt4 import QtGui
+from PyQt4.QtCore import Qt
+from PyQt4.QtGui import (QDialog, QGridLayout, QToolBar, QHBoxLayout,
+                         QVBoxLayout, QFrame, QWidget)
+
 from guiqwt.baseplot import BasePlot
+from guiqwt.curve import CurvePlot
+from guiqwt.image import ImagePlot
 from guiqwt.plot import PlotManager
 from guiqwt.tools import (SelectTool, RectZoomTool, BasePlotMenuTool,
                           DeleteItemTool, ItemListPanelTool,
@@ -12,12 +18,37 @@ from guiqwt.tools import (SelectTool, RectZoomTool, BasePlotMenuTool,
                           ReverseYAxisTool, AspectRatioTool, ContrastPanelTool,
                           XCSPanelTool, YCSPanelTool, CrossSectionTool,
                           AverageCrossSectionTool)
-from PyQt4.QtCore import Qt
-from PyQt4.QtGui import (QDialog, QGridLayout, QToolBar, QHBoxLayout,
-                         QVBoxLayout, QFrame, QWidget)
+from guiqwt.signals import SIG_PLOT_AXIS_CHANGED
 from guidata.configtools import get_icon
 from guiqwt.config import _
-        
+
+
+# Monkeypatch curve and image plot so synchronizing axes works with all tools
+def fixed_do_zoom_rect_view(self, *args, **kwargs):
+    CurvePlot.old_do_zoom_rect_view(self, *args, **kwargs)
+    self.emit(SIG_PLOT_AXIS_CHANGED, self)
+
+CurvePlot.old_do_zoom_rect_view = CurvePlot.do_zoom_rect_view
+CurvePlot.do_zoom_rect_view = fixed_do_zoom_rect_view
+
+
+def fixed_do_autoscale(self, *args, **kwargs):
+    CurvePlot.old_do_autoscale(self, *args, **kwargs)
+    if not isinstance(self, ImagePlot):
+        self.emit(SIG_PLOT_AXIS_CHANGED, self)
+
+CurvePlot.old_do_autoscale = CurvePlot.do_autoscale
+CurvePlot.do_autoscale = fixed_do_autoscale
+
+
+def fixed_do_autoscale_image(self, *args, **kwargs):
+    ImagePlot.old_do_autoscale(self, *args, **kwargs)
+    self.emit(SIG_PLOT_AXIS_CHANGED, self)
+
+ImagePlot.old_do_autoscale = ImagePlot.do_autoscale
+ImagePlot.do_autoscale = fixed_do_autoscale_image
+
+
 class PlotDialog(QDialog, PlotManager):
     """ Implements a dialog to which an arbitrary number of plots can be
         added.
@@ -117,12 +148,14 @@ class PlotDialog(QDialog, PlotManager):
         self.add_separator_tool()
         self.get_default_tool().activate()
 
-    def add_custom_image_tools(self):
+    def add_custom_image_tools(self, activate_zoom=True):
         """ Adds typically needed image tools to the window.
         """
         self.add_toolbar(self.toolbar)
 
         self.register_standard_tools()
+        if activate_zoom:
+            self.set_default_tool(self.get_tool(RectZoomTool))
         self.add_separator_tool()
 
         self.add_tool(ColormapTool)

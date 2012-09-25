@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from distutils.core import setup
+from setuptools import setup, find_packages
 import os
 
 def find_version():
@@ -22,18 +22,25 @@ if __name__ == "__main__":
     setup(
         name="spykeutils",
         version=find_version(),
-        packages=['spykeutils', 'spykeutils.plot', 'spykeutils.plugin'],
-        requires=['scipy', 'quantities', 'neo'],
+        packages=find_packages(),
+        install_requires=['scipy', 'quantities', 'neo'],
+        extras_require = {
+            'plot':  ['guiqwt'],
+            'plugin': ['tables']
+        },
+        scripts = [
+            'bin/spykeplugin'
+        ],
         author='Robert Pröpper',
         maintainer='Robert Pröpper',
-        description='spykeutils: Utilities for analyzing electrophysiological data',
+        description='Utilities for analyzing electrophysiological data',
         long_description=open('README.rst', 'r').read(),
-        license='License :: OSI Approved :: BSD License',
+        license='BSD',
         url='https://github.com/rproepp/spykeutils',
         classifiers=[
             'Development Status :: 4 - Beta',
             'Intended Audience :: Science/Research',
-            'License :: OSI Approved :: MIT License',
+            'License :: OSI Approved :: BSD License',
             'Natural Language :: English',
             'Operating System :: OS Independent',
             'Programming Language :: Python',

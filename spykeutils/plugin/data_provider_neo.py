@@ -101,7 +101,6 @@ class NeoDataProvider(DataProvider):
         selected_blocks = viewer.neo_blocks()
         block_files = viewer.neo_block_file_names()
         for b in selected_blocks:
-            print b
             block_indices[b] = len(block_list)
             block_list.append([NeoDataProvider.block_indices[b],
                                block_files[b]])
@@ -115,7 +114,6 @@ class NeoDataProvider(DataProvider):
         for rcg in selected_rcg:
             rcg_indices[rcg] = len(rcg_list)
             idx = rcg.block.recordingchannelgroups.index(rcg)
-            print rcg.block
             rcg_list.append([idx, block_indices[rcg.block]])
         data['channel_groups'] = rcg_list
 
