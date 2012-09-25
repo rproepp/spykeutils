@@ -28,9 +28,10 @@ if __name__ == "__main__":
             'plot':  ['guiqwt'],
             'plugin': ['tables']
         },
-        scripts = [
-            'bin/spykeplugin'
-        ],
+        entry_points = {
+            'console_scripts':
+                ['spykeplugin = spykeutils.plugin.start_plugin:main']
+        },
         author='Robert Pröpper',
         maintainer='Robert Pröpper',
         description='Utilities for analyzing electrophysiological data',

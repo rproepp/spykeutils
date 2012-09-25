@@ -9,16 +9,11 @@ import pickle
 from spykeutils.plugin.analysis_plugin import AnalysisPlugin
 from spykeutils.plugin.data_provider import DataProvider
 
-# Import DataProvider implementations so they can be loaded...
-try:
-    from spykeprivate.data_provider_db import DBStoredProvider
-    DataProvider._factories['DB'] = DBStoredProvider.from_data
-except ImportError:
-    pass
+# Data provider implementations need to be imported so they can be loaded
 import spykeutils.plugin.data_provider_stored
 
 
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser(description='Start an analysis plugin')
     parser.add_argument('Name', type=str, help='Name of analysis class')
     parser.add_argument('Code', type=str, help='Code of the analysis')
@@ -83,3 +78,6 @@ if __name__ == '__main__':
         selections.append(DataProvider.from_data(s))
 
     plugin.start(selections[0], selections[1:])
+
+if __name__ == '__main__':
+    main()

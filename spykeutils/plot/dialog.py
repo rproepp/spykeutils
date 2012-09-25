@@ -5,6 +5,11 @@ from PyQt4 import QtGui
 from PyQt4.QtCore import Qt
 from PyQt4.QtGui import (QDialog, QGridLayout, QToolBar, QHBoxLayout,
                          QVBoxLayout, QFrame, QWidget)
+try:
+    from PyQt4 import QtCore
+    _fromUtf8 = QtCore.QString.fromUtf8
+except AttributeError:
+    _fromUtf8 = lambda s: s
 
 from guiqwt.baseplot import BasePlot
 from guiqwt.curve import CurvePlot
@@ -21,6 +26,8 @@ from guiqwt.tools import (SelectTool, RectZoomTool, BasePlotMenuTool,
 from guiqwt.signals import SIG_PLOT_AXIS_CHANGED
 from guidata.configtools import get_icon
 from guiqwt.config import _
+
+import window_icon_rc
 
 
 # Monkeypatch curve and image plot so synchronizing axes works with all tools
@@ -58,10 +65,14 @@ class PlotDialog(QDialog, PlotManager):
         be added which provide callbacks when the checkbox state changes.
     """
 
-    def __init__(self, wintitle="guiqwt plot", icon="guiqwt.png",
-                 toolbar=False, options=None, parent=None, panels=None):
+    def __init__(self, wintitle="Plot window",
+                 toolbar=False,  parent=None, panels=None):
         QDialog.__init__(self, parent)
         self.setWindowFlags(Qt.Window)
+
+        icon = QtGui.QIcon()
+        icon.addPixmap(QtGui.QPixmap(_fromUtf8(":/Application/Main")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.setWindowIcon(icon)
 
         # WidgetMixin copy
         PlotManager.__init__(self, main=self)

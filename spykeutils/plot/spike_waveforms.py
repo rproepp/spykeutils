@@ -52,10 +52,8 @@ def spikes(spikes, axes_style, anti_alias = False, time_unit = pq.ms):
                     plot.add_item(curve)
             win.add_plot_widget(pW, c)
 
-        win.synchronize_axis(BasePlot.X_BOTTOM, channels)
-        win.synchronize_axis(BasePlot.Y_LEFT, channels)
-        win.add_x_synchronization_option(True)
-        win.add_y_synchronization_option(True)
+        win.add_x_synchronization_option(True, channels)
+        win.add_y_synchronization_option(False, channels)
         helper.make_window_legend(win, indices, True)
     else: # Only one plot needed
         pW = BaseCurveWidget(win)
