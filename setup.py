@@ -30,7 +30,7 @@ if __name__ == "__main__":
         },
         entry_points = {
             'console_scripts':
-                ['spykeplugin = spykeutils.plugin.start_plugin:main']
+                ['spyke-plugin = spykeutils.plugin.start_plugin:main']
         },
         author='Robert Pröpper',
         maintainer='Robert Pröpper',

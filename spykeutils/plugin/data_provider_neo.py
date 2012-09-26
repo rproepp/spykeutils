@@ -69,6 +69,9 @@ class NeoDataProvider(DataProvider):
             for io in neo.io.iolist:
                 if extension in io.extensions:
                     if io == neo.NeoHdf5IO:
+                        # Fix unicode problem with pyinstaller
+                        if hasattr(sys, 'frozen'):
+                            filename = filename.encode('UTF-8')
                         n_io = io(filename=filename)
                         blocks = n_io.read_all_blocks(lazy=lazy)
                         for i, b in enumerate(blocks):
