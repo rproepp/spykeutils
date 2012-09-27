@@ -202,7 +202,9 @@ class PlotDialog(QDialog, PlotManager):
         self.option_layout.addWidget(checkBox)
 
     def add_x_synchronization_option(self, active, ids = None):
-        """ Offer an option for X axes synchronization.
+        """ Offer an option for X axes synchronization. This method should
+        be called after show(), so that a proper initial synchronization
+        can be performed.
 
         :param bool active: Determines whether the axes are synchronized
             initially.
@@ -215,7 +217,9 @@ class PlotDialog(QDialog, PlotManager):
             PlotDialog._synchronization_option_x, active)
 
     def add_y_synchronization_option(self, active, ids = None):
-        """ Offer an option for Y axes synchronization.
+        """ Offer an option for Y axes synchronization. This method should
+        be called after show(), so that a proper initial synchronization
+        can be performed.
 
         :param bool active: Determines whether the axes are synchronized
             initially
@@ -354,7 +358,20 @@ class PlotDialog(QDialog, PlotManager):
                 plots = self.axis_syncplots[axis]
             else:
                 plots = self.plots.keys()
+        if len(plots) < 1:
+            return
+
         PlotManager.synchronize_axis(self, axis, plots)
+
+        # Find interval that needs to be shown in order to include all
+        # currently shown parts in the synchronized plots
+        plot_objects = [self.plots[p] for p in plots]
+        lb = min((p.axisScaleDiv(axis).lowerBound() for p in plot_objects))
+        ub = max((p.axisScaleDiv(axis).upperBound() for p in plot_objects))
+        for p in plot_objects:
+            p.setAxisScale(axis, lb, ub)
+            p.replot()
+
         
     def unsynchronize_axis(self, axis, plots = None):
         if plots is None:

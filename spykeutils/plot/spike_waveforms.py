@@ -52,8 +52,7 @@ def spikes(spikes, axes_style, anti_alias = False, time_unit = pq.ms):
                     plot.add_item(curve)
             win.add_plot_widget(pW, c)
 
-        win.add_x_synchronization_option(True, channels)
-        win.add_y_synchronization_option(False, channels)
+
         helper.make_window_legend(win, indices, True)
     else: # Only one plot needed
         pW = BaseCurveWidget(win)
@@ -125,15 +124,10 @@ def spikes(spikes, axes_style, anti_alias = False, time_unit = pq.ms):
     plot.set_axis_title(BasePlot.X_BOTTOM, 'Time')
     plot.set_axis_unit(BasePlot.X_BOTTOM, x.dimensionality.string)
 
-    max_spread = 0
-    max_plot = None
-    for p in win.plots.itervalues():
-        scalediv = p.axisScaleDiv(BasePlot.Y_LEFT)
-        spread = scalediv.upperBound() - scalediv.lowerBound()
-        if spread > max_spread:
-            max_spread = spread
-            max_plot = p
-    win.plot_axis_changed(max_plot)
+    if axes_style == 1:
+        win.add_x_synchronization_option(True, channels)
+        win.add_y_synchronization_option(True, channels)
+
     if len(channels) == 1 or axes_style > 1:
         plot.set_axis_title(BasePlot.Y_LEFT, 'Voltage')
         plot.set_axis_unit(BasePlot.Y_LEFT, ref_units.dimensionality.string)

@@ -86,10 +86,11 @@ def _correlogram_plot(win, trains, bin_size, max_lag, border_correction,
 
         win.add_plot_widget(pW, i, column=i%columns)
 
-    win.add_x_synchronization_option(True, range(len(crlgs)))
-    win.add_y_synchronization_option(False, range(len(crlgs)))
     win.add_custom_curve_tools()
     progress.done()
     win.show()
+
+    win.add_x_synchronization_option(True, range(len(crlgs)))
+    win.add_y_synchronization_option(False, range(len(crlgs)))
 
     return True
