@@ -3,8 +3,8 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to the spykeutil documentation!
-=======================================
+Welcome to the spykeutils documentation!
+========================================
 
 Based on the :mod:`neo` framework, spykeutils is a Python library for
 analyzing and plotting data from neurophysiological recordings. It can be
