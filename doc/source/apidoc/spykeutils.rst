@@ -15,4 +15,4 @@ Subpackages
 .. toctree::
 
     spykeutils.plot
-
+    spykeutils.plugin
