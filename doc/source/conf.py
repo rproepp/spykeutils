@@ -24,11 +24,12 @@ import spykeutils
 # -- Mocking modules for Read the Docs compatibility ---------------------------
 from mock import MagicMock
 
-MOCK_MODULES = ['neo', 'quantities', 'scipy', 'guiqwt', 'guiqwt.builder',
+MOCK_MODULES = ['neo', 'quantities', 'tables','guiqwt', 'guiqwt.builder',
                 'guiqwt.baseplot', 'guiqwt.plot', 'guiqwt.curve',
                 'guiqwt.image', 'guiqwt.tools', 'guiqwt.signals',
                 'guiqwt.config', 'PyQt4', 'PyQt4.QtCore', 'PyQt4.QtGui',
-                'guidata.configtools']
+                'guidata', 'guidata.configtools',
+                'scipy', 'scipy.spatial', 'scipy.spatial.distance']
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = MagicMock()
 
@@ -232,7 +233,7 @@ man_pages = [
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {'python': ('http://docs.python.org/', None),
-                       'neo': ('http://packages.python.org/neo/', None),
+                       'neo': ('http://neo.readthedocs.org/en/latest/', None),
                        'scipy': ('http://docs.scipy.org/doc/scipy/reference/', None),
                        'quantities': ('http://packages.python.org/quantities/', None),
                        'guiqwt': ('http://packages.python.org/guiqwt/', None)}
