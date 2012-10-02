@@ -6,6 +6,11 @@ from spyke_exception import SpykeException
 def spikes_from_spike_train(spike_train):
     """ Return a list of spikes for a spike train.
 
+    Note that while the created spikes have references to the same segment and
+    unit as the spike train, the relationships in the other direction are
+    not automatically created (the spikes are not attached to the unit or
+    segment).
+
     :param SpikeTrain spike_train: A spike train with spike waveform
         data. If no such data is found, an empty list is returned.
     :returns: A list of Spike objects, one for every spike in ``spike_train``.
@@ -30,6 +35,11 @@ def spike_train_from_spikes(spikes, include_waveforms=True):
 
     All spikes must have an identical left sweep, the same unit and the same
     segment, otherwise a ``SpykeException`` is raised.
+
+    Note that while the created spike train has references to the same
+    segment and unit as the spikes, the relationships in the other direction
+    are not automatically created (the spike train is not attached to the
+    unit or segment).
 
     :param spikes: A list of spike objects.
     :param bool include_waveforms: Determines if the waveforms from the Spike
@@ -77,3 +87,41 @@ def spike_train_from_spikes(spikes, include_waveforms=True):
                 waves[i,:,:] = spike.waveform
 
     return neo.SpikeTrain(times, times.max(), waveforms=waves, left_sweep=ls)
+
+
+def analog_signals_from_analog_signal_array(signal_array):
+    """ Return a list of analog signals an analog signal array.
+
+    If ``signal_array`` is attached to a recording channel group with exactly
+    is many channels as there are channels in ``signal_array``, each created
+    signal will be assigned the corresponding channel. If the attached
+    recording channel group has only one recording channel, all created signals
+    will be assigned to this channel. In all other cases, the created
+    signal will not have a reference to a recording channel.
+
+    Note that while the created signals may have references to a segment and
+    channels, the relationships in the other direction are
+    not automatically created (the signals are not attached to the recording
+    channel or segment).
+
+    :param signal_array: An analog signal array.
+    :type signal_array: :class:`neo.core.AnalogSignalArray`
+    :return: A list of analog signals, one for every channel in
+        ``signal_array``
+    :rtype: list
+    """
+    signals = []
+    rcg = signal_array.recordingchannelgroup
+
+    for i in xrange(signal_array.shape[1]):
+        s = neo.AnalogSignal(signal_array[:,i], t_start = signal_array.t_start,
+            sampling_rate=signal_array.sampling_rate)
+        if len(rcg.recordingchannels) == 1:
+            s.recordingchannel = rcg.recodingchannels[0]
+        elif len(rcg.recordingchannels) == signal_array.shape[1]:
+            s.recordingchannel = rcg.recodingchannels[i]
+        s.segment = signal_array.segment
+        signals.append(s)
+
+    return signals
+
