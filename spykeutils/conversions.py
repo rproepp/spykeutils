@@ -117,9 +117,9 @@ def analog_signals_from_analog_signal_array(signal_array):
         s = neo.AnalogSignal(signal_array[:,i], t_start = signal_array.t_start,
             sampling_rate=signal_array.sampling_rate)
         if len(rcg.recordingchannels) == 1:
-            s.recordingchannel = rcg.recodingchannels[0]
+            s.recordingchannel = rcg.recordingchannels[0]
         elif len(rcg.recordingchannels) == signal_array.shape[1]:
-            s.recordingchannel = rcg.recodingchannels[i]
+            s.recordingchannel = rcg.recordingchannels[i]
         s.segment = signal_array.segment
         signals.append(s)
 

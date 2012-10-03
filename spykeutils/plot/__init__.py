@@ -77,7 +77,7 @@ from interspike_intervals import ISI
 from dialog import PlotDialog
 from rasterplot import raster_plot
 from correlogram import cross_correlogram
-from analog_signals import signal, signal_array
+from analog_signals import signals
 from psth import psth
 from sde import sde
 from spike_waveforms import spikes
