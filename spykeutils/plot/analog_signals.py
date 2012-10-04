@@ -56,11 +56,11 @@ def signals(signals, events=None, epochs=None, spike_trains=None,
     # Plot title
     win_title = 'Analog Signal'
     if len(set((s.recordingchannel for s in signals))) == 1:
-        if signals[0].recordingchannel.name:
+        if signals[0].recordingchannel and signals[0].recordingchannel.name:
             win_title += ' | Recording Channel: %s' %\
                          signals[0].recordingchannel.name
     if len(set((s.segment for s in signals))) == 1:
-        if signals[0].segment.name:
+        if signals[0].segment and signals[0].segment.name:
             win_title += ' | Segment: %s' % signals[0].segment.name
     win = PlotDialog(toolbar=True, wintitle=win_title)
 
@@ -84,17 +84,22 @@ def signals(signals, events=None, epochs=None, spike_trains=None,
 
     progress.set_ticks((len(draw_spikes) + len(spikes) + 1) * len(channels))
 
-    # X-Axis
-    sample = (1 / signals[0].sampling_rate).simplified
-    x = sp.arange(signals[0].shape[0]) * sample
-    x.units = time_unit
-
     offset = 0 * signals[0].units
     if use_subplots:
         plot = None
         for c in channels:
             pW = BaseCurveWidget(win)
             plot = pW.plot
+
+            if signals[c].name:
+                win.set_plot_title(plot, signals[c].name)
+            elif signals[c].recordingchannel:
+                if signals[c].recordingchannel.name:
+                    win.set_plot_title(plot, signals[c].recordingchannel.name)
+
+            sample = (1 / signals[c].sampling_rate).simplified
+            x = (sp.arange(signals[c].shape[0])) * sample + signals[c].t_start
+            x.units = time_unit
 
             helper.add_epochs(plot, epochs, x.units)
             plot.add_item(make.curve(x, signals[c]))
@@ -122,7 +127,7 @@ def signals(signals, events=None, epochs=None, spike_trains=None,
         pW = BaseCurveWidget(win)
         plot = pW.plot
 
-        helper.add_epochs(plot, epochs, x.units)
+        helper.add_epochs(plot, epochs, time_unit)
 
         # Find plot y offset
         max_offset = 0 * signals[0].units
@@ -134,6 +139,10 @@ def signals(signals, events=None, epochs=None, spike_trains=None,
         offset -= signals[channels[0]].min()
 
         for c in channels:
+            sample = (1 / signals[c].sampling_rate).simplified
+            x = (sp.arange(signals[c].shape[0])) * sample + signals[c].t_start
+            x.units = time_unit
+
             plot.add_item(make.curve(x, signals[c] + offset))
             _add_spike_waveforms(plot, spikes, x.units, c, offset, progress)
             _add_spike_waveforms(plot, draw_spikes, x.units, c, offset,

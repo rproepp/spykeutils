@@ -5,6 +5,7 @@ import scipy as sp
 from PyQt4.QtGui import QApplication
 from guiqwt.builder import make
 
+
 class _MarkerName:
     """ Helper class to create marker name functions for different strings.
     """
@@ -68,6 +69,7 @@ def get_color(entity_id):
     """
     return __colors[entity_id % len(__colors)]
 
+
 def get_object_color(unit):
     """ Return a color for a Neo object, based on the 'unique_id'
     annotation. If the annotation is not present, return a color based
@@ -79,6 +81,7 @@ def get_object_color(unit):
     except Exception:
         return get_color(hash(unit))
     return get_color(hash(unit))
+
 
 def set_color_scheme(colors):
     """ Set the color scheme used in plots.
@@ -114,6 +117,7 @@ def add_events(plot, events, units=None):
             movable=False, markerstyle='|', color='k', linestyle=':',
             linewidth=1))
 
+
 def add_spikes(plot, train, color='k', spike_width=1, spike_height=20000,
                y_offset = 0, name='', units=None):
     """ Add all spikes from a spike train to a guiqwt plot as vertical lines.
@@ -144,6 +148,7 @@ def add_spikes(plot, train, color='k', spike_width=1, spike_height=20000,
     plot.add_item(spikes)
 
     return spikes
+
 
 def add_epochs(plot, epochs, units=None):
     """ Add Epoch markers to a guiqwt plot.
@@ -177,21 +182,22 @@ def add_epochs(plot, epochs, units=None):
             movable=False, markerstyle='|', color='k', linestyle='NoPen',
             linewidth=1))
 
-def make_window_legend(win, units, show_option=None):
+
+def make_window_legend(win, objects, show_option=None):
     """ Create a legend in a PlotDialog for a given sequence of neo objects.
 
     :param win: The window where the legend will be added.
     :type win: :class:`spykeutils.plot.dialogs.PlotDialog`
-    :param sequence units: A list of neo objects which will be included in
+    :param sequence objects: A list of neo objects which will be included in
         the legend.
     :param bool show_option: Determines whether a toggle for the legend
         will be shown (if the parameter is not ``None``) and if the legend
         is visible initially (``True``/``False``).
     """
-    if not units:
+    if not objects:
         return
 
     legend = []
-    for u in units:
+    for u in objects:
         legend.append((get_object_color(u), u.name))
     win.add_color_legend(legend, show_option)
