@@ -573,7 +573,7 @@ class NeoDataProvider(DataProvider):
         channelgroups = self.recording_channel_groups()
         for s in self.segments():
             signals[s] = [t for t in s.analogsignalarrays
-                          if t.recordingchannel in channelgroups]
+                          if t.recordingchannelgroup in channelgroups]
 
         nonesignals = []
         for c in channelgroups:

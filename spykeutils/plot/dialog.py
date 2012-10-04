@@ -404,3 +404,15 @@ class PlotDialog(QDialog, PlotManager):
             ub = scalediv.upperBound()
             other.setAxisScale(axis, lb, ub)
             other.replot()
+
+    def set_plot_title(self, plot, title):
+        """ Set the title of a guiqwt plot and use the same font as for the
+            rest of the window.
+
+        :param plot: The plot for which the title is set.
+        :param str title: The new title of the plot.
+        """
+        plot.setTitle(title)
+        l = plot.titleLabel()
+        l.setFont(self.font())
+        plot.setTitle(l.text())
