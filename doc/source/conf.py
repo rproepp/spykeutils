@@ -22,16 +22,22 @@ sys.path.insert(0, os.path.abspath(
 import spykeutils
 
 # -- Mocking modules for Read the Docs compatibility ---------------------------
-from mock import MagicMock
+try:
+    import neo
+    import scipy
+    import PyQt4
+    import guiqwt
+except ImportError:
+    from mock import MagicMock
 
-MOCK_MODULES = ['neo', 'quantities', 'tables','guiqwt', 'guiqwt.builder',
-                'guiqwt.baseplot', 'guiqwt.plot', 'guiqwt.curve',
-                'guiqwt.image', 'guiqwt.tools', 'guiqwt.signals',
-                'guiqwt.config', 'PyQt4', 'PyQt4.QtCore', 'PyQt4.QtGui',
-                'guidata', 'guidata.configtools',
-                'scipy', 'scipy.spatial', 'scipy.spatial.distance']
-for mod_name in MOCK_MODULES:
-    sys.modules[mod_name] = MagicMock()
+    MOCK_MODULES = ['neo', 'tables','guiqwt', 'guiqwt.builder',
+                    'guiqwt.baseplot', 'guiqwt.plot', 'guiqwt.curve',
+                    'guiqwt.image', 'guiqwt.tools', 'guiqwt.signals',
+                    'guiqwt.config', 'PyQt4', 'PyQt4.QtCore', 'PyQt4.QtGui',
+                    'guidata', 'guidata.configtools',
+                    'scipy', 'scipy.spatial', 'scipy.spatial.distance']
+    for mod_name in MOCK_MODULES:
+        sys.modules[mod_name] = MagicMock()
 
 # -- General configuration -----------------------------------------------------
 
@@ -40,7 +46,10 @@ for mod_name in MOCK_MODULES:
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest', 'sphinx.ext.intersphinx', 'sphinx.ext.coverage', 'sphinx.ext.pngmath', 'sphinx.ext.pngmath', 'sphinx.ext.ifconfig']
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest',
+              'sphinx.ext.intersphinx', 'sphinx.ext.coverage',
+              'sphinx.ext.pngmath', 'sphinx.ext.pngmath',
+              'sphinx.ext.ifconfig']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
