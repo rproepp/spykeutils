@@ -72,7 +72,7 @@ def psth(trains, bin_size, rate_correction=True, start=0*pq.ms, stop=None):
     :param dict trains: A dictionary of lists of SpikeTrain objects.
     :param bin_size: The desired bin size (as a time quantity).
     :type bin_size: Quantity scalar
-    :param bool rate_correction: Determine if a rates (``True``) or
+    :param bool rate_correction: Determines if a rates (``True``) or
         counts (``False``) are returned.
     :param start: The desired time for the start of the first bin. It
         will be recalculated if there are spike trains which start
@@ -108,46 +108,36 @@ def aligned_spike_trains(trains, events, copy=True):
     """ Return a list of spike trains aligned to an event (the event will
     be time 0 on the returned trains).
 
-    :param dict trains: A dictionary of SpikeTrain objects or a
-        dictionary of lists of SpikeTrain objects.
-    :param dict events: A dictionary (with the same indices as ``trains``)
-        of Event objects or lists of Event objects. In case of lists,
-        the first event in the list will be used for alignment.
+    :param dict trains: A list of SpikeTrain objects.
+    :param dict events: A dictionary of Event objects, indexed by segment.
+        These events (in case of lists, always the first element in the list)
+        will be used to align the spike trains and will be at time 0 for
+        the aligned spike trains.
     :param bool copy: Determines if aligned copies of the original
         spike trains  will be returned. If not, every spike train needs
         exactly one corresponding event, otherwise a ``ValueError`` will
-        be raised. Otherwise, entries with more or less than one event
-        will be ignored.
+        be raised. Otherwise, entries with no event will be ignored.
     """
     ret = []
-    for i, it in trains.iteritems():
-        if i not in events or (isinstance(events[i], list) and
-                               len(events[i]) != 1):
+    for t in trains:
+        s = t.segment
+        if s not in events:
             if not copy:
                 raise ValueError(
                     'Cannot align spike trains: At least one segment does' +
                     'not have an align event.')
             continue
 
-        # Cope with lists of events
-        e = events[i]
-        if isinstance(e,list):
-            e = e[0]
+        if copy:
+            st = t.rescale(t.units)
+        else:
+            st = t
 
-        # Cope with single spike train instead of lists
-        if not isinstance(it, list):
-            it = [it]
-
-        for t in it:
-            if copy:
-                st = t.rescale(t.units)
-            else:
-                st = t
-
-            st -= e.time
-            st.t_stop -= e.time
-            st.t_start -= e.time
-            ret.append(st)
+        e = events[s]
+        st -= e.time
+        st.t_stop -= e.time
+        st.t_start -= e.time
+        ret.append(st)
 
     return ret
 

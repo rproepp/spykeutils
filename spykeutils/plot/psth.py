@@ -13,18 +13,17 @@ from ..progress_indicator import ProgressIndicator
 
 @helper.needs_qt
 def psth(trains, events=None, start=0*pq.ms, stop=None, bin_size=100*pq.ms,
-         bar_plot=False, unit=pq.ms, progress=ProgressIndicator()):
+         rate_correction=True, bar_plot=False, unit=pq.ms,
+         progress=ProgressIndicator()):
     """ Create a peri stimulus time histogram.
 
     The peri stimulus time histogram gives an estimate of the instantaneous
     rate.
 
     :param dict trains: A dictionary of SpikeTrain lists.
-    :param dict events: A dictionary (with the same indices as ``trains``)
-        of Event objects or lists of Event objects. In case of lists,
-        the first event in the list will be used for alignment. The events
-        will be at time 0 on the plot. If None, spike trains will are used
-        unmodified.
+    :param dict events: A dictionary of Event objects, indexed by segment.
+        The events will be at time 0 on the plot. If None, spike trains
+        are used unmodified.
     :param start: The desired time for the start of the first bin. It
         will be recalculated if there are spike trains which start later
         than this time. This parameter can be negative (which could be
@@ -36,6 +35,8 @@ def psth(trains, events=None, start=0*pq.ms, stop=None, bin_size=100*pq.ms,
     :type stop: Quantity scalar
     :param bin_size: The bin size for the histogram.
     :type bin_size: Quantity scalar
+    :param bool rate_correction: Determines if a rates (``True``) or
+        counts (``False``) are shown.
     :param bool bar_plot: Determines if a bar plot (``True``) or a line
         plot (``False``) will be created. In case of a bar plot, only
         the first index in ``trains`` will be shown in the plot.
@@ -55,11 +56,9 @@ def psth(trains, events=None, start=0*pq.ms, stop=None, bin_size=100*pq.ms,
         if events:
             trains[u] = rate_estimation.aligned_spike_trains(
                 trains[u], events)
-        else:
-            trains[u] = trains[u].values()
 
     rates, bins = rate_estimation.psth(trains, bin_size, start=start,
-        stop=stop)
+        stop=stop, rate_correction=rate_correction)
     progress.done()
 
     if not psth:
@@ -101,7 +100,11 @@ def psth(trains, events=None, start=0*pq.ms, stop=None, bin_size=100*pq.ms,
         plot.add_item(legend)
         win.add_legend_option([legend], True)
 
-    plot.set_axis_title(BasePlot.Y_LEFT, 'Number of intervals')
+    if not rate_correction:
+        plot.set_axis_title(BasePlot.Y_LEFT, 'Spike Count')
+    else:
+        plot.set_axis_title(BasePlot.Y_LEFT, 'Rate')
+        plot.set_axis_unit(BasePlot.Y_LEFT, 'Hz')
     plot.set_axis_title(BasePlot.X_BOTTOM, 'Interval length')
     plot.set_axis_unit(BasePlot.X_BOTTOM, unit.dimensionality.string)
     win.add_custom_curve_tools()

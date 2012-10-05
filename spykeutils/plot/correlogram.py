@@ -22,8 +22,7 @@ def cross_correlogram(trains, bin_size, max_lag=500*pq.ms, border_correction=Tru
         (end time of calculated correlogram).
     :type max_lag: Quantity scalar
     :param bool border_correction: Apply correction for less data at higher
-        timelags. Not perfect for bin_size != 1*``unit``, especially with
-        large ``max_lag`` compared to length of spike trains.
+        timelags.
     :param Quantity unit: Unit of X-Axis.
     :param progress: Set this parameter to report progress.
     :type progress: :class:`spykeutils.progress_indicator.ProgressIndicator`

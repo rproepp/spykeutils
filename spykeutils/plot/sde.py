@@ -64,8 +64,6 @@ def sde(trains, events=None, start=0*pq.ms, stop=None,
         if events:
             trains[u] = rate_estimation.aligned_spike_trains(
                 trains[u], events)
-        else:
-            trains[u] = trains[u].values()
 
     # Calculate spike density estimation
     if optimize_steps:

@@ -11,9 +11,28 @@ from dialog import PlotDialog
 import helper
 from ..spyke_exception import SpykeException
 
-def _ISI_plot(win, trains, bin_size, cut_off, bar_plot, unit):
-    """ Fill a plot window with a interspike interval histogram of units
+
+@helper.needs_qt
+def ISI(trains, bin_size, cut_off, bar_plot=False, unit=pq.ms):
+    """ Create a plot dialog with a interspike interval histogram of units
+    for a list of trials. Read required data from database.
+
+    :param dict trains: Dictionary with lists of spike trains indexed by
+        units for which to display ISI histograms
+    :param bin_size: Bin size (time)
+    :type bin_size: Quantity scalar
+    :param cut_off: End of histogram (time)
+    :type bin_size: Quantity scalar
+    :param bool bar_plot: If ``True``, create a bar ISI histogram
+        (automatically limits plot to just the first of the given units).
+        Else, create a line ISI histogram.
+    :param Quantity unit: Unit of X-Axis. If None, milliseconds are used.
     """
+    if not trains:
+        raise SpykeException('No spike trains for ISI histogram')
+
+    win_title = 'ISI Histogram | Bin size: %.3f ms' % bin_size
+    win = PlotDialog(toolbar=True, wintitle=win_title)
     bin_size.rescale(unit)
     cut_off.rescale(unit)
     bins = sp.arange(0*unit, cut_off, bin_size) * unit
@@ -78,30 +97,6 @@ def _ISI_plot(win, trains, bin_size, cut_off, bar_plot, unit):
     else:
         plot.set_antialiasing(True)
 
-    return True
-
-@helper.needs_qt
-def ISI(trains, bin_size, cut_off, bar_plot=False, unit=pq.ms):
-    """ Create a plot dialog with a interspike interval histogram of units
-    for a list of trials. Read required data from database.
-
-    :param dict trains: Dictionary with lists of spike trains indexed by
-        units for which to display ISI histograms
-    :param bin_size: Bin size (time)
-    :type bin_size: Quantity scalar
-    :param cut_off: End of histogram (time)
-    :type bin_size: Quantity scalar
-    :param bool bar_plot: If ``True``, create a bar ISI histogram
-        (automatically limits plot to just the first of the given units).
-        Else, create a line ISI histogram.
-    :param Quantity unit: Unit of X-Axis. If None, milliseconds are used.
-    """
-    if not trains:
-        raise SpykeException('No spike trains for ISI histogram')
-
-    win_title = 'ISI Histogram | Bin size: %.3f ms' % bin_size
-    win = PlotDialog(toolbar=True, wintitle=win_title)
-    _ISI_plot(win, trains, bin_size, cut_off, bar_plot, unit)
 
 if __name__ == '__main__':
     import guidata

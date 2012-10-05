@@ -16,9 +16,8 @@ import helper
 
 @helper.needs_qt
 def signals(signals, events=None, epochs=None, spike_trains=None,
-           spikes=None, spike_train_waveforms = True,
-           use_subplots=True,
-           time_unit=pq.s, y_unit=None, progress=ProgressIndicator()):
+           spikes=None, use_subplots=True, time_unit=pq.s, y_unit=None,
+           progress=ProgressIndicator()):
     """ Create a plot from a list of AnalogSignal objects.
 
     :param list signals: The list of signals to plot.
@@ -26,23 +25,14 @@ def signals(signals, events=None, epochs=None, spike_trains=None,
         plot.
     :param sequence epochs: A list of Epoch objects to be included in the
         plot.
-    :param dict spike_trains: A dictionary of SpikeTrain objects to be
+    :param list spike_trains: A list of SpikeTrain objects to be
         included in the plot. Spikes are plotted as vertical lines.
-        Indices of the dictionary (typically Unit objects) are used
-        for color and legend entries.
-    :param dict spikes: A dictionary of lists of Spike objects
+        If the spike trains do not have names, the ``unit`` property (if it
+        exists) is used for color and legend entries.
+    :param dict spikes: A list of lists of Spike objects
         to be included in the plot. Waveforms of spikes are overlaid on
-        the signal. Indices of the dictionary (typically Unit objects) are
-        used for color and legend entries.
-    :param bool spike_train_waveforms: Determines how the spike trains from
-        ``spike_trains`` are used:
-
-        * ``True``: Spikes from the SpikeTrain objects are plotted in the same
-          way as the spikes from ``spike_waveforms``. Only works if waveform
-          data is present in the SpikeTrain objects.
-        * ``False``: Spikes are plotted as vertical lines.
-          Indices of the dictionary (typically Unit objects) are used
-          for color and legend entries.
+        the signal. If the spikes do not have names, the ``unit`` property
+        (if it exists) is used for color and legend entries.
     :param bool use_subplots: Determines if a separate subplot for is created
         each signal.
     :param Quantity time_unit: The unit of the x axis.
@@ -69,20 +59,13 @@ def signals(signals, events=None, epochs=None, spike_trains=None,
     if epochs is None:
         epochs = []
     if spike_trains is None:
-        spike_trains = {}
+        spike_trains = []
     if spikes is None:
-        spikes = {}
-
-    if spike_train_waveforms:
-        draw_spikes = []
-        for st in spike_trains:
-            draw_spikes.extend(conversions.spikes_from_spike_train(st))
-    else:
-        draw_spikes = spikes
+        spikes = []
 
     channels = range(len(signals))
 
-    progress.set_ticks((len(draw_spikes) + len(spikes) + 1) * len(channels))
+    progress.set_ticks((len(spike_trains) + len(spikes) + 1) * len(channels))
 
     offset = 0 * signals[0].units
     if use_subplots:
@@ -102,17 +85,18 @@ def signals(signals, events=None, epochs=None, spike_trains=None,
             x.units = time_unit
 
             helper.add_epochs(plot, epochs, x.units)
-            plot.add_item(make.curve(x, signals[c]))
+            if y_unit is not None:
+                plot.add_item(make.curve(x, signals[c].rescale(y_unit)))
+            else:
+                plot.add_item(make.curve(x, signals[c]))
             helper.add_events(plot, events, x.units)
 
             _add_spike_waveforms(plot, spikes, x.units, c, offset, progress)
-            _add_spike_waveforms(plot, draw_spikes, x.units, c, offset,
-                progress)
 
-            if not spike_train_waveforms:
-                for train in spike_trains:
-                    color = helper.get_object_color(train.unit)
-                    helper.add_spikes(plot, train, color, units=x.units)
+            for train in spike_trains:
+                color = helper.get_object_color(train.unit)
+                helper.add_spikes(plot, train, color, units=x.units)
+                progress.step()
 
             win.add_plot_widget(pW, c)
             plot.set_axis_unit(BasePlot.Y_LEFT,
@@ -143,19 +127,21 @@ def signals(signals, events=None, epochs=None, spike_trains=None,
             x = (sp.arange(signals[c].shape[0])) * sample + signals[c].t_start
             x.units = time_unit
 
-            plot.add_item(make.curve(x, signals[c] + offset))
+            if y_unit is not None:
+                plot.add_item(make.curve(x,
+                    (signals[c] + offset).rescale(y_unit)))
+            else:
+                plot.add_item(make.curve(x, signals[c] + offset))
             _add_spike_waveforms(plot, spikes, x.units, c, offset, progress)
-            _add_spike_waveforms(plot, draw_spikes, x.units, c, offset,
-                progress)
             offset += max_offset
             progress.step()
 
         helper.add_events(plot, events, x.units)
 
-        if not spike_train_waveforms:
-            for train in spike_trains:
-                color = helper.get_object_color(train.unit)
-                helper.add_spikes(plot, train, color, units=x.units)
+        for train in spike_trains:
+            color = helper.get_object_color(train.unit)
+            helper.add_spikes(plot, train, color, units=x.units)
+            progress.step()
 
         win.add_plot_widget(pW, 0)
 
@@ -180,6 +166,9 @@ def signals(signals, events=None, epochs=None, spike_trains=None,
 
 def _add_spike_waveforms(plot, spikes, x_units, channel, offset, progress):
     for spike in spikes:
+        if spike.waveform is None:
+            continue
+
         color = helper.get_object_color(spike.unit)
         # TODO: Is this usage of Spike.left_sweep correct?
         if spike.left_sweep:

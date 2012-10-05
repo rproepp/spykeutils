@@ -471,7 +471,8 @@ class NeoDataProvider(DataProvider):
         channels = self.recording_channels()
         for s in self.segments():
             signals.extend([t for t in s.analogsignals
-                           if t.recordingchannel in channels or t.recordingchannel is None])
+                           if t.recordingchannel in channels or
+                              t.recordingchannel is None])
         for u in self.recording_channels():
             signals.extend([t for t in u.analogsignals if t.segment is None])
 
@@ -485,7 +486,8 @@ class NeoDataProvider(DataProvider):
         channels = self.recording_channels()
         for s in self.segments():
             signals[s] = [t for t in s.analogsignals
-                          if t.recordingchannel in channels]
+                          if t.recordingchannel in channels or
+                             t.recordingchannel is None]
 
         nonesignals = []
         for c in channels:
@@ -504,7 +506,8 @@ class NeoDataProvider(DataProvider):
         segments = self.segments()
         for c in self.recording_channels():
             signals[c] = [t for t in c.analogsignals
-                          if t.segment in segments]
+                          if t.segment in segments or
+                             t.segment is None]
 
         nonesignals = []
         for s in segments:
