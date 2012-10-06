@@ -30,7 +30,7 @@ try:
 except ImportError:
     from mock import MagicMock
 
-    MOCK_MODULES = ['neo', 'tables','guiqwt', 'guiqwt.builder',
+    MOCK_MODULES = ['neo', 'numpy', 'tables','guiqwt', 'guiqwt.builder',
                     'guiqwt.baseplot', 'guiqwt.plot', 'guiqwt.curve',
                     'guiqwt.image', 'guiqwt.tools', 'guiqwt.signals',
                     'guiqwt.config', 'PyQt4', 'PyQt4.QtCore', 'PyQt4.QtGui',
@@ -144,7 +144,7 @@ html_theme = 'default'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = []
+html_static_path = ['static']
 
 # If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
 # using the given strftime format.
@@ -229,6 +229,9 @@ latex_documents = [
 # If false, no module index is generated.
 #latex_domain_indices = True
 
+# -- Add additional features ---------------------------------------------------
+def setup(app):
+    app.add_javascript('copybutton.js')
 
 # -- Options for manual page output --------------------------------------------
 
