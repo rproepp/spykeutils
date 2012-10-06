@@ -1,3 +1,6 @@
+"""
+.. autofunction:: sde(trains, events=None, start=0 ms, stop=None, kernel_size=100 ms, optimize_steps=0, minimum_kernel=10 ms, maximum_kernel=500 ms, unit=ms, progress=None)
+"""
 import scipy as sp
 
 from guiqwt.builder import make
@@ -6,17 +9,18 @@ from guiqwt.plot import BaseCurveWidget
 
 import quantities as pq
 
+from .. import SpykeException
 from .. import rate_estimation
 from ..progress_indicator import ProgressIndicator
-from ..spyke_exception import SpykeException
 from dialog import PlotDialog
 import helper
+
 
 @helper.needs_qt
 def sde(trains, events=None, start=0*pq.ms, stop=None,
         kernel_size=100*pq.ms, optimize_steps=0,
         minimum_kernel=10*pq.ms, maximum_kernel=500*pq.ms,
-        unit=pq.ms, progress=ProgressIndicator()):
+        unit=pq.ms, progress=None):
     """ Create a spike density estimation plot.
 
     The spike density estimations give an estimate of the instantaneous
@@ -52,6 +56,9 @@ def sde(trains, events=None, start=0*pq.ms, stop=None,
     :param progress: Set this parameter to report progress.
     :type progress: :class:`spykeutils.progress_indicator.ProgressIndicator`
     """
+    if not progress:
+        progress = ProgressIndicator()
+
     start.units = unit
     if stop:
         stop.units = unit

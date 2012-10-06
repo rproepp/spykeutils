@@ -1,10 +1,16 @@
+"""
+.. autofunction:: binned_spike_trains(trains, bin_size, start=0 ms, stop=None)
+.. autofunction:: psth(trains, bin_size, rate_correction=True, start=0 ms, stop=None)
+.. autofunction:: spike_density_estimation(trains, start=0 ms, stop=None, evaluation_points=None, kernel=gauss_kernel, kernel_size=100 ms, optimize_steps=None, progress=None)
+"""
 from __future__ import division
 
 import scipy as sp
 import quantities as pq
 import neo
 from progress_indicator import ProgressIndicator
-from spyke_exception import SpykeException
+from . import SpykeException
+
 
 def _binned_spike_trains(trains, bins):
     """ Return a binned representation of SpikeTrain objects.
@@ -172,7 +178,7 @@ def gauss_kernel(x, kernel_size):
 def spike_density_estimation(trains, start=0*pq.ms, stop=None,
                              evaluation_points=None, kernel=gauss_kernel,
                              kernel_size=100*pq.ms, optimize_steps=None,
-                             progress=ProgressIndicator()):
+                             progress=None):
     """ Create a spike density estimation from a dictionary of
     lists of SpikeTrain objects. The spike density estimations give
     an estimate of the instantaneous rate. Optionally finds optimal
@@ -218,6 +224,9 @@ def spike_density_estimation(trains, start=0*pq.ms, stop=None,
         * The used evaluation points.
     :rtype: dict, dict, Quantity 1D
     """
+    if not progress:
+        progress = ProgressIndicator()
+
     if optimize_steps is None or len(optimize_steps) < 1:
         units = kernel_size.units
         kernel_size = {u:kernel_size for u in trains}
@@ -288,8 +297,7 @@ def collapsed_spike_trains(trains):
 
     return neo.SpikeTrain(collapsed*stop.units, t_stop=stop, t_start=start)
 
-def optimal_gauss_kernel_size(train, optimize_steps,
-                              progress=ProgressIndicator()):
+def optimal_gauss_kernel_size(train, optimize_steps, progress=None):
     """ Return the optimal kernel size for a spike density estimation
     of a SpikeTrain for a gaussian kernel. This function takes a single
     spike train, which can be a superposition of multiple spike trains
@@ -308,6 +316,9 @@ def optimal_gauss_kernel_size(train, optimize_steps,
     :returns: Best of the given kernel sizes
     :rtype: Quantity scalar
     """
+    if not progress:
+        progress = ProgressIndicator()
+
     x = sp.asarray(train.rescale(optimize_steps.units))
     steps = sp.asarray(optimize_steps)
 

@@ -1,3 +1,6 @@
+"""
+.. autofunction:: ISI(trains, bin_size, cut_off, bar_plot=False, unit=ms)
+"""
 import scipy as sp
 
 from guiqwt.builder import make
@@ -7,9 +10,9 @@ from guiqwt.plot import BaseCurveWidget
 import neo
 import quantities as pq
 
+from .. import SpykeException
 from dialog import PlotDialog
 import helper
-from ..spyke_exception import SpykeException
 
 
 @helper.needs_qt

@@ -1,3 +1,6 @@
+"""
+.. autofunction:: signals(signals, events=None, epochs=None, spike_trains=None, spikes=None, use_subplots=True, time_unit=s, y_unit=None, progress=None)
+"""
 from __future__ import division
 
 import scipy as sp
@@ -7,17 +10,17 @@ from guiqwt.builder import make
 from guiqwt.baseplot import BasePlot
 from guiqwt.plot import BaseCurveWidget
 
-from ..spyke_exception import SpykeException
-from .. import conversions
 from ..progress_indicator import ProgressIndicator
+from .. import SpykeException
 from dialog import PlotDialog
 import helper
+
 
 
 @helper.needs_qt
 def signals(signals, events=None, epochs=None, spike_trains=None,
            spikes=None, use_subplots=True, time_unit=pq.s, y_unit=None,
-           progress=ProgressIndicator()):
+           progress=None):
     """ Create a plot from a list of AnalogSignal objects.
 
     :param list signals: The list of signals to plot.
@@ -29,7 +32,7 @@ def signals(signals, events=None, epochs=None, spike_trains=None,
         included in the plot. Spikes are plotted as vertical lines.
         If the spike trains do not have names, the ``unit`` property (if it
         exists) is used for color and legend entries.
-    :param dict spikes: A list of lists of Spike objects
+    :param list spikes: A list of lists of Spike objects
         to be included in the plot. Waveforms of spikes are overlaid on
         the signal. If the spikes do not have names, the ``unit`` property
         (if it exists) is used for color and legend entries.
@@ -42,6 +45,8 @@ def signals(signals, events=None, epochs=None, spike_trains=None,
     if not signals:
         raise SpykeException(
             'Cannot create signal plot: No signal data provided!')
+    if not progress:
+        progress = ProgressIndicator()
 
     # Plot title
     win_title = 'Analog Signal'

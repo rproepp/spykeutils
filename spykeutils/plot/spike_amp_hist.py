@@ -1,19 +1,22 @@
+"""
+.. autofunction:: spike_amplitude_histogram(trains, num_bins, uniform_y_scale=True, unit=uV, progress=None)
+"""
 import scipy as sp
 import quantities as pq
 
 from guiqwt.plot import BaseImageWidget
 from guiqwt.builder import make
 
-from dialog import PlotDialog
-from ..spyke_exception import SpykeException
 from ..progress_indicator import ProgressIndicator
+from .. import SpykeException
 from ..stationarity import spike_amplitude_histogram as sah
 import helper
+from dialog import PlotDialog
 
 
 @helper.needs_qt
 def spike_amplitude_histogram(trains, num_bins, uniform_y_scale=True,
-                              unit=pq.uV, progress=ProgressIndicator()):
+                              unit=pq.uV, progress=None):
     """ Create a spike amplitude histogram.
 
     This plot is useful to assess the drift in spike amplitude over a longer
@@ -35,6 +38,8 @@ def spike_amplitude_histogram(trains, num_bins, uniform_y_scale=True,
     """
     if not trains:
         raise SpykeException('No spikes trains for Spike Amplitude Histogram!')
+    if not progress:
+        progress = ProgressIndicator()
 
     hist, down, up = sah(trains, num_bins, uniform_y_scale, unit, progress)
     num_channels = len(down)

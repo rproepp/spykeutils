@@ -1,12 +1,15 @@
+"""
+.. autofunction:: spike_amplitude_histogram(trains, num_bins, uniform_y_scale=True, unit=uV, progress=None)
+"""
 import scipy as sp
 import quantities as pq
 
-from spyke_exception import SpykeException
 from progress_indicator import ProgressIndicator
+from . import SpykeException
 
 
 def spike_amplitude_histogram(trains, num_bins, uniform_y_scale=True,
-                              unit=pq.uV, progress=ProgressIndicator()):
+                              unit=pq.uV, progress=None):
     """ Return a spike amplitude histogram.
 
     The resulting is useful to assess the drift in spike amplitude over a longer
@@ -25,6 +28,7 @@ def spike_amplitude_histogram(trains, num_bins, uniform_y_scale=True,
     :param progress: Set this parameter to report progress.
     :type progress: :class:`spykeutils.progress_indicator.ProgressIndicator`
     :return: A tuple with three values:
+
         * A three-dimensional histogram matrix, where the first dimension
           corresponds to bins, the second dimension to the entries of
           ``trains`` (e.g. segments) and the third dimension to channels.
@@ -34,6 +38,9 @@ def spike_amplitude_histogram(trains, num_bins, uniform_y_scale=True,
           will be equal if ``uniform_y_scale`` is true).
     :rtype: (ndarray, list, list)
     """
+    if not progress:
+        progress = ProgressIndicator()
+
     num_channels = 1
     for t in trains:
         if not t:

@@ -1,9 +1,9 @@
 import scipy as sp
 import neo
 
-from spyke_exception import SpykeException
+from . import SpykeException
 
-def spikes_from_spike_train(spike_train):
+def spikes_from_spike_train(spike_train, include_waveforms = True):
     """ Return a list of spikes for a spike train.
 
     Note that while the created spikes have references to the same segment and
@@ -13,10 +13,15 @@ def spikes_from_spike_train(spike_train):
 
     :param SpikeTrain spike_train: A spike train with spike waveform
         data. If no such data is found, an empty list is returned.
+    :param bool include_waveforms: Determines if the ``waveforms`` property is
+        converted to the spike waveforms. If ``waveforms`` is None, this
+        parameter has no effect.
     :returns: A list of Spike objects, one for every spike in ``spike_train``.
     :rtype: list
     """
-    waves = spike_train.waveforms
+    waves = None
+    if include_waveforms:
+        waves = spike_train.waveforms
 
     spikes = []
     for i, t in enumerate(spike_train):

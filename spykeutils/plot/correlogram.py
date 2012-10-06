@@ -1,19 +1,24 @@
+"""
+.. autofunction:: cross_correlogram(trains, bin_size, max_lag=500 ms, border_correction=True, unit=ms, progress=None)
+"""
+
 from guiqwt.builder import make
 from guiqwt.baseplot import BasePlot
 from guiqwt.plot import BaseCurveWidget
 import quantities as pq
 
+from .. import SpykeException
+from ..progress_indicator import ProgressIndicator
+from ..correlations import correlogram
 from dialog import PlotDialog
 import helper
-from ..progress_indicator import ProgressIndicator
-from ..correlogram import correlogram
-from ..spyke_exception import SpykeException
+
 
 @helper.needs_qt
 def cross_correlogram(trains, bin_size, max_lag=500*pq.ms, border_correction=True,
-                      unit=pq.ms, progress=ProgressIndicator()):
+                      unit=pq.ms, progress=None):
     """ Create (cross-)correlograms from a dictionary of SpikeTrain
-        lists for different units.
+    lists for different units.
 
     :param dict trains: Dictionary of SpikeTrain lists.
     :param bin_size: Bin size (time).
@@ -29,24 +34,22 @@ def cross_correlogram(trains, bin_size, max_lag=500*pq.ms, border_correction=Tru
     """
     if not trains:
         raise SpykeException('No spike trains for correlogram')
+    if not progress:
+        progress = ProgressIndicator()
 
     win_title = 'Correlogram'
     progress.begin('Creating correlogram')
     progress.set_status('Calculating...')
     win = PlotDialog(toolbar=True, wintitle=win_title)
-    _correlogram_plot(win, trains, bin_size, max_lag, border_correction,
-        progress, unit)
 
-def _correlogram_plot(win, trains, bin_size, max_lag, border_correction,
-                      progress, unit):
-    """ Fill a plot window with correlograms.
-    """
     correlograms, bins = correlogram(trains, bin_size, max_lag,
         border_correction, unit, progress)
     x = bins[:-1] + bin_size / 2
 
     crlgs = []
     indices = correlograms.keys()
+    columns = max(2, len(indices) - 3)
+
     for i1 in xrange(len(indices)):
         for i2 in xrange(i1, len(indices)):
             crlgs.append((correlograms[indices[i1]][indices[i2]],
@@ -75,8 +78,7 @@ def _correlogram_plot(win, trains, bin_size, max_lag, border_correction,
             plot.add_item(color_curve)
         plot.add_item(make.legend(restrict_items=legend_items))
 
-        columns = max(2, len(indices) - 3)
-        if i >= len(correlograms) - columns:
+        if i >= len(crlgs) - columns:
             plot.set_axis_title(BasePlot.X_BOTTOM, 'Time')
             plot.set_axis_unit(BasePlot.X_BOTTOM, unit.dimensionality.string)
         if i % columns == 0:

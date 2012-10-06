@@ -1,5 +1,5 @@
 """ Functions for estimating the quality of spike sorting results. These
-functions estimate a false positive and false negative fractions for
+functions estimate false positive and false negative fractions.
 """
 
 from __future__ import division
@@ -11,8 +11,8 @@ import neo
 
 from spykeutils.progress_indicator import ProgressIndicator
 
-def get_refperiod_violations(spike_trains, refperiod,
-                             progress=ProgressIndicator()):
+
+def get_refperiod_violations(spike_trains, refperiod, progress=None):
     """ Return the refractory period violations in the given spike trains
     for the specified refractory period.
 
@@ -28,10 +28,12 @@ def get_refperiod_violations(spike_trains, refperiod,
           arrays with violation times (Quantity 1D with the same unit as
           ``refperiod``) for each spike train.
     :rtype: int, dict """
-
     if type(refperiod) != pq.Quantity or \
        refperiod.simplified.dimensionality != pq.s.dimensionality:
         raise ValueError('refperiod must be a time quantity!')
+
+    if not progress:
+        progress = ProgressIndicator()
 
     total_violations = 0
     violations = {}
@@ -49,6 +51,7 @@ def get_refperiod_violations(spike_trains, refperiod,
 
     return total_violations, violations
 
+
 def calculate_refperiod_fp(num_spikes, refperiod, violations, total_time):
     """ Return the rate of false positives calculated from refractory period
     calculations for each unit. The equation used is described in
@@ -63,6 +66,8 @@ def calculate_refperiod_fp(num_spikes, refperiod, violations, total_time):
     :type refperiod: Quantity scalar
     :param dict violations: Dictionary of total number of violations,
         indexed the same as num_spikes.
+    :param total_time: The total time in which violations could have occured.
+    :type total_time: Quantity scalar
 
     :returns: A dictionary of false positive rates indexed by unit.
         Note that values above 0.5 can not be directly interpreted as a
@@ -87,6 +92,7 @@ def calculate_refperiod_fp(num_spikes, refperiod, violations, total_time):
         fp[u] = 0.5 - sp.sqrt(0.25 - zw)
 
     return fp
+
 
 def calculate_overlap_fp_fn(means, spikes):
     """ Return a dict of tuples (False positive rate, false negative rate)
@@ -206,6 +212,7 @@ def calculate_overlap_fp_fn(means, spikes):
             num = len(spikes[u])
             totals[u] = (fp / num, fn / num)
     return totals, singles
+
 
 def _multi_norm(x, mean):
     """ Evaluate pdf of multivariate normal distribution with a mean

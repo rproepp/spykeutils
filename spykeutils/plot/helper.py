@@ -1,3 +1,7 @@
+"""
+This module contains some utility functions that are usefult in plot creation.
+"""
+
 import functools
 
 import scipy as sp

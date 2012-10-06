@@ -1,3 +1,6 @@
+"""
+.. autofunction:: psth(trains, events=None, start=0 ms, stop=None, bin_size=100 ms, rate_correction=True, bar_plot=False, unit=ms, progress=None)
+"""
 import scipy as sp
 import quantities as pq
 
@@ -5,16 +8,17 @@ from guiqwt.builder import make
 from guiqwt.baseplot import BasePlot
 from guiqwt.plot import BaseCurveWidget
 
+from .. import rate_estimation
+from ..progress_indicator import ProgressIndicator
+from .. import SpykeException
 from dialog import PlotDialog
 import helper
-from .. import rate_estimation
-from ..spyke_exception import SpykeException
-from ..progress_indicator import ProgressIndicator
+
 
 @helper.needs_qt
 def psth(trains, events=None, start=0*pq.ms, stop=None, bin_size=100*pq.ms,
          rate_correction=True, bar_plot=False, unit=pq.ms,
-         progress=ProgressIndicator()):
+         progress=None):
     """ Create a peri stimulus time histogram.
 
     The peri stimulus time histogram gives an estimate of the instantaneous
@@ -46,6 +50,8 @@ def psth(trains, events=None, start=0*pq.ms, stop=None, bin_size=100*pq.ms,
     """
     if not trains:
         raise SpykeException('No spike trains for PSTH!')
+    if not progress:
+        progress = ProgressIndicator()
 
     if bar_plot:
         k = trains.keys()[0]
@@ -59,7 +65,6 @@ def psth(trains, events=None, start=0*pq.ms, stop=None, bin_size=100*pq.ms,
 
     rates, bins = rate_estimation.psth(trains, bin_size, start=start,
         stop=stop, rate_correction=rate_correction)
-    progress.done()
 
     if not psth:
         raise SpykeException('No spike trains for PSTH!')
@@ -108,6 +113,7 @@ def psth(trains, events=None, start=0*pq.ms, stop=None, bin_size=100*pq.ms,
     plot.set_axis_title(BasePlot.X_BOTTOM, 'Interval length')
     plot.set_axis_unit(BasePlot.X_BOTTOM, unit.dimensionality.string)
     win.add_custom_curve_tools()
+    progress.done()
     win.show()
 
     if bar_plot: # Rescale Bar plot

@@ -1,62 +1,22 @@
 """ This package contains various plotting functions for neo objects.
-The plots are created using guiqwt - if guiqwt is not installed, this
-package can not be used.
-
-:mod:`rasterplot` Module
--------------------------
+The plots are created using :mod:`guiqwt` - if :mod:`guiqwt` is not installed,
+this package can not be used.
 
 .. automodule:: spykeutils.plot.rasterplot
-    :members:
-    :show-inheritance:
-
-:mod:`analog_signals` Module
-----------------------------
-
-.. automodule:: spykeutils.plot.analog_signals
-    :members:
-    :show-inheritance:
-
-:mod:`correlogram` Module
--------------------------
 
 .. automodule:: spykeutils.plot.correlogram
-    :members:
-    :show-inheritance:
-
-:mod:`interspike_intervals` Module
-----------------------------------
 
 .. automodule:: spykeutils.plot.interspike_intervals
-    :members:
-    :show-inheritance:
 
-:mod:`sde` Module
------------------
+.. automodule:: spykeutils.plot.peri_stimulus_histogram
 
 .. automodule:: spykeutils.plot.sde
-    :members:
-    :show-inheritance:
 
-:mod:`psth` Module
-------------------
-
-.. automodule:: spykeutils.plot.psth
-    :members:
-    :show-inheritance:
-
-:mod:`spike_waveforms` Module
------------------------------
-
-.. automodule:: spykeutils.plot.spike_waveforms
-    :members:
-    :show-inheritance:
-
-:mod:`spike_amp_hist` Module
-----------------------------
+.. automodule:: spykeutils.plot.analog_signals
 
 .. automodule:: spykeutils.plot.spike_amp_hist
-    :members:
-    :show-inheritance:
+
+.. automodule:: spykeutils.plot.spike_waveforms
 
 :mod:`dialog` Module
 --------------------
@@ -75,10 +35,11 @@ package can not be used.
 
 from interspike_intervals import ISI
 from dialog import PlotDialog
-from rasterplot import raster_plot
+from rasterplot import raster
 from correlogram import cross_correlogram
 from analog_signals import signals
-from psth import psth
+from peri_stimulus_histogram import psth
 from sde import sde
 from spike_waveforms import spikes
 from spike_amp_hist import spike_amplitude_histogram
+

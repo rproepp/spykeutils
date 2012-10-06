@@ -1,4 +1,6 @@
-from __future__ import division
+"""
+.. autofunction:: spikes(spikes, axes_style, anti_alias=False, time_unit=ms, progress=None)
+"""
 
 import scipy as sp
 import quantities as pq
@@ -7,12 +9,15 @@ from guiqwt.builder import make
 from guiqwt.baseplot import BasePlot
 from guiqwt.plot import BaseCurveWidget
 
-from ..spyke_exception import SpykeException
+from ..progress_indicator import ProgressIndicator
+from .. import SpykeException
 from dialog import PlotDialog
 import helper
 
+
 @helper.needs_qt
-def spikes(spikes, axes_style, anti_alias = False, time_unit = pq.ms):
+def spikes(spikes, axes_style, anti_alias=False, time_unit=pq.ms,
+           progress=None):
     """ Create a plot dialog with spike waveforms.
 
     :param dict spikes: A dictionary of spike lists.
@@ -24,9 +29,16 @@ def spikes(spikes, axes_style, anti_alias = False, time_unit = pq.ms):
 
     :param bool anti_alias: Determines whether an antialiased plot is created.
     :param Quantity time_unit: The (time) unit for the x axis
+    :param progress: Set this parameter to report progress.
+    :type progress: :class:`spykeutils.progress_indicator.ProgressIndicator`
     """
     if not spikes:
         raise SpykeException('No spikes for spike waveform plot!')
+    if not progress:
+        progress = ProgressIndicator()
+
+    progress.begin('Creating waveform plot')
+    progress.set_ticks(sum((len(l) for l in spikes.itervalues())))
     win_title = 'Spike waveforms'
     win = PlotDialog(toolbar=True, wintitle=win_title)
 
@@ -50,6 +62,7 @@ def spikes(spikes, axes_style, anti_alias = False, time_unit = pq.ms):
                 for w in spike_waves:
                     curve = make.curve(x, w[:, c], title=u.name, color=color)
                     plot.add_item(curve)
+                    progress.step()
             win.add_plot_widget(pW, c)
 
 
@@ -75,6 +88,7 @@ def spikes(spikes, axes_style, anti_alias = False, time_unit = pq.ms):
                             legend_items.append(curve)
                         first_wave = False
                         plot.add_item(curve)
+                        progress.step()
                 offset += x[-1]
                 if c != channels[-1]:
                     plot.add_item(make.marker((offset, 0), lambda x,y: '',
@@ -111,6 +125,7 @@ def spikes(spikes, axes_style, anti_alias = False, time_unit = pq.ms):
                             legend_items.append(curve)
                         first_wave = False
                         plot.add_item(curve)
+                        progress.step()
                 offset += maxOffset
 
         l = make.legend(restrict_items=legend_items)
@@ -119,6 +134,7 @@ def spikes(spikes, axes_style, anti_alias = False, time_unit = pq.ms):
         win.add_legend_option([l], True)
 
     win.add_custom_curve_tools()
+    progress.done()
     win.show()
 
     plot.set_axis_title(BasePlot.X_BOTTOM, 'Time')

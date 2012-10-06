@@ -1,15 +1,18 @@
+"""
+.. autofunction:: correlogram(trains, bin_size, max_lag=500 ms, border_correction=True, unit=ms, progress=None)
+"""
 import scipy as sp
 from collections import OrderedDict
 
 import quantities as pq
 
 from progress_indicator import ProgressIndicator
-from spyke_exception import SpykeException
+from . import SpykeException
 
 def correlogram(trains, bin_size, max_lag=500*pq.ms, border_correction=True,
-                unit=pq.ms, progress=ProgressIndicator()):
+                unit=pq.ms, progress=None):
     """ Return (cross-)correlograms from a dictionary of SpikeTrain
-        lists for different units.
+    lists for different units.
 
     :param dict trains: Dictionary of SpikeTrain lists.
     :param bin_size: Bin size (time).
@@ -32,6 +35,9 @@ def correlogram(trains, bin_size, max_lag=500*pq.ms, border_correction=True,
         * The bins used for the correlogram calculation.
     :rtype: dict, Quantity 1D
     """
+    if not progress:
+        progress = ProgressIndicator()
+
     bin_size.rescale(unit)
     max_lag.rescale(unit)
 

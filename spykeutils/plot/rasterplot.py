@@ -1,3 +1,6 @@
+"""
+.. autofunction:: raster(trains, units=None, show_lines=True, events=None, epochs=None)
+"""
 import scipy as sp
 
 from guiqwt.builder import make
@@ -7,12 +10,13 @@ from guiqwt.plot import BaseCurveWidget
 import neo
 import quantities as pq
 
+from .. import SpykeException
 from dialog import PlotDialog
 import helper
-from ..spyke_exception import SpykeException
+
 
 @helper.needs_qt
-def raster_plot(trains, units=None, show_lines=True, events=None, epochs=None):
+def raster(trains, units=None, show_lines=True, events=None, epochs=None):
     """ Create a new plotting window with a rasterplot of spiketrains.
 
         :param dict trains: Dictionary of spike trains indexed by a
@@ -37,9 +41,7 @@ def raster_plot(trains, units=None, show_lines=True, events=None, epochs=None):
     if show_lines:
         trial_length = max([t.t_stop - t.t_start for t in trains.itervalues()])
         trial_length.units = units
-    _spike_trains_plot(win, trains, units, trial_length, events, epochs)
 
-def _spike_trains_plot(win, trains, units, trial_length, events, epochs):
     pW = BaseCurveWidget(win)
     plot = pW.plot
 
@@ -95,5 +97,5 @@ if __name__ == '__main__':
     train2 = neo.SpikeTrain(sp.arange(21)*5000, units='ms', t_stop=100000)
     train2.unit = unit2
 
-    raster_plot({unit1:train1, unit2:train2}, pq.s)
+    raster({unit1:train1, unit2:train2}, pq.s)
     app.exec_()
