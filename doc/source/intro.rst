@@ -1,29 +1,63 @@
-Dependencies
+Requirements
 ============
-spykeutils is based on the :mod:`neo` framework, so it depends on the neo
-package. This means it also carries neo's dependencies -
-`scipy <http://scipy.org>`_ and :mod:`quantities`.
-In addition, Python 2.7 or newer is required.
+Spykeutils is a pure Python package and therefore easy to install. It depends
+on the following additional packages:
 
-For the :mod:`spykeutils.plot` subpackage, :mod:`guiqwt` is required. The
-main :mod:`spykeutils` can be used without guiqwt, but plotting will be
-unavailable. However, many spykeutils functions return data that can
-easily be plotted with an arbitrary plotting library, e.g.
-`matplotlib <http://matplotlib.sourceforge.net>`_.
+* Python_ >= 2.7
+* neo_ >= 0.2.2
+* scipy_
+* guiqwt_ (Optional, for plotting)
+* tables_ (Optional, for analysis results data management)
 
-Installation
-============
-At the moment, spykeutils is not supposed to be installed. Just put it in
-your python path and you're done. A setup will be added in the near future.
+Please see the respective websites for instructions on how to install them if
+they are not yet installed on your computer.
 
-Currently, the neo version in pypi contains bugs that affect some of the
-functions in spykeutils. Please install the most recent version from
-`GitHub <https://github.com/python-neo/python-neo>`_.
+**Note:** The current version of Neo in the Python Package Index contains
+some bugs that prevent it from working properly with spykeutils in some
+situations. Please install the latest version directly from GitHub:
+https://github.com/NeuralEnsemble/python-neo
+
+You can download the repository from the GitHub page or clone it using
+git and then install from the resulting folder::
+
+$ python setup.py install
+
+Download and Installation
+=========================
+The easiest way to get spykeutils is from the Python Package Index.
+If you have pip_ installed::
+
+$ pip install spykeutils
+
+Alternatively, if you have setuptools_::
+
+$ easy_install spykeutils
+
+Alternatively, you can get the latest version directly from GitHub at
+https://github.com/rproepp/spykeutils.
+
+The master branch (selected by default) always contains the current stable
+version. If you want the latest development version (not recommended unless
+you need some features that do not exist in the stable version yet), select
+the development branch. You can download the repository from the GitHub page
+or clone it using git and then install from the resulting folder::
+
+$ python setup.py install
 
 Usage
 =====
-For the most part, spykeutils consists of independent functions that work on
-neo objects. Many functions also take quantities as parameters. Therefore,
-make sure to have an overview :mod:`neo` and :mod:`quantities` before using
-spykeutils. Once you are familiar with these packages, head to the
-:ref:`apiref` to browse the contents of spykeutils.
+For the most part, spykeutils is a collection of functions that work on
+Neo objects. Many functions also take quantities as parameters. Therefore,
+make sure to get an overview of :mod:`neo` and :mod:`quantities` before using
+spykeutils. Once you are familiar with these packages, have a look at the
+:ref:`examples` or head to the :ref:`apiref` to browse the contents of
+spykeutils.
+
+.. _`Python`: http://python.org/
+.. _`neo`: http://neo.readthedocs.org/
+.. _`guiqwt`: http://packages.python.org/guiqwt/
+.. _`tables`: http://www.pytables.org/
+.. _`quantities`: http://pypi.python.org/pypi/quantities
+.. _`pip`: http://pypi.python.org/pypi/pip
+.. _`scipy`: http://scipy.org/
+.. _`setuptools`: http://pypi.python.org/pypi/setuptools

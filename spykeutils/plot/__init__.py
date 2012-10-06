@@ -45,23 +45,23 @@ package can not be used.
     :show-inheritance:
 
 :mod:`spike_waveforms` Module
-------------------
+-----------------------------
 
 .. automodule:: spykeutils.plot.spike_waveforms
     :members:
     :show-inheritance:
 
 :mod:`spike_amp_hist` Module
-------------------
+----------------------------
 
-.. automodule:: spykeutils.plot.spike_amplitude_histogram
+.. automodule:: spykeutils.plot.spike_amp_hist
     :members:
     :show-inheritance:
 
-:mod:`dialogs` Module
----------------------
+:mod:`dialog` Module
+--------------------
 
-.. automodule:: spykeutils.plot.dialogs
+.. automodule:: spykeutils.plot.dialog
     :members:
     :show-inheritance:
 
