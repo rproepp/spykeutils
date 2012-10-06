@@ -1,4 +1,6 @@
 """
+.. autoclass:: spykeutils.SpykeException
+
 :mod:`conversions` Module
 -------------------------
 
@@ -41,14 +43,6 @@
 .. automodule:: spykeutils.stationarity
     :members:
     :exclude-members: spike_amplitude_histogram
-
-:mod:`spyke_exception` Module
------------------------------
-
-.. automodule:: spykeutils.spyke_exception
-    :members:
-    :undoc-members:
-    :show-inheritance:
 """
 
 __version__ = '0.1.1'

@@ -25,7 +25,6 @@ from guiqwt.tools import (SelectTool, RectZoomTool, BasePlotMenuTool,
                           AverageCrossSectionTool)
 from guiqwt.signals import SIG_PLOT_AXIS_CHANGED
 from guidata.configtools import get_icon
-from guiqwt.config import _
 
 import window_icon_rc
 
@@ -58,20 +57,20 @@ ImagePlot.do_autoscale = fixed_do_autoscale_image
 
 class PlotDialog(QDialog, PlotManager):
     """ Implements a dialog to which an arbitrary number of plots can be
-        added.
+    added.
 
-        This class implements a `QDialog` with a number of plots on it. The
-        plot's axes can be arbitrarily synchronized and option checkboxes can
-        be added which provide callbacks when the checkbox state changes.
+    This class implements a `QDialog` with a number of plots on it. The plot's
+    axes can be arbitrarily synchronized and option checkboxes can be added
+    which provide callbacks when the checkbox state changes.
     """
 
-    def __init__(self, wintitle="Plot window",
+    def __init__(self, wintitle='Plot window',
                  toolbar=False,  parent=None, panels=None):
         QDialog.__init__(self, parent)
         self.setWindowFlags(Qt.Window)
 
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap(_fromUtf8(":/Application/Main")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon.addPixmap(QtGui.QPixmap(_fromUtf8(':/Application/Main')), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.setWindowIcon(icon)
 
         # WidgetMixin copy
@@ -88,7 +87,7 @@ class PlotDialog(QDialog, PlotManager):
             for panel in panels:
                 self.add_panel(panel)
 
-        self.toolbar = QToolBar(_("Tools"))
+        self.toolbar = QToolBar('Tools')
         if not toolbar:
             self.toolbar.hide()
 

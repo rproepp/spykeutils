@@ -1,5 +1,5 @@
 """ This package contains various plotting functions for neo objects.
-The plots are created using :mod:`guiqwt` - if :mod:`guiqwt` is not installed,
+The plots are created using :mod:`guiqwt` - if it is not installed,
 this package can not be used.
 
 .. automodule:: spykeutils.plot.rasterplot
@@ -30,7 +30,6 @@ this package can not be used.
 
 .. automodule:: spykeutils.plot.helper
     :members:
-    :show-inheritance:
 """
 
 from interspike_intervals import ISI

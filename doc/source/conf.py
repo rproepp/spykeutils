@@ -27,6 +27,7 @@ try:
     import scipy
     import PyQt4
     import guiqwt
+    import blub
 except ImportError:
     from mock import MagicMock
 
@@ -38,6 +39,14 @@ except ImportError:
                     'scipy', 'scipy.spatial', 'scipy.spatial.distance']
     for mod_name in MOCK_MODULES:
         sys.modules[mod_name] = MagicMock()
+
+    # Needed for spykeutils.plot.Dialog.PlotDialog
+    class QDialog:
+        pass
+    class PlotManager:
+        pass
+    sys.modules['PyQt4.QtGui'].QDialog = QDialog
+    sys.modules['guiqwt.plot'].PlotManager = PlotManager
 
 # -- General configuration -----------------------------------------------------
 

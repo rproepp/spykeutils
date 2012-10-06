@@ -7,7 +7,6 @@ spykeutils package
 ------------------
 
 .. automodule:: spykeutils
-    :members:
 
 Subpackages
 -----------
