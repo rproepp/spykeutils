@@ -7,10 +7,11 @@ on the following additional packages:
 * neo_ >= 0.2.2
 * scipy_
 * guiqwt_ (Optional, for plotting)
-* tables_ (Optional, for analysis results data management)
+* tables_ (Optional, for analysis results data management. Also known as
+  PyTables.)
 
 Please see the respective websites for instructions on how to install them if
-they are not yet installed on your computer.
+they are not present on your computer.
 
 **Note:** The current version of Neo in the Python Package Index contains
 some bugs that prevent it from working properly with spykeutils in some

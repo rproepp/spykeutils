@@ -118,7 +118,7 @@ The resulting plot will look like the following:
 
 While spike density estimations are preferable to PSTHs in many cases, the
 picture also shows an important weakness: The estimation will generally be too
-low on borders. The areas where this happens become larger with kernel size,
+low on margins. The areas where this happens become larger with kernel size,
 which is clearly visible from the rounded shape of Unit 1 (which really has
 a flat rate) with its very large kernel size.
 

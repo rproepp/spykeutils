@@ -17,6 +17,14 @@ def find_version():
         rval = '0'
     return rval
 
+DESC = """Based on the `Neo <http://packages.python.org/neo/>`_ framework,
+spykeutils is a Python library for analyzing and plotting data from
+neurophysiological recordings. It can be used by itself or in conjunction
+with Spyke Viewer, a multi-platform GUI application for navigating
+electrophysiological datasets.
+
+For more information, see the documentation at
+http://spykeutils.readthedocs.org"""
 
 if __name__ == "__main__":
     setup(
@@ -35,7 +43,7 @@ if __name__ == "__main__":
         author='Robert Pröpper',
         maintainer='Robert Pröpper',
         description='Utilities for analyzing electrophysiological data',
-        long_description=open('README.rst', 'r').read(),
+        long_description=DESC,
         license='BSD',
         url='https://github.com/rproepp/spykeutils',
         classifiers=[

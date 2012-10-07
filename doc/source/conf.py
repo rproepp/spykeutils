@@ -58,7 +58,7 @@ except ImportError:
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest',
               'sphinx.ext.intersphinx', 'sphinx.ext.coverage',
               'sphinx.ext.pngmath', 'sphinx.ext.pngmath',
-              'sphinx.ext.ifconfig']
+              'sphinx.ext.ifconfig', 'sphinx.ext.viewcode']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
