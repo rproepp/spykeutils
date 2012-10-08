@@ -1,7 +1,7 @@
 import json
 from data_provider import DataProvider
 from data_provider_neo import NeoDataProvider
-from spykeutils.progress_indicator import ProgressIndicator
+from ..progress_indicator import ProgressIndicator
 
 class NeoStoredProvider(NeoDataProvider):
     def __init__(self, data, progress=ProgressIndicator()):

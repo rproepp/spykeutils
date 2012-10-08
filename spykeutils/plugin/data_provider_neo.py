@@ -4,7 +4,9 @@ from copy import copy
 
 import neo
 
-from spykeutils.plugin.data_provider import DataProvider
+from data_provider import DataProvider
+from .. import conversions as convert
+
 
 class NeoDataProvider(DataProvider):
     """ Base class for data providers using NEO"""
@@ -423,40 +425,72 @@ class NeoDataProvider(DataProvider):
 
         return spikes
 
-    def events(self):
+    def events(self, include_array_events = True):
         """ Return a dictionary (indexed by Segment) of lists of
         Event objects.
         """
         ret = {}
         for s in self.segments():
             ret[s] = s.events
+            if include_array_events:
+                for a in s.eventarrays:
+                    ret[s].extend(convert.event_array_to_events(a))
         return ret
 
-    def labeled_events(self, label):
+    def labeled_events(self, label, include_array_events = True):
         """ Return a dictionary (indexed by Segment) of lists of Event
         objects with the given label.
         """
         ret = {}
         for s in self.segments():
             ret[s] = [e for e in s.events if e.label == label]
+            if include_array_events:
+                for a in s.eventarrays:
+                    events = convert.event_array_to_events(a)
+                    ret[s].extend((e for e in events if e.label == label))
         return ret
 
-    def epochs(self):
+    def event_arrays(self):
+        """ Return a dictionary (indexed by Segment) of lists of
+        EventArray objects.
+        """
+        ret = {}
+        for s in self.segments():
+            ret[s] = s.eventarrays
+        return ret
+
+    def epochs(self, include_array_epochs = True):
         """ Return a dictionary (indexed by Segment) of lists of
         Epoch objects.
         """
         ret = {}
         for s in self.segments():
             ret[s] = s.epochs
+            if include_array_epochs:
+                for a in s.epocharrays:
+                    ret[s].extend(convert.epoch_array_to_epochs(a))
         return ret
 
-    def labeled_epochs(self, label):
+    def labeled_epochs(self, label, include_array_epochs = True):
         """ Return a dictionary (indexed by Segment) of lists of Epoch
         objects with the given label.
         """
         ret = {}
         for s in self.segments():
             ret[s] = [e for e in s.epochs if e.label == label]
+            if include_array_epochs:
+                for a in s.epocharrays:
+                    epochs = convert.epoch_array_to_epochs(a)
+                    ret[s].extend((e for e in epochs if e.label == label))
+        return ret
+
+    def epoch_arrays(self):
+        """ Return a dictionary (indexed by Segment) of lists of
+        EpochArray objects.
+        """
+        ret = {}
+        for s in self.segments():
+            ret[s] = s.epocharrays
         return ret
 
     def num_analog_signals(self):

@@ -46,11 +46,12 @@ class DataProvider(object):
 
         The returned blocks will contain references to all other selected
         elements further down in the object hierarchy, but no references to
-        elements which are not selected. The returned hierarchy is volatile,
-        meaning that changes made to it will not persist. The main purpose
+        elements which are not selected. The returned hierarchy is a copy,
+        so changes made to it will not persist. The main purpose
         of this function is to provide an object hierarchy that can be
         saved to a neo file. It is not recommended to use it for data
-        processing, as the whole selection has to be loaded.
+        processing, the respective functions that return objects lower
+        in the hierarchy are better suited for that purpose.
         """
         return []
 
@@ -146,33 +147,59 @@ class DataProvider(object):
         """
         return self._invert_indices(self.spikes_by_unit_and_segment())
 
-    def events(self):
+    def events(self, include_array_events = True):
         """ Return a dictionary (indexed by Segment) of lists of
         Event objects.
+
+        :param bool include_array_events: Determines if EventArray objects
+            should be converted to Event objects and included in the returned
+            list.
         """
         return {}
 
-    def labeled_events(self, label):
+    def labeled_events(self, label, include_array_events = True):
         """ Return a dictionary (indexed by Segment) of lists of Event
         objects with the given label.
 
         :param str label: The name of the Event objects to be returnded
+        :param bool include_array_events: Determines if EventArray objects
+            should be converted to Event objects and included in the returned
+            list.
         """
         return []
 
-    def epochs(self):
+    def event_arrays(self):
         """ Return a dictionary (indexed by Segment) of lists of
-        Epoch objects.
+        EventArray objects.
         """
         return {}
 
-    def labeled_epochs(self, label):
+    def epochs(self, include_array_epochs = True):
+        """ Return a dictionary (indexed by Segment) of lists of
+        Epoch objects.
+
+        :param bool include_array_epochs: Determines if EpochArray objects
+            should be converted to Epoch objects and included in the returned
+            list.
+        """
+        return {}
+
+    def labeled_epochs(self, label, include_array_epochs = True):
         """ Return a dictionary (indexed by Segment) of lists of Epoch
         objects with the given label.
 
         :param str label: The name of the Epoch objects to be returnded
+        :param bool include_array_epochs: Determines if EpochArray objects
+            should be converted to Epoch objects and included in the returned
+            list.
         """
         return []
+
+    def epoch_arrays(self):
+        """ Return a dictionary (indexed by Segment) of lists of
+        EpochArray objects.
+        """
+        return {}
 
     def num_analog_signals(self):
         """ Return the number of AnalogSignal objects.

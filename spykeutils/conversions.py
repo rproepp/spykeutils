@@ -3,16 +3,18 @@ import neo
 
 from . import SpykeException
 
-def spikes_from_spike_train(spike_train, include_waveforms = True):
+
+def spike_train_to_spikes(spike_train, include_waveforms = True):
     """ Return a list of spikes for a spike train.
 
     Note that while the created spikes have references to the same segment and
     unit as the spike train, the relationships in the other direction are
     not automatically created (the spikes are not attached to the unit or
-    segment).
+    segment). Other properties like annotations are not copied or referenced
+    in the created spikes.
 
-    :param SpikeTrain spike_train: A spike train with spike waveform
-        data. If no such data is found, an empty list is returned.
+    :param SpikeTrain spike_train: A spike train from which the Spike objects
+        are constructed.
     :param bool include_waveforms: Determines if the ``waveforms`` property is
         converted to the spike waveforms. If ``waveforms`` is None, this
         parameter has no effect.
@@ -35,7 +37,8 @@ def spikes_from_spike_train(spike_train, include_waveforms = True):
 
     return spikes
 
-def spike_train_from_spikes(spikes, include_waveforms=True):
+
+def spikes_to_spike_train(spikes, include_waveforms=True):
     """ Return a spike train for a list of spikes.
 
     All spikes must have an identical left sweep, the same unit and the same
@@ -44,9 +47,11 @@ def spike_train_from_spikes(spikes, include_waveforms=True):
     Note that while the created spike train has references to the same
     segment and unit as the spikes, the relationships in the other direction
     are not automatically created (the spike train is not attached to the
-    unit or segment).
+    unit or segment). Other properties like annotations are not copied or
+    referenced in the created spike train.
 
-    :param spikes: A list of spike objects.
+    :param spikes: A list of spike objects from which the SpikeTrain object
+        is constructed.
     :param bool include_waveforms: Determines if the waveforms from the Spike
         objects are used to fill the ``waveforms`` property of the resulting
         spike train. If ``True``, all spikes need a ``waveform`` property
@@ -75,18 +80,19 @@ def spike_train_from_spikes(spikes, include_waveforms=True):
     for i, spike in enumerate(spikes):
         if (u != spike.unit or s != spike.segment or
             ls != spike.left_sweep):
-            raise SpykeException('Cannot create spike train from spikes with' +
-                'nonuniform properties!')
+            raise SpykeException('Cannot create spike train from spikes with '
+                                 'nonuniform properties!')
 
         times[i] = spikes[i].time
 
         if include_waveforms:
             if spike.waveform is None:
                 if waves is not None:
-                    raise SpykeException('Cannot create spike train from ' +
-                                         'spikes where some waveforms are None')
+                    raise SpykeException('Cannot create spike train from '
+                                         'spikes where some waveforms are '
+                                         'None')
             elif sh != spike.waveform.shape:
-                raise SpykeException('Cannot create spike train from spikes ' +
+                raise SpykeException('Cannot create spike train from spikes '
                                      'with nonuniform waveform shapes!')
             if waves is not None:
                 waves[i,:,:] = spike.waveform
@@ -94,8 +100,8 @@ def spike_train_from_spikes(spikes, include_waveforms=True):
     return neo.SpikeTrain(times, times.max(), waveforms=waves, left_sweep=ls)
 
 
-def analog_signals_from_analog_signal_array(signal_array):
-    """ Return a list of analog signals an analog signal array.
+def analog_signal_array_to_analog_signals(signal_array):
+    """ Return a list of analog signals for an analog signal array.
 
     If ``signal_array`` is attached to a recording channel group with exactly
     is many channels as there are channels in ``signal_array``, each created
@@ -107,19 +113,22 @@ def analog_signals_from_analog_signal_array(signal_array):
     Note that while the created signals may have references to a segment and
     channels, the relationships in the other direction are
     not automatically created (the signals are not attached to the recording
-    channel or segment).
+    channel or segment). Other properties like annotations are not copied or
+    referenced in the created analog signals.
 
-    :param signal_array: An analog signal array.
+    :param signal_array: An analog signal array from which the AnalogSignal
+        objects are constructed.
     :type signal_array: :class:`neo.core.AnalogSignalArray`
     :return: A list of analog signals, one for every channel in
-        ``signal_array``
+        ``signal_array``.
     :rtype: list
     """
     signals = []
     rcg = signal_array.recordingchannelgroup
 
     for i in xrange(signal_array.shape[1]):
-        s = neo.AnalogSignal(signal_array[:,i], t_start = signal_array.t_start,
+        s = neo.AnalogSignal(signal_array[:,i],
+            t_start = signal_array.t_start,
             sampling_rate=signal_array.sampling_rate)
         if len(rcg.recordingchannels) == 1:
             s.recordingchannel = rcg.recordingchannels[0]
@@ -130,3 +139,46 @@ def analog_signals_from_analog_signal_array(signal_array):
 
     return signals
 
+
+def event_array_to_events(event_array):
+    """ Return a list of events for an event array.
+
+    Note that while the created events may have references to a segment,
+    the relationships in the other direction are not automatically created
+    (the events are not attached to the segment). Other properties like
+    annotations are not copied or referenced in the created events.
+
+    :param event_array: An event array from which the Event objects are
+        constructed.
+    :type event_array: :class:`neo.core.EventArray`
+    :return: A list of events, one for of the events in ``event_array``.
+    :rtype: list
+    """
+    events = []
+    for i, t in enumerate(event_array.times):
+        e = neo.Event(t, event_array.labels[i])
+        e.segment = event_array.segment
+        events.append(e)
+    return events
+
+
+def epoch_array_to_epochs(epoch_array):
+    """ Return a list of epochs for an epoch array.
+
+    Note that while the created epochs may have references to a segment,
+    the relationships in the other direction are not automatically created
+    (the events are not attached to the segment). Other properties like
+    annotations are not copied or referenced in the created epochs.
+
+    :param epoch_array: A period array from which the Epoch objects are
+        constructed.
+    :type epoch_array: :class:`neo.core.EpochArray`
+    :return: A list of events, one for of the events in ``epoch_array``.
+    :rtype: list
+    """
+    periods = []
+    for i, t in enumerate(epoch_array.times):
+        p = neo.Epoch(t, epoch_array.durations[i], epoch_array.labels[i])
+        p.segment = epoch_array.segment
+        periods.append(p)
+    return periods

@@ -4,8 +4,8 @@ import os
 import tables
 import time
 
-import spykeutils.plugin.gui_data as gui_data
-#import guidata.dataset.datatypes as guidata
+import gui_data
+
 
 class HashEntry(tables.IsDescription):
     hash = tables.StringCol(32)
@@ -27,11 +27,13 @@ class AnalysisPlugin(gui_data.DataSet):
     has two configuration options which are used in the start() method
     to print to the console::
 
-        class ExampleAnalysis():
+        from spykeutils.plugin.analysis_plugin import AnalysisPlugin
+
+        class ExampleAnalysis(AnalysisPlugin):
             some_time = di.FloatItem('Some time', default=2.0, unit='ms')
             print_more = di.BoolItem('Print additional info', default=True)
 
-            def start(self):
+            def start(self, current, selections):
                 print 'The selected time is', some_time, 'milliseconds.'
                 if print_more:
                     print 'This is important additional information!'
