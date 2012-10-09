@@ -32,7 +32,7 @@ def spikes(spikes, axes_style, anti_alias=False, time_unit=pq.ms,
     :param progress: Set this parameter to report progress.
     :type progress: :class:`spykeutils.progress_indicator.ProgressIndicator`
     """
-    if not spikes:
+    if not spikes or sum((len(l) for l in spikes.itervalues())) < 1:
         raise SpykeException('No spikes for spike waveform plot!')
     if not progress:
         progress = ProgressIndicator()
@@ -44,10 +44,11 @@ def spikes(spikes, axes_style, anti_alias=False, time_unit=pq.ms,
 
     indices = spikes.keys()
     ref_spike = spikes[spikes.keys()[0]][0]
+    if ref_spike.waveform is None:
+        raise SpykeException('Cannot create waveform plot: At least one spike '
+                             'has no waveform or sampling rate!')
     ref_units = ref_spike.waveform.units
-    srate = ref_spike.sampling_rate
     channels = range(ref_spike.waveform.shape[1])
-    x = (sp.arange(ref_spike.waveform.shape[0]) / srate).rescale(time_unit)
 
     plot = None
     if axes_style == 1: # Separate channel plots
@@ -56,11 +57,16 @@ def spikes(spikes, axes_style, anti_alias=False, time_unit=pq.ms,
             plot = pW.plot
             plot.set_antialiasing(anti_alias)
             for u in indices:
-                spike_waves = (s.waveform.rescale(ref_units)\
-                    for s in spikes[u])
                 color = helper.get_object_color(u)
-                for w in spike_waves:
-                    curve = make.curve(x, w[:, c], title=u.name, color=color)
+                for s in spikes[u]:
+                    if s.waveform is None or s.sampling_rate is None:
+                        raise SpykeException('Cannot create waveform plot: '
+                                             'At least one spike has no '
+                                             'waveform or sampling rate!')
+                    x = (sp.arange(s.waveform.shape[0]) /
+                         s.sampling_rate).rescale(time_unit)
+                    curve = make.curve(x, s.waveform[:, c].rescale(ref_units),
+                        title=u.name, color=color)
                     plot.add_item(curve)
                     progress.step()
             win.add_plot_widget(pW, c)
@@ -77,12 +83,17 @@ def spikes(spikes, axes_style, anti_alias=False, time_unit=pq.ms,
             offset = 0 * time_unit
             for c in channels:
                 for u in indices:
-                    spike_waves = (s.waveform.rescale(ref_units) \
-                        for s in spikes[u])
                     first_wave = True
                     color = helper.get_object_color(u)
-                    for w in spike_waves:
-                        curve = make.curve(x + offset, w[:, c], u.name,
+                    for s in spikes[u]:
+                        if s.waveform is None or s.sampling_rate is None:
+                            raise SpykeException('Cannot create waveform plot: '
+                                                 'At least one spike has no '
+                                                 'waveform or sampling rate!')
+                        x = (sp.arange(s.waveform.shape[0]) /
+                             s.sampling_rate).rescale(time_unit)
+                        curve = make.curve(x + offset,
+                            s.waveform[:, c].rescale(ref_units), u.name,
                             color=color)
                         if c == channels[0] and first_wave == True:
                             legend_items.append(curve)
@@ -114,13 +125,18 @@ def spikes(spikes, axes_style, anti_alias=False, time_unit=pq.ms,
             offset = 0 * ref_units
             for c in channels:
                 for u in indices:
-                    spike_waves = (s.waveform.rescale(ref_units)\
-                        for s in spikes[u])
                     first_wave = True
                     color = helper.get_object_color(u)
-                    for w in spike_waves:
-                        curve = make.curve(x, w[:, c] + offset, u.name,
-                            color=color)
+                    for s in spikes[u]:
+                        if s.waveform is None or s.sampling_rate is None:
+                            raise SpykeException('Cannot create waveform plot: '
+                                                 'At least one spike has no '
+                                                 'waveform or sampling rate!')
+                        x = (sp.arange(s.waveform.shape[0]) /
+                             s.sampling_rate).rescale(time_unit)
+                        curve = make.curve(x,
+                            s.waveform[:, c].rescale(ref_units) + offset,
+                            u.name, color=color)
                         if c == channels[0] and first_wave == True:
                             legend_items.append(curve)
                         first_wave = False

@@ -158,42 +158,6 @@ class NeoDataProvider(DataProvider):
 
         return data
 
-    def blocks(self):
-        """ Return a list of selected Block objects
-        """
-        return []
-
-    def segments(self):
-        """ Return a list of selected Segment objects
-        """
-        return []
-
-    def recording_channel_groups(self):
-        """ Return a list of selected
-        """
-        return []
-
-    def recording_channels(self):
-        """ Return a list of selected recording channel indices
-        """
-        return []
-
-    def recording_channel_objects(self):
-        """ Return a list of selected RecordingChannel objects
-        """
-        rcgs = self.recording_channel_groups()
-        channel_ids = self.recording_channels()
-        channels = []
-        for rcg in rcgs:
-            channels.extend([c for c in rcg.recordingchannels
-                             if c.index in channel_ids])
-        return channels
-
-    def units(self):
-        """ Return a list of selected Unit objects
-        """
-        return []
-
     def spike_trains(self):
         """ Return a list of SpikeTrain objects.
         """

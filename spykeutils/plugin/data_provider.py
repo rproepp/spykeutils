@@ -41,6 +41,46 @@ class DataProvider(object):
                 ret[i2][i1] = dictionary[i1][i2]
         return ret
 
+    def blocks(self):
+        """ Return a list of selected Block objects.
+
+        The returned objects will contain all regular references, not just to
+        selected objects.
+        """
+        return []
+
+    def segments(self):
+        """ Return a list of selected Segment objects.
+
+        The returned objects will contain all regular references, not just to
+        selected objects.
+        """
+        return []
+
+    def recording_channel_groups(self):
+        """ Return a list of selected RecordingChannelGroup objects.
+
+        The returned objects will contain all regular references, not just to
+        selected objects.
+        """
+        return []
+
+    def recording_channels(self):
+        """ Return a list of selected RecordingChannel objects.
+
+        The returned objects will contain all regular references, not just to
+        selected objects.
+        """
+        return []
+
+    def units(self):
+        """ Return a list of selected Unit objects.
+
+        The returned objects will contain all regular references, not just to
+        selected objects.
+        """
+        return []
+
     def selection_blocks(self):
         """ Return a list of selected blocks.
 
