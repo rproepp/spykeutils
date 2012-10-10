@@ -11,16 +11,16 @@ from guiqwt.baseplot import BasePlot
 from guiqwt.plot import BaseCurveWidget
 
 from ..progress_indicator import ProgressIndicator
+from .. import conversions
 from .. import SpykeException
 from dialog import PlotDialog
 import helper
 
 
-
 @helper.needs_qt
 def signals(signals, events=None, epochs=None, spike_trains=None,
-           spikes=None, use_subplots=True, time_unit=pq.s, y_unit=None,
-           progress=None):
+           spikes=None, show_waveforms=True, use_subplots=True,
+           time_unit=pq.s, y_unit=None, progress=None):
     """ Create a plot from a list of AnalogSignal objects.
 
     :param list signals: The list of signals to plot.
@@ -29,13 +29,13 @@ def signals(signals, events=None, epochs=None, spike_trains=None,
     :param sequence epochs: A list of Epoch objects to be included in the
         plot.
     :param list spike_trains: A list of SpikeTrain objects to be
-        included in the plot. Spikes are plotted as vertical lines.
-        If the spike trains do not have names, the ``unit`` property (if it
-        exists) is used for color and legend entries.
-    :param list spikes: A list of lists of Spike objects
-        to be included in the plot. Waveforms of spikes are overlaid on
-        the signal. If the spikes do not have names, the ``unit`` property
-        (if it exists) is used for color and legend entries.
+        included in the plot. The ``unit`` property (if it exists) is used
+        for color and legend entries.
+    :param list spikes: A list Spike objects to be included in the plot.
+        The ``unit`` property (if it exists) is used for color and legend
+        entries.
+    :param bool show_waveforms: Determines if spikes from Spike and
+        SpikeTrain objects are shown as waveforms or vertical lines.
     :param bool use_subplots: Determines if a separate subplot for is created
         each signal.
     :param Quantity time_unit: The unit of the x axis.
@@ -66,6 +66,19 @@ def signals(signals, events=None, epochs=None, spike_trains=None,
     if spike_trains is None:
         spike_trains = []
     if spikes is None:
+        spikes = []
+
+    if show_waveforms:
+        for st in spike_trains:
+            if st.waveforms is not None:
+                spikes.extend(conversions.spike_train_to_spikes(st))
+        spike_trains = []
+    else:
+        unit_spikes = {}
+        for s in spikes:
+            unit_spikes.setdefault(s.unit, []).append(s)
+        for sps in unit_spikes.itervalues():
+            spike_trains.append(conversions.spikes_to_spike_train(sps, False))
         spikes = []
 
     channels = range(len(signals))

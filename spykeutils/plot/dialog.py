@@ -4,7 +4,7 @@
 from PyQt4 import QtGui
 from PyQt4.QtCore import Qt
 from PyQt4.QtGui import (QDialog, QGridLayout, QToolBar, QHBoxLayout,
-                         QVBoxLayout, QFrame, QWidget)
+                         QVBoxLayout, QFrame, QWidget, QMessageBox)
 try:
     from PyQt4 import QtCore
     _fromUtf8 = QtCore.QString.fromUtf8
@@ -22,9 +22,11 @@ from guiqwt.tools import (SelectTool, RectZoomTool, BasePlotMenuTool,
                           ItemCenterTool, SignalStatsTool, ColormapTool,
                           ReverseYAxisTool, AspectRatioTool, ContrastPanelTool,
                           XCSPanelTool, YCSPanelTool, CrossSectionTool,
-                          AverageCrossSectionTool)
+                          AverageCrossSectionTool, SaveAsTool, PrintTool,
+                          CopyToClipboardTool, CommandTool, DefaultToolbarID)
 from guiqwt.signals import SIG_PLOT_AXIS_CHANGED
 from guidata.configtools import get_icon
+from guidata.qthelpers import get_std_icon
 
 import window_icon_rc
 
@@ -54,6 +56,27 @@ def fixed_do_autoscale_image(self, *args, **kwargs):
 ImagePlot.old_do_autoscale = ImagePlot.do_autoscale
 ImagePlot.do_autoscale = fixed_do_autoscale_image
 
+
+# Custom Help tool class (because regular help is missing
+# information on single middle mouse click)
+class HelpTool(CommandTool):
+    def __init__(self, manager, toolbar_id=DefaultToolbarID):
+        super(HelpTool,self).__init__(manager, "Help",
+            get_std_icon("DialogHelpButton", 16),
+            toolbar_id=toolbar_id)
+
+    def activate_command(self, plot, checked):
+        """Activate tool"""
+        QMessageBox.information(plot, "Help",
+            """Keyboard/mouse shortcuts:
+  - single left-click: item (curve, image, ...) selection
+  - single right-click: context-menu relative to selected item
+  - single middle click: home
+  - shift: on-active-curve (or image) cursor
+  - alt: free cursor
+  - left-click + mouse move: move item (when available)
+  - middle-click + mouse move: pan
+  - right-click + mouse move: zoom""")
 
 class PlotDialog(QDialog, PlotManager):
     """ Implements a dialog to which an arbitrary number of plots can be
@@ -154,7 +177,10 @@ class PlotDialog(QDialog, PlotManager):
             self.add_tool(AntiAliasingTool)
         self.add_tool(AxisScaleTool)
         self.add_separator_tool()
-        self.register_other_tools()
+        self.add_tool(SaveAsTool)
+        self.add_tool(CopyToClipboardTool)
+        self.add_tool(PrintTool)
+        self.add_tool(HelpTool)
         self.add_separator_tool()
         self.get_default_tool().activate()
 
@@ -180,7 +206,10 @@ class PlotDialog(QDialog, PlotManager):
             self.add_tool(AverageCrossSectionTool)
 
         self.add_separator_tool()
-        self.register_other_tools()
+        self.add_tool(SaveAsTool)
+        self.add_tool(CopyToClipboardTool)
+        self.add_tool(PrintTool)
+        self.add_tool(HelpTool)
         self.add_separator_tool()
         self.get_default_tool().activate()
     

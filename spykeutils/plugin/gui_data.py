@@ -1,7 +1,7 @@
 """ This module gives access to all members of
 :mod:`guidata.dataset.dataitems` and :mod:`guidata.dataset.datatypes`.
-If `guidata` cannot be imported, the module offers suitable dummy
-objects instead.
+If :mod:`guidata` cannot be imported, the module offers suitable dummy
+objects instead (e.g. for use on a server).
 """
 try:
     from guidata.dataset.dataitems import *

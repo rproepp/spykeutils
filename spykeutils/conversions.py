@@ -97,7 +97,12 @@ def spikes_to_spike_train(spikes, include_waveforms=True):
             if waves is not None:
                 waves[i,:,:] = spike.waveform
 
-    return neo.SpikeTrain(times, times.max(), waveforms=waves, left_sweep=ls)
+    ret = neo.SpikeTrain(times, t_start=times.min(), t_stop=times.max(),
+        waveforms=waves, left_sweep=ls)
+    ret.unit = u
+    ret.segment = s
+    ret.left_sweep = ls
+    return ret
 
 
 def analog_signal_array_to_analog_signals(signal_array):

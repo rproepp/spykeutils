@@ -16,4 +16,9 @@ where the `spykeviewer` package and its dependencies are not installed
 .. automodule:: spykeutils.plugin.data_provider
     :members:
     :show-inheritance:
+
+:mod:`gui_data` Module
+----------------------
+
+.. automodule:: spykeutils.plugin.gui_data
 """
