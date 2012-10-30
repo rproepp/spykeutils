@@ -35,8 +35,9 @@ except ImportError:
                     'guiqwt.baseplot', 'guiqwt.plot', 'guiqwt.curve',
                     'guiqwt.image', 'guiqwt.tools', 'guiqwt.signals',
                     'guiqwt.config', 'PyQt4', 'PyQt4.QtCore', 'PyQt4.QtGui',
-                    'guidata', 'guidata.configtools', 'quantities',
-                    'scipy', 'scipy.spatial', 'scipy.spatial.distance']
+                    'guidata', 'guidata.configtools', 'guidata.qthelpers',
+                    'quantities', 'scipy', 'scipy.spatial',
+                    'scipy.spatial.distance']
     for mod_name in MOCK_MODULES:
         sys.modules[mod_name] = MagicMock()
 
