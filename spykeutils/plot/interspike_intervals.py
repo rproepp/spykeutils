@@ -17,8 +17,7 @@ import helper
 
 @helper.needs_qt
 def ISI(trains, bin_size, cut_off, bar_plot=False, unit=pq.ms):
-    """ Create a plot dialog with a interspike interval histogram of units
-    for a list of trials. Read required data from database.
+    """ Create a plot dialog with an interspike interval histogram.
 
     :param dict trains: Dictionary with lists of spike trains indexed by
         units for which to display ISI histograms
