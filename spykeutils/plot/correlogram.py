@@ -37,7 +37,7 @@ def cross_correlogram(trains, bin_size, max_lag=500*pq.ms, border_correction=Tru
     if not progress:
         progress = ProgressIndicator()
 
-    win_title = 'Correlogram'
+    win_title = 'Correlogram | Bin size ' + str(bin_size)
     progress.begin('Creating correlogram')
     progress.set_status('Calculating...')
     win = PlotDialog(toolbar=True, wintitle=win_title)

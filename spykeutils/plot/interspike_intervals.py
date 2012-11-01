@@ -34,7 +34,7 @@ def ISI(trains, bin_size, cut_off, bar_plot=False, unit=pq.ms):
     if not trains:
         raise SpykeException('No spike trains for ISI histogram')
 
-    win_title = 'ISI Histogram | Bin size: %.3f ms' % bin_size
+    win_title = 'ISI Histogram | Bin size: ' + str(bin_size)
     win = PlotDialog(toolbar=True, wintitle=win_title)
     bin_size.rescale(unit)
     cut_off.rescale(unit)
