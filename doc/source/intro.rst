@@ -11,7 +11,11 @@ on the following additional packages:
   PyTables.)
 
 Please see the respective websites for instructions on how to install them if
-they are not present on your computer.
+they are not present on your computer. If you use Linux, you might not
+have access rights to your Python package installation directory, depending
+on your configuration. In this case, you will have to execute all shell
+commands in this section with administrator privileges, e.g. by using
+``sudo``.
 
 .. note::
     The current version of Neo in the Python Package Index contains
