@@ -203,5 +203,9 @@ def make_window_legend(win, objects, show_option=None):
 
     legend = []
     for u in objects:
-        legend.append((get_object_color(u), u.name))
+        if u is not None:
+            name = u.name
+        else:
+            name = 'No identifier'
+        legend.append((get_object_color(u), name))
     win.add_color_legend(legend, show_option)

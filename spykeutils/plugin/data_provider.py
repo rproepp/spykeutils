@@ -348,6 +348,16 @@ class DataProvider(object):
         return self._invert_indices(
             self.analog_signal_arrays_by_channelgroup_and_segment())
 
+    def refresh_view(self):
+        """ Refresh associated views of the data.
+
+        Use this method if when you change the neo hierarchy on which the
+        selection is based (e.g. adding or removing objects). It will ensure
+        that all current views on the data are updated, for example in
+        Spyke Viewer.
+        """
+        pass
+
     def data_dict(self):
         """ Return a dictionary with all information to serialize the
         object.

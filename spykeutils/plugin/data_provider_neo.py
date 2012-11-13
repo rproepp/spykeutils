@@ -179,7 +179,8 @@ class NeoDataProvider(DataProvider):
         trains = OrderedDict()
         segments = self.segments()
         for u in self.units():
-            trains[u] = [t for t in u.spiketrains if t.segment in segments]
+            trains[u] = [t for t in u.spiketrains if t.segment in segments or
+                                                     t.segment is None]
 
         nonetrains = []
         for s in self.segments():
@@ -275,7 +276,8 @@ class NeoDataProvider(DataProvider):
         trains = OrderedDict()
         units = self.units()
         for s in self.segments():
-            trains[s] = [t for t in s.spiketrains if t.unit in units]
+            trains[s] = [t for t in s.spiketrains if t.unit in units or
+                                                     t.unit is None]
 
         nonetrains = []
         for u in self.units():
@@ -334,7 +336,8 @@ class NeoDataProvider(DataProvider):
         spikes = OrderedDict()
         segments = self.segments()
         for u in self.units():
-            spikes[u] = [t for t in u.spikes if t.segment in segments]
+            spikes[u] = [t for t in u.spikes if t.segment in segments or
+                                                t.segment is None]
 
         nonespikes = []
         for s in self.segments():
@@ -351,7 +354,8 @@ class NeoDataProvider(DataProvider):
         spikes = OrderedDict()
         units = self.units()
         for s in self.segments():
-            spikes[s] = [t for t in s.spikes if t.unit in units]
+            spikes[s] = [t for t in s.spikes if t.unit in units or
+                                                t.unit is None]
 
         nonespikes = []
         for u in self.units():
