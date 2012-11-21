@@ -87,14 +87,17 @@ class PlotDialog(QDialog, PlotManager):
     which provide callbacks when the checkbox state changes.
     """
 
-    def __init__(self, wintitle='Plot window',
-                 toolbar=False,  parent=None, panels=None):
+    def __init__(self, wintitle='Plot window', major_grid=True,
+                 minor_grid=False, toolbar=False,  parent=None, panels=None):
         QDialog.__init__(self, parent)
         self.setWindowFlags(Qt.Window)
 
         icon = QtGui.QIcon()
         icon.addPixmap(QtGui.QPixmap(_fromUtf8(':/Application/Main')), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.setWindowIcon(icon)
+
+        self.major_grid = major_grid
+        self.minor_grid = minor_grid
 
         # WidgetMixin copy
         PlotManager.__init__(self, main=self)
@@ -444,3 +447,14 @@ class PlotDialog(QDialog, PlotManager):
         l = plot.titleLabel()
         l.setFont(self.font())
         plot.setTitle(l.text())
+
+    def show(self):
+        for p in self.plots.itervalues():
+            if not self.minor_grid:
+                p.grid.gridparam.min_xenabled = False
+                p.grid.gridparam.min_yenabled = False
+            if not self.major_grid:
+                p.grid.gridparam.maj_xenabled = False
+                p.grid.gridparam.maj_yenabled = False
+            p.grid.update_params()
+        super(PlotDialog, self).show()

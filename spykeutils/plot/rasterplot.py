@@ -36,7 +36,7 @@ def raster(trains, units=None, show_lines=True, events=None, epochs=None):
         units = pq.ms
 
     win_title = 'Spike Trains'
-    win = PlotDialog(toolbar=True, wintitle=win_title)
+    win = PlotDialog(toolbar=True, wintitle=win_title, major_grid=False)
     trial_length = None
     if show_lines:
         trial_length = max([t.t_stop - t.t_start for t in trains.itervalues()])
