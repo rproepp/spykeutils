@@ -4,7 +4,7 @@ Spykeutils is a pure Python package and therefore easy to install. It depends
 on the following additional packages:
 
 * Python_ >= 2.7
-* neo_ >= 0.2.2
+* neo_ >= 0.2.1
 * scipy_
 * guiqwt_ (Optional, for plotting)
 * tables_ (Optional, for analysis results data management. Also known as
@@ -18,15 +18,14 @@ commands in this section with administrator privileges, e.g. by using
 ``sudo``.
 
 .. note::
-    The current version of Neo in the Python Package Index contains
-    some bugs that prevent it from working properly with spykeutils in some
-    situations. Please install the latest version directly from GitHub:
-    https://github.com/rproepp/python-neo
+    If you have installed neo_ before, please make sure you have the most
+    recent version of the package, e.g. by running::
 
-    You can download the repository from the GitHub page or clone it using
-    git and then install from the resulting folder::
+    $ pip install -U neo
 
-    $ python setup.py install
+    or::
+
+    $ easy_install -U neo
 
 Download and Installation
 =========================
