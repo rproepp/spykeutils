@@ -21,8 +21,6 @@ import icons_rc
 class HomeTool(CommandTool):
     """ A command to show all elements in the plot (same as pressing the
     middle mouse button).
-
-    Even a longer docstring does not seem to help...
     """
 
     def __init__(self, manager, toolbar_id=DefaultToolbarID):
