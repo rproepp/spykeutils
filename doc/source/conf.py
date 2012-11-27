@@ -27,14 +27,14 @@ try:
     import scipy
     import PyQt4
     import guiqwt
-    import blub
 except ImportError:
     from mock import MagicMock
 
     MOCK_MODULES = ['neo', 'numpy', 'tables','guiqwt', 'guiqwt.builder',
                     'guiqwt.baseplot', 'guiqwt.plot', 'guiqwt.curve',
                     'guiqwt.image', 'guiqwt.tools', 'guiqwt.signals',
-                    'guiqwt.config', 'PyQt4', 'PyQt4.QtCore', 'PyQt4.QtGui',
+                    'guiqwt.config', 'guiqwt.events',
+                    'PyQt4', 'PyQt4.QtCore', 'PyQt4.QtGui',
                     'guidata', 'guidata.configtools', 'guidata.qthelpers',
                     'quantities', 'scipy', 'scipy.spatial',
                     'scipy.spatial.distance']
@@ -48,6 +48,14 @@ except ImportError:
         pass
     sys.modules['PyQt4.QtGui'].QDialog = QDialog
     sys.modules['guiqwt.plot'].PlotManager = PlotManager
+
+    # Needed for spykeutils.plot.guiqwt_tools
+    class CommandTool:
+        pass
+    class InteractiveTool:
+        pass
+    sys.modules['guiqwt.tools'].CommandTool = CommandTool
+    sys.modules['guiqwt.tools'].InteractiveTool = InteractiveTool
 
 # -- General configuration -----------------------------------------------------
 
