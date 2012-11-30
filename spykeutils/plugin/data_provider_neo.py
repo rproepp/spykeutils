@@ -159,6 +159,84 @@ class NeoDataProvider(DataProvider):
 
         return data
 
+    def _active_block(self, old):
+        """ Return a copy of all selected elements in the given block
+        """
+        block = copy(old)
+
+        block.segments = []
+        selected_segments = self.segments()
+        selected_rcgs = self.recording_channel_groups()
+        selected_channels = self.recording_channels()
+        selected_units = self.units()
+        for s in old.segments:
+            if s in selected_segments:
+                segment = copy(s)
+                segment.analogsignals = [sig for sig in s.analogsignals
+                                         if sig.recordingchannel
+                in selected_channels]
+                segment.analogsignalarrays =\
+                [asa for asa in s.analogsignalarrays
+                 if asa.recordingchannelgroup in selected_rcgs]
+                segment.irregularlysampledsignals =\
+                [iss for iss in s.irregularlysampledsignals
+                 if iss.recordingchannel in selected_channels]
+                segment.spikes = [sp for sp in s.spikes
+                                  if sp.unit in selected_units]
+                segment.spiketrains = [st for st in s.spiketrains
+                                       if st.unit in selected_units]
+                segment.block = block
+                block.segments.append(segment)
+
+        block.recordingchannelgroups = []
+        for old_rcg in old.recordingchannelgroups:
+            if old_rcg in selected_rcgs:
+                rcg = copy(old_rcg)
+                rcg.analogsignalarrays =\
+                [asa for asa in old_rcg.analogsignalarrays
+                 if asa.segment in selected_segments]
+
+                rcg.recordingchannels = []
+                for c in old_rcg.recordingchannels:
+                    if not c in selected_channels:
+                        continue
+                    channel = copy(c)
+                    channel.analogsignals = [sig for sig in c.analogsignals
+                                             if sig.segment
+                    in selected_segments]
+                    channel.irregularlysampledsignals =\
+                    [iss for iss in c.irregularlysampledsignals
+                     if iss.segment in selected_segments]
+                    channel.recordingchannelgroups = copy(
+                        c.recordingchannelgroups)
+                    channel.recordingchannelgroups.insert(
+                        channel.recordingchannelgroups.index(old_rcg), rcg)
+                    channel.recordingchannelgroups.remove(old_rcg)
+                    rcg.recordingchannels.append(channel)
+
+                rcg.units = []
+                for u in old_rcg.units:
+                    if not u in selected_units:
+                        continue
+
+                    unit = copy(u)
+                    unit.spikes = [sp for sp in u.spikes
+                                   if sp.segment in selected_segments]
+                    unit.spiketrains = [st for st in u.spiketrains
+                                        if st.segment in selected_segments]
+                    unit.recordingchannelgroup = rcg
+                    rcg.units.append(unit)
+
+                rcg.block = block
+                block.recordingchannelgroups.append(rcg)
+
+        return block
+
+    def selection_blocks(self):
+        """ Return a list of selected blocks.
+        """
+        return [self._active_block(b) for b in self.blocks()]
+
     def spike_trains(self):
         """ Return a list of SpikeTrain objects.
         """
@@ -179,8 +257,10 @@ class NeoDataProvider(DataProvider):
         trains = OrderedDict()
         segments = self.segments()
         for u in self.units():
-            trains[u] = [t for t in u.spiketrains if t.segment in segments or
-                                                     t.segment is None]
+            st = [t for t in u.spiketrains if t.segment in segments or
+                                                  t.segment is None]
+            if st:
+                trains[u] = st
 
         nonetrains = []
         for s in self.segments():
@@ -190,85 +270,6 @@ class NeoDataProvider(DataProvider):
 
         return trains
 
-    def _active_block(self, old):
-        """ Return a copy of all selected elements in the given block
-        """
-        block = copy(old)
-
-        block.segments = []
-        selected_segments = self.segments()
-        selected_rcgs = self.recording_channel_groups()
-        selected_channels = self.recording_channels()
-        selected_units = self.units()
-        for s in old.segments:
-            if s in selected_segments:
-                segment = copy(s)
-                segment.analogsignals = [sig for sig in s.analogsignals
-                                         if sig.recordingchannel
-                                         in selected_channels]
-                segment.analogsignalarrays = \
-                    [asa for asa in s.analogsignalarrays
-                     if asa.recordingchannelgroup in selected_rcgs]
-                segment.irregularlysampledsignals = \
-                    [iss for iss in s.irregularlysampledsignals
-                     if iss.recordingchannel in selected_channels]
-                segment.spikes = [sp for sp in s.spikes
-                                  if sp.unit in selected_units]
-                segment.spiketrains = [st for st in s.spiketrains
-                                        if st.unit in selected_units]
-                segment.block = block
-                block.segments.append(segment)
-
-        block.recordingchannelgroups = []
-        for old_rcg in old.recordingchannelgroups:
-            if old_rcg in selected_rcgs:
-                rcg = copy(old_rcg)
-                rcg.analogsignalarrays =\
-                    [asa for asa in old_rcg.analogsignalarrays
-                     if asa.segment in selected_segments]
-
-                rcg.recordingchannels = []
-                for c in old_rcg.recordingchannels:
-                    if not c in selected_channels:
-                        continue
-                    channel = copy(c)
-                    channel.analogsignals = [sig for sig in c.analogsignals
-                                             if sig.segment
-                                             in selected_segments]
-                    channel.irregularlysampledsignals =\
-                        [iss for iss in c.irregularlysampledsignals
-                         if iss.segment in selected_segments]
-                    channel.recordingchannelgroups = copy(
-                        c.recordingchannelgroups)
-                    channel.recordingchannelgroups.insert(
-                        channel.recordingchannelgroups.index(old_rcg), rcg)
-                    channel.recordingchannelgroups.remove(old_rcg)
-                    rcg.recordingchannels.append(channel)
-
-                rcg.units = []
-                for u in old_rcg.units:
-                    if not u in selected_units:
-                        continue
-
-                    unit = copy(u)
-                    unit.spikes = [sp for sp in u.spikes
-                                   if sp.segment in selected_segments]
-                    unit.spiketrains = [st for st in u.spiketrains
-                                         if st.segment in selected_segments]
-                    unit.recordingchannelgroup = rcg
-                    rcg.units.append(unit)
-
-                rcg.block = block
-                block.recordingchannelgroups.append(rcg)
-
-        return block
-
-    def selection_blocks(self):
-        """ Return a list of selected blocks.
-        """
-        return [self._active_block(b) for b in self.blocks()]
-
-
     def spike_trains_by_segment(self):
         """ Return a dictionary (indexed by Segment) of lists of
         SpikeTrain objects.
@@ -276,8 +277,10 @@ class NeoDataProvider(DataProvider):
         trains = OrderedDict()
         units = self.units()
         for s in self.segments():
-            trains[s] = [t for t in s.spiketrains if t.unit in units or
-                                                     t.unit is None]
+            st = [t for t in s.spiketrains if t.unit in units or
+                                              t.unit is None]
+            if st:
+                trains[s] = st
 
         nonetrains = []
         for u in self.units():
@@ -336,8 +339,10 @@ class NeoDataProvider(DataProvider):
         spikes = OrderedDict()
         segments = self.segments()
         for u in self.units():
-            spikes[u] = [t for t in u.spikes if t.segment in segments or
-                                                t.segment is None]
+            sp = [t for t in u.spikes if t.segment in segments or
+                                         t.segment is None]
+            if sp:
+                spikes[u] = sp
 
         nonespikes = []
         for s in self.segments():
@@ -354,8 +359,10 @@ class NeoDataProvider(DataProvider):
         spikes = OrderedDict()
         units = self.units()
         for s in self.segments():
-            spikes[s] = [t for t in s.spikes if t.unit in units or
-                                                t.unit is None]
+            sp = [t for t in s.spikes if t.unit in units or
+                                         t.unit is None]
+            if sp:
+                spikes[s] = sp
 
         nonespikes = []
         for u in self.units():
@@ -400,9 +407,12 @@ class NeoDataProvider(DataProvider):
         """
         ret = OrderedDict()
         for s in self.segments():
-            ret[s] = s.events
+            if s.events:
+                ret[s] = s.events
             if include_array_events:
                 for a in s.eventarrays:
+                    if s not in ret:
+                        ret[s] = []
                     ret[s].extend(convert.event_array_to_events(a))
         return ret
 
@@ -412,9 +422,13 @@ class NeoDataProvider(DataProvider):
         """
         ret = OrderedDict()
         for s in self.segments():
-            ret[s] = [e for e in s.events if e.label == label]
+            events = [e for e in s.events if e.label == label]
+            if events:
+                ret[s] = events
             if include_array_events:
                 for a in s.eventarrays:
+                    if s not in ret:
+                        ret[s] = []
                     events = convert.event_array_to_events(a)
                     ret[s].extend((e for e in events if e.label == label))
         return ret
@@ -425,7 +439,8 @@ class NeoDataProvider(DataProvider):
         """
         ret = OrderedDict()
         for s in self.segments():
-            ret[s] = s.eventarrays
+            if s.eventarrays:
+                ret[s] = s.eventarrays
         return ret
 
     def epochs(self, include_array_epochs = True):
@@ -434,9 +449,12 @@ class NeoDataProvider(DataProvider):
         """
         ret = OrderedDict()
         for s in self.segments():
-            ret[s] = s.epochs
+            if s.epochs:
+                ret[s] = s.epochs
             if include_array_epochs:
                 for a in s.epocharrays:
+                    if s not in ret:
+                        ret[s] = []
                     ret[s].extend(convert.epoch_array_to_epochs(a))
         return ret
 
@@ -446,9 +464,13 @@ class NeoDataProvider(DataProvider):
         """
         ret = OrderedDict()
         for s in self.segments():
-            ret[s] = [e for e in s.epochs if e.label == label]
+            epochs = [e for e in s.epochs if e.label == label]
+            if epochs:
+                ret[s] = epochs
             if include_array_epochs:
                 for a in s.epocharrays:
+                    if s not in ret:
+                        ret[s] = []
                     epochs = convert.epoch_array_to_epochs(a)
                     ret[s].extend((e for e in epochs if e.label == label))
         return ret
@@ -459,7 +481,8 @@ class NeoDataProvider(DataProvider):
         """
         ret = OrderedDict()
         for s in self.segments():
-            ret[s] = s.epocharrays
+            if s.epocharrays:
+                ret[s] = s.epocharrays
         return ret
 
     def num_analog_signals(self):
@@ -488,9 +511,11 @@ class NeoDataProvider(DataProvider):
         signals = OrderedDict()
         channels = self.recording_channels()
         for s in self.segments():
-            signals[s] = [t for t in s.analogsignals
-                          if t.recordingchannel in channels or
-                             t.recordingchannel is None]
+            sig = [t for t in s.analogsignals
+                   if t.recordingchannel in channels or
+                      t.recordingchannel is None]
+            if sig:
+                signals[s] = sig
 
         nonesignals = []
         for c in channels:
@@ -508,9 +533,11 @@ class NeoDataProvider(DataProvider):
         signals = OrderedDict()
         segments = self.segments()
         for c in self.recording_channels():
-            signals[c] = [t for t in c.analogsignals
-                          if t.segment in segments or
-                             t.segment is None]
+            sig = [t for t in c.analogsignals
+                   if t.segment in segments or
+                      t.segment is None]
+            if sig:
+                signals[c] = sig
 
         nonesignals = []
         for s in segments:
@@ -578,8 +605,10 @@ class NeoDataProvider(DataProvider):
         signals = OrderedDict()
         channelgroups = self.recording_channel_groups()
         for s in self.segments():
-            signals[s] = [t for t in s.analogsignalarrays
-                          if t.recordingchannelgroup in channelgroups]
+            sa = [t for t in s.analogsignalarrays
+                  if t.recordingchannelgroup in channelgroups]
+            if sa:
+                signals[s] = sa
 
         nonesignals = []
         for c in channelgroups:
@@ -597,8 +626,10 @@ class NeoDataProvider(DataProvider):
         signals = OrderedDict()
         segments = self.segments()
         for c in self.recording_channel_groups():
-            signals[c] = [t for t in c.analogsignalarrays
-                          if t.segment in segments]
+            sa = [t for t in c.analogsignalarrays
+                  if t.segment in segments]
+            if sa:
+                signals[c] = sa
 
         nonesignals = []
         for s in segments:
