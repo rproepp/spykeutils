@@ -19,8 +19,6 @@ import sys, os
 sys.path.insert(0, os.path.abspath(
     os.path.join(os.pardir,os.pardir)))
 
-import spykeutils
-
 # -- Mocking modules for Read the Docs compatibility ---------------------------
 try:
     import neo
@@ -56,6 +54,8 @@ except ImportError:
         pass
     sys.modules['guiqwt.tools'].CommandTool = CommandTool
     sys.modules['guiqwt.tools'].InteractiveTool = InteractiveTool
+
+import spykeutils
 
 # -- General configuration -----------------------------------------------------
 

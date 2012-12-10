@@ -485,96 +485,158 @@ class NeoDataProvider(DataProvider):
                 ret[s] = s.epocharrays
         return ret
 
-    def num_analog_signals(self):
+    def num_analog_signals(self, mode=1):
         """ Return the number of AnalogSignal objects.
         """
-        return len(self.analog_signals())
+        return len(self.analog_signals(mode))
 
-    def analog_signals(self):
+    def analog_signals(self, mode=1):
         """ Return a list of AnalogSignal objects.
         """
         signals = []
         channels = self.recording_channels()
-        for s in self.segments():
-            signals.extend([t for t in s.analogsignals
-                           if t.recordingchannel in channels or
-                              t.recordingchannel is None])
-        for u in self.recording_channels():
-            signals.extend([t for t in u.analogsignals if t.segment is None])
+
+        if mode == 1 or mode == 3:
+            for s in self.segments():
+                signals.extend([t for t in s.analogsignals
+                               if t.recordingchannel in channels or
+                                  t.recordingchannel is None])
+            for u in self.recording_channels():
+                signals.extend([t for t in u.analogsignals
+                                if t.segment is None])
+        if mode > 1:
+            for sa in self.analog_signal_arrays():
+                for sig in convert.analog_signal_array_to_analog_signals(sa):
+                    if sig.recordingchannel is None or \
+                        sig.recordingchannel in channels:
+                        signals.append(sig)
 
         return signals
 
-    def analog_signals_by_segment(self):
+    def analog_signals_by_segment(self, mode=1):
         """ Return a dictionary (indexed by Segment) of lists of
         AnalogSignal objects.
         """
         signals = OrderedDict()
         channels = self.recording_channels()
-        for s in self.segments():
-            sig = [t for t in s.analogsignals
-                   if t.recordingchannel in channels or
-                      t.recordingchannel is None]
-            if sig:
-                signals[s] = sig
 
-        nonesignals = []
-        for c in channels:
-            nonesignals.extend([t for t in c.analogsignals
-                                if t.segment is None])
-        if nonesignals:
-            signals[self.no_segment] = nonesignals
+        if mode == 1 or mode == 3:
+            for s in self.segments():
+                sig = [t for t in s.analogsignals
+                       if t.recordingchannel in channels or
+                          t.recordingchannel is None]
+                if sig:
+                    signals[s] = sig
+
+            nonesignals = []
+            for c in channels:
+                nonesignals.extend([t for t in c.analogsignals
+                                    if t.segment is None])
+            if nonesignals:
+                signals[self.no_segment] = nonesignals
+
+        if mode > 1:
+            for o, sa_list in \
+                self.analog_signal_arrays_by_segment().iteritems():
+                for sa in sa_list:
+                    for sig in \
+                        convert.analog_signal_array_to_analog_signals(sa):
+                        if sig.recordingchannel is None or \
+                            sig.recordingchannel in channels:
+                            if o not in signals:
+                                signals[o] = []
+                            signals[o].append(sig)
 
         return signals
 
-    def analog_signals_by_channel(self):
+    def analog_signals_by_channel(self, mode=1):
         """ Return a dictionary (indexed by RecordingChannel) of lists
         of AnalogSignal objects.
         """
         signals = OrderedDict()
-        segments = self.segments()
-        for c in self.recording_channels():
-            sig = [t for t in c.analogsignals
-                   if t.segment in segments or
-                      t.segment is None]
-            if sig:
-                signals[c] = sig
+        channels = self.recording_channels()
 
-        nonesignals = []
-        for s in segments:
-            nonesignals.extend([t for t in s.analogsignals
-                                if t.recordingchannel is None])
-        if nonesignals:
-            signals[self.no_segment] = nonesignals
+        if mode == 1 or mode == 3:
+            segments = self.segments()
+            for c in channels:
+                sig = [t for t in c.analogsignals
+                       if t.segment in segments or
+                          t.segment is None]
+                if sig:
+                    signals[c] = sig
+
+            nonesignals = []
+            for s in segments:
+                nonesignals.extend([t for t in s.analogsignals
+                                    if t.recordingchannel is None])
+            if nonesignals:
+                signals[self.no_channel] = nonesignals
+
+        if mode > 1:
+            for o, sa_list in \
+                self.analog_signal_arrays_by_channelgroup().iteritems():
+                for sa in sa_list:
+                    for sig in \
+                        convert.analog_signal_array_to_analog_signals(sa):
+                        if sig.recordingchannel is None:
+                            if self.no_channel not in signals:
+                                signals[self.no_channel] = [sig]
+                            else:
+                                signals[self.no_channel].append(sig)
+                        elif sig.recordingchannel in channels:
+                            if sig.recordingchannel not in signals:
+                                signals[sig.recordingchannel] = [sig]
+                            else:
+                                signals[sig.recordingchannel].append(sig)
 
         return signals
 
-    def analog_signals_by_channel_and_segment(self):
+    def analog_signals_by_channel_and_segment(self, mode=1):
         """ Return a dictionary (indexed by RecordingChannel) of
         dictionaries (indexed by Segment) of AnalogSignal lists.
         """
         signals = OrderedDict()
-        segments = self.segments()
-        for c in self.recording_channels():
-            for s in segments:
-                segsignals = [t for t in c.analogsignals if t.segment == s]
-                if segsignals:
+        channels = self.recording_channels()
+
+        if mode == 1 or mode == 3:
+            segments = self.segments()
+            for c in channels:
+                for s in segments:
+                    segsignals = [t for t in c.analogsignals if t.segment == s]
+                    if segsignals:
+                        if c not in signals:
+                            signals[c] = OrderedDict()
+                        signals[c][s] = segsignals
+                nonesignals = [t for t in c.analogsignals if t.segment is None]
+                if nonesignals:
                     if c not in signals:
                         signals[c] = OrderedDict()
-                    signals[c][s] = segsignals
-            nonesignals = [t for t in c.analogsignals if t.segment is None]
-            if nonesignals:
-                if c not in signals:
-                    signals[c] = OrderedDict()
-                signals[c][self.no_segment] = nonesignals
+                    signals[c][self.no_segment] = nonesignals
 
-        nonesignals = OrderedDict()
-        for s in self.segments():
-            segsignals = [t for t in s.analogsignals
-                          if t.recordingchannel is None]
-            if segsignals:
-                nonesignals[s] = segsignals
-        if nonesignals:
-            signals[self.no_channel] = nonesignals
+            nonesignals = OrderedDict()
+            for s in self.segments():
+                segsignals = [t for t in s.analogsignals
+                              if t.recordingchannel is None]
+                if segsignals:
+                    nonesignals[s] = segsignals
+            if nonesignals:
+                signals[self.no_channel] = nonesignals
+
+        if mode > 1:
+            for cg, inner in self.analog_signal_arrays_by_channelgroup_and_segment().iteritems():
+                for seg, sa_list in inner.iteritems():
+                    for sa in sa_list:
+                        for sig in \
+                            convert.analog_signal_array_to_analog_signals(sa):
+                            chan = sig.recordingchannel
+                            if chan not in channels:
+                                continue
+                            if chan not in signals:
+                                signals[chan] = OrderedDict()
+                            if seg not in signals[chan]:
+                                signals[chan][seg] = []
+                            signals[chan][seg].append(sig)
+
 
         return signals
 
@@ -642,7 +704,7 @@ class NeoDataProvider(DataProvider):
 
     def analog_signal_arrays_by_channelgroup_and_segment(self):
         """ Return a dictionary (indexed by RecordingChannelGroup) of
-        dictionaries (indexed by Segment) of AnalogSignalArray objects.
+        dictionaries (indexed by Segment) of AnalogSignalArray lists.
         """
         signals = OrderedDict()
         segments = self.segments()
@@ -653,20 +715,20 @@ class NeoDataProvider(DataProvider):
                 if segsignals:
                     if c not in signals:
                         signals[c] = OrderedDict()
-                    signals[c][s] = segsignals[0]
+                    signals[c][s] = segsignals
             nonesignals = [t for t in c.analogsignalarrays
                            if t.segment is None]
             if nonesignals:
                 if c not in signals:
                     signals[c] = OrderedDict()
-                signals[c][self.no_segment] = nonesignals[0]
+                signals[c][self.no_segment] = nonesignals
 
         nonesignals = OrderedDict()
         for s in self.segments():
             segsignals = [t for t in s.analogsignalarrays
                           if t.recordingchannelgroup is None]
             if segsignals:
-                nonesignals[s] = segsignals[0]
+                nonesignals[s] = segsignals
         if nonesignals:
             signals[self.no_channelgroup] = nonesignals
 

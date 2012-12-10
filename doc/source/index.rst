@@ -15,6 +15,7 @@ Contents:
    intro
    examples
    apidoc/spykeutils
+   CHANGELOG
 
 Indices and tables
 ==================

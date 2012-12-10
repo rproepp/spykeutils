@@ -241,35 +241,59 @@ class DataProvider(object):
         """
         return {}
 
-    def num_analog_signals(self):
+    def num_analog_signals(self, conversion_mode=1):
         """ Return the number of AnalogSignal objects.
+
+        :param int conversion_mode: Determines what signals are included:
+
+            1. AnalogSignal objects only
+            2. AnalogSignal objects extracted from AnalogSignalArrays only
+            3. Both AnalogSignal objects and extracted AnalogSignalArrays
         """
         return 0
 
-    def analog_signals(self):
+    def analog_signals(self, conversion_mode=1):
         """ Return a list of AnalogSignal objects.
+
+        :param int conversion_mode: Determines what signals are returned:
+
+            1. AnalogSignal objects only
+            2. AnalogSignal objects extracted from AnalogSignalArrays only
+            3. Both AnalogSignal objects and extracted AnalogSignalArrays
         """
         return []
 
-    def analog_signals_by_segment(self):
+    def analog_signals_by_segment(self, conversion_mode=1):
         """ Return a dictionary (indexed by Segment) of lists of
         AnalogSignal objects.
 
         If analog signals not attached to a Segment are selected, their
         dictionary key will be ``DataProvider.no_segment``.
+
+        :param int conversion_mode: Determines what signals are returned:
+
+            1. AnalogSignal objects only
+            2. AnalogSignal objects extracted from AnalogSignalArrays only
+            3. Both AnalogSignal objects and extracted AnalogSignalArrays
         """
         return {}
 
-    def analog_signals_by_channel(self):
+    def analog_signals_by_channel(self, conversion_mode=1):
         """ Return a dictionary (indexed by RecordingChannel) of lists
         of AnalogSignal objects.
 
         If analog signals not attached to a RecordingChannel are selected,
         their dictionary key will be ``DataProvider.no_channel``.
+
+        :param int conversion_mode: Determines what signals are returned:
+
+            1. AnalogSignal objects only
+            2. AnalogSignal objects extracted from AnalogSignalArrays only
+            3. Both AnalogSignal objects and extracted AnalogSignalArrays
         """
         return {}
 
-    def analog_signals_by_channel_and_segment(self):
+    def analog_signals_by_channel_and_segment(self, conversion_mode=1):
         """ Return a dictionary (indexed by RecordingChannel) of
         dictionaries (indexed by Segment) of AnalogSignal lists.
 
@@ -277,10 +301,16 @@ class DataProvider(object):
         RecordingChannel are selected, their dictionary key will be
         ``DataProvider.no_segment`` or ``DataProvider.no_channel``,
         respectively.
+
+        :param int conversion_mode: Determines what signals are returned:
+
+            1. AnalogSignal objects only
+            2. AnalogSignal objects extracted from AnalogSignalArrays only
+            3. Both AnalogSignal objects and extracted AnalogSignalArrays
         """
         return {}
 
-    def analog_signals_by_segment_and_channel(self):
+    def analog_signals_by_segment_and_channel(self, conversion_mode=1):
         """ Return a dictionary (indexed by Segment) of
         dictionaries (indexed by RecordingChannel) of AnalogSignal lists.
 
@@ -288,9 +318,15 @@ class DataProvider(object):
         RecordingChannel are selected, their dictionary key will be
         ``DataProvider.no_segment`` or ``DataProvider.no_channel``,
         respectively.
+
+        :param int conversion_mode: Determines what signals are returned:
+
+            1. AnalogSignal objects only
+            2. AnalogSignal objects extracted from AnalogSignalArrays only
+            3. Both AnalogSignal objects and extracted AnalogSignalArrays
         """
         return self._invert_indices(
-            self.analog_signals_by_channel_and_segment())
+            self.analog_signals_by_channel_and_segment(conversion_mode))
 
     def num_analog_signal_arrays(self):
         """ Return the number of AnalogSignalArray objects.
