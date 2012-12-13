@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 
 import sys
+import os
 import argparse
 import inspect
 import json
@@ -26,6 +27,7 @@ def main():
     parser.add_argument('-sf', '--selectionfile', dest='selectionfile',
         action='store_const', const=True, default=False,
         help='Selection represents a filename containing the serialized selection (default: Selection is a string')
+    parser.add_argument('-dd', '--datadir', type=str, help='The data directory')
 
     args = parser.parse_args()
 
@@ -77,6 +79,8 @@ def main():
     for s in sels:
         selections.append(DataProvider.from_data(s))
 
+    if args.datadir and os.path.isdir(args.datadir):
+        AnalysisPlugin.data_dir = args.datadir
     plugin.start(selections[0], selections[1:])
 
 if __name__ == '__main__':

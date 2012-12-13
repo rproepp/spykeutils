@@ -31,7 +31,7 @@ if __name__ == "__main__":
         name="spykeutils",
         version=find_version(),
         packages=find_packages(),
-        install_requires=['scipy', 'quantities', 'neo>=0.2.1'],
+        install_requires=['scipy', 'quantities', 'neo>=0.2.1,<0.3.0'],
         extras_require = {
             'plot':  ['guiqwt'],
             'plugin': ['tables']
