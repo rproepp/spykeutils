@@ -49,5 +49,5 @@ def gen_homogeneous_poisson(rate, t_start = 0 * pq.s, t_stop = None,
 
     if t_stop == None:
         t_stop = spike_times[-1]
-    return neo.SpikeTrain(spike_times, t_start, t_stop)
+    return neo.SpikeTrain(spike_times, t_start=t_start, t_stop=t_stop)
 
