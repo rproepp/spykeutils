@@ -1,3 +1,9 @@
+spykeutils (0.2.0+git8-g4c21317-1) UNRELEASED; urgency=low
+
+  * Initial public release
+
+ -- Robert Pröpper <robert.proepper@gmail.com>  Fri, 04 Jan 2013 17:47:09 +0100
+
 spykeutils (0.1.0+git8-g4c21317-1) unstable; urgency=low
 
   * Initial release (Closes: #687726).
