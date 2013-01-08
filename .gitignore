@@ -1,2 +1,4 @@
 *.pyc
+.ropeproject
 doc/build
+spykeutils.egg-info

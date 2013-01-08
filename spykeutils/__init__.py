@@ -29,6 +29,13 @@
     :members:
     :exclude-members: binned_spike_trains, psth, spike_density_estimation
 
+:mod:`spike_train_generation` Module
+------------------------------------
+
+.. automodule:: spykeutils.spike_train_generation
+    :members:
+    :undoc-members:
+
 :mod:`sorting_quality_assesment` Module
 ---------------------------------------
 
