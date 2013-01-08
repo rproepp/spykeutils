@@ -48,3 +48,35 @@ def gen_homogeneous_poisson(
     if t_stop is None:
         t_stop = spike_times[-1]
     return neo.SpikeTrain(spike_times, t_start=t_start, t_stop=t_stop)
+
+
+def gen_inhomogeneous_poisson(
+        modulation, max_rate, t_start=0 * pq.s, t_stop=None, max_spikes=None):
+    """ Generate an inhomogeneous Poisson spike train. The length is controlled
+    with `t_stop` and `max_spikes`. Either one or both of these arguments have
+    to be given.
+
+    :param function modulation: Function :math:`f((t_1, \\dots, t_n)):
+        [\\text{t\\_start}, \\text{t\\_end}]^n \\rightarrow [0, 1]^n` giving
+        the instantaneous firing rates at times :math:`(t_1, \\dots, t_n)` as
+        proportion of `max_rate`. Thus, a 1-D array will be passed to the
+        function and it should return an array of the same size.
+    :param max_rate: Maximum firing rate of the spike train to generate.
+    :type max_rate: Quantity scalar
+    :param t_start: Time at which the spike train begins. The first actual spike
+        will be greater than this time.
+    :type t_start: Quantity scalar
+    :param t_stop: Time at which the spike train ends. All generated spikes will
+        be lower or equal than this time. If set to None, the number of
+        generated spikes is controlled by `max_spikes` and `t_stop` will be
+        equal to the last generated spike.
+    :type t_stop: Quantity scalar
+    :param max_spikes: Maximum number of spikes to generate. Fewer spikes might
+        be generated.
+
+    :returns: The generated spike train.
+    :rtype: SpikeTrain
+    """
+
+    st = gen_homogeneous_poisson(max_rate, t_start, t_stop, max_spikes)
+    return st[numpy.random.rand(st.size) < modulation(st)]
