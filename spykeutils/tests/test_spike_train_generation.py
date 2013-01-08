@@ -7,7 +7,6 @@ except ImportError:
 import scipy as sp
 import quantities as pq
 import neo
-#from neo.test.tools import assert_arrays_equal
 import spykeutils.spike_train_generation as stg
 
 
