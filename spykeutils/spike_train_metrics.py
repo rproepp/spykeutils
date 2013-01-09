@@ -77,7 +77,10 @@ def van_rossum_dist(trains, tau=1.0 * pq.s):
     It is defined as Euclidean distance of the spike trains convolved with a
     causal decaying exponential function. A detailed description can be found in
     *Rossum, M. C. W. (2001). A novel spike distance. Neural Computation,
-    13(4), 751-763.*
+    13(4), 751-763.* This implementation is normalized to yield a distance of
+    1.0 for the distance between an empty spike train and a spike train with a
+    single spike. Divide the result by sqrt(2.0) to get the normalization used
+    in the cited paper.
 
     Given :math:`N` spike trains with :math:`n` spikes on average the run-time
     complexity of this function is :math:`O(N^2 n)` and :math:`O(N^2 + Nn^2)`
@@ -116,7 +119,7 @@ def van_rossum_dist(trains, tau=1.0 * pq.s):
     # Same spike train terms
     D = sp.zeros((len(trains), len(trains)))
     for u in xrange(D.shape[0]):
-        summand = markage[u].size + 2.0 * sp.sum(markage[u])
+        summand = markage[u].size / 2.0 + sp.sum(markage[u])
         D[u, :] += summand
         D[:, u] += summand
 
@@ -127,10 +130,10 @@ def van_rossum_dist(trains, tau=1.0 * pq.s):
             start_j = sp.searchsorted(js, 0)
             start_k = sp.searchsorted(ks, 0)
             for i, j in enumerate(js[start_j:], start_j):
-                D[u, v] -= (2.0 * inv_exp_trains[u][i] * exp_trains[v][j] *
+                D[u, v] -= (inv_exp_trains[u][i] * exp_trains[v][j] *
                             (1.0 + markage[v][j]))
             for i, k in enumerate(ks[start_k:], start_k):
-                D[u, v] -= (2.0 * inv_exp_trains[v][i] * exp_trains[u][k] *
+                D[u, v] -= (inv_exp_trains[v][i] * exp_trains[u][k] *
                             (1.0 + markage[u][k]))
             D[v, u] = D[u, v]
 
