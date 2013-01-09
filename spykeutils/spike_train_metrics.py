@@ -119,7 +119,7 @@ def van_rossum_dist(trains, tau=1.0 * pq.s):
     # Same spike train terms
     D = sp.zeros((len(trains), len(trains)))
     for u in xrange(D.shape[0]):
-        summand = markage[u].size / 2.0 + sp.sum(markage[u])
+        summand = markage[u].size + 2.0 * sp.sum(markage[u])
         D[u, :] += summand
         D[:, u] += summand
 
@@ -130,10 +130,10 @@ def van_rossum_dist(trains, tau=1.0 * pq.s):
             start_j = sp.searchsorted(js, 0)
             start_k = sp.searchsorted(ks, 0)
             for i, j in enumerate(js[start_j:], start_j):
-                D[u, v] -= (inv_exp_trains[u][i] * exp_trains[v][j] *
+                D[u, v] -= (2.0 * inv_exp_trains[u][i] * exp_trains[v][j] *
                             (1.0 + markage[v][j]))
             for i, k in enumerate(ks[start_k:], start_k):
-                D[u, v] -= (inv_exp_trains[v][i] * exp_trains[u][k] *
+                D[u, v] -= (2.0 * inv_exp_trains[v][i] * exp_trains[u][k] *
                             (1.0 + markage[u][k]))
             D[v, u] = D[u, v]
 

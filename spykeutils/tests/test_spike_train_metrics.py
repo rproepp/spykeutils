@@ -111,11 +111,11 @@ class Test_van_rossum_dist(ut.TestCase, CommonMetricTestCases):
         b = neo.SpikeTrain(
             sp.array([2.0, 4.0, 7.0, 10.0]) * pq.s,  t_stop=12.0 * pq.s)
         c = neo.SpikeTrain(sp.array([3.0, 4.0]) * pq.s, t_stop=12.0 * pq.s)
-        tau = 2.0 * pq.s
+        tau = 3.0 * pq.s
         expected = sp.array([
-            [0.0, 2.02753412, 2.71301667],
-            [2.02753412, 0.0, 1.76151496],
-            [2.71301667, 1.76151496, 0.0]])
+            [0.0, 1.895846644204, 2.878796160479],
+            [1.895846644204, 0.0, 1.760192079676],
+            [2.878796160479, 1.760192079676, 0.0]])
         actual = stm.van_rossum_dist((a, b, c), tau)
         self.assertTrue(sp.all(sp.absolute(expected - actual) < 1e-7))
 
