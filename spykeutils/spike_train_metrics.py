@@ -107,6 +107,8 @@ def van_rossum_dist(trains, tau=1.0 * pq.s):
 
     markage = [sp.empty(st.size) for st in trains]
     for u in xrange(len(markage)):
+        if markage[u].size <= 0:
+            continue
         markage[u][0] = 0
         for i in xrange(1, markage[u].size):
             markage[u][i] = (markage[u][i - 1] + 1.0) * exp_diffs[u][i - 1, i]
@@ -132,7 +134,7 @@ def van_rossum_dist(trains, tau=1.0 * pq.s):
                             (1.0 + markage[u][k]))
             D[v, u] = D[u, v]
 
-    return D
+    return sp.sqrt(D)
 
 
 def _searchsorted_pairwise(a, b):
