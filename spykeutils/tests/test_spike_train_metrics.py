@@ -128,21 +128,21 @@ class Test_searchsorted_pairwise(ut.TestCase):
         a = [1, 3, 5, 8, 9, 11]
         b = [2, 4, 6, 7, 10]
         expected = ([-1, 0, 1, 3, 3, 4], [0, 1, 2, 2, 4])
-        actual = stm.searchsorted_pairwise(a, b)
+        actual = stm._searchsorted_pairwise(a, b)
         self.assert_array_tuple_equal(expected, actual)
 
     def test_works_with_array(self):
         a = sp.array([1, 3, 5, 8, 9, 11])
         b = sp.array([2, 4, 6, 7, 10])
         expected = ([-1, 0, 1, 3, 3, 4], [0, 1, 2, 2, 4])
-        actual = stm.searchsorted_pairwise(a, b)
+        actual = stm._searchsorted_pairwise(a, b)
         self.assert_array_tuple_equal(expected, actual)
 
     def test_equal_items_in_second_list_are_considered_smaller(self):
         a = [1, 3, 4]
         b = [2, 3]
         expected = ([-1, 1, 1], [0, 0])
-        actual = stm.searchsorted_pairwise(a, b)
+        actual = stm._searchsorted_pairwise(a, b)
         self.assert_array_tuple_equal(expected, actual)
 
     def test_works_with_one_list_empty(self):
@@ -150,17 +150,17 @@ class Test_searchsorted_pairwise(ut.TestCase):
         b = [1, 2, 3]
 
         expected = ([], [-1, -1, -1])
-        actual = stm.searchsorted_pairwise(a, b)
+        actual = stm._searchsorted_pairwise(a, b)
         self.assert_array_tuple_equal(expected, actual)
 
         expected = ([-1, -1, -1], [])
-        actual = stm.searchsorted_pairwise(b, a)
+        actual = stm._searchsorted_pairwise(b, a)
         self.assert_array_tuple_equal(expected, actual)
 
     def test_returns_empty_lists_if_both_lists_are_empty(self):
         self.assert_array_tuple_equal(
             ([], []),
-            stm.searchsorted_pairwise([], []))
+            stm._searchsorted_pairwise([], []))
 
 
 if __name__ == '__main__':

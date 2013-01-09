@@ -121,7 +121,7 @@ def van_rossum_dist(trains, tau=1.0 * pq.s):
     # Cross spike train terms
     for u in xrange(D.shape[0]):
         for v in xrange(u, D.shape[1]):
-            js, ks = searchsorted_pairwise(trains[u], trains[v])
+            js, ks = _searchsorted_pairwise(trains[u], trains[v])
             start_j = sp.searchsorted(js, 0)
             start_k = sp.searchsorted(ks, 0)
             for i, j in enumerate(js[start_j:], start_j):
@@ -135,7 +135,20 @@ def van_rossum_dist(trains, tau=1.0 * pq.s):
     return D
 
 
-def searchsorted_pairwise(a, b):
+def _searchsorted_pairwise(a, b):
+    """ Find indices for both of the two sequences where elements from one
+    sequence should be inserted into the other sequence to maintain order.
+
+    If values in `a` and `b` are equal, the values in `b` will always be
+    considered as smaller.
+
+    :param sequence a: A sorted sequence.
+    :param sequence b: A sorted sequence.
+    :returns: The indices for insertion of `a` into `b` and for insertion of `b`
+        into `a`
+    :rtype: Tuple of arrays.
+    """
+
     idx_a = sp.empty(len(a))
     idx_b = sp.empty(len(b))
     i = j = 0
