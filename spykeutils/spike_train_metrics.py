@@ -109,15 +109,12 @@ def searchsorted_pairwise(a, b):
     idx_b = sp.empty(len(b))
     i = j = 0
     while i < len(a) and j < len(b):
-        i_inc = j_inc = 0
         if a[i] < b[j]:
             idx_a[i] = j - 1
-            i_inc = 1
+            i += 1
         elif a[i] >= b[j]:
             idx_b[j] = i - 1
-            j_inc = 1
-        i += i_inc
-        j += j_inc
+            j += 1
     idx_a[i:] = j - 1
     idx_b[j:] = i - 1
     return idx_a, idx_b
