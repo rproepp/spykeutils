@@ -34,6 +34,10 @@ class CommonMetricTestCases(object):
             sp.array([1, 2, 3]) * pq.s, t_start=0 * pq.s, t_stop=4 * pq.s)
         self.assertAlmostEqual(0, self.calc_metric(st, st.copy()))
 
+    def test_works_with_empty_spike_trains(self):
+        st = neo.SpikeTrain(sp.array([]) * pq.s, t_stop=2.0 * pq.s)
+        self.assertAlmostEqual(0, self.calc_metric(st, st.copy()))
+
     def test_is_symmetric(self):
         a = neo.SpikeTrain(sp.array([
             1.1844519,  1.57346687,  2.52261998,  3.65824785,  5.38988771,
