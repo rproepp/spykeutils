@@ -68,3 +68,56 @@ def victor_purpura_dist(a, b, q=1.0 * pq.s ** -1):
                     a[num_spikes_processed] - b[num_spikes_processed + j]))
 
     return cost_a[-cost_b.size]
+
+
+def van_rossum_dist(trains, tau=1.0 * pq.s):
+    exp_trains = [sp.exp(st / tau) for st in trains]
+    inv_exp_trains = [1.0 / st for st in exp_trains]
+    exp_diffs = [sp.outer(exp_train, inv_exp_train) for
+                 exp_train, inv_exp_train in zip(exp_trains, inv_exp_trains)]
+
+    markage = [sp.empty(st.size) for st in trains]
+    for u in xrange(len(markage)):
+        markage[u][0] = 0
+        for i in xrange(1, markage[u].size):
+            markage[u][i] = (markage[u][i - 1] + 1.0) * exp_diffs[u][i - 1, i]
+
+    D = sp.zeros((len(trains), len(trains)))
+    for u in xrange(D.shape[0]):
+        summand = markage[u].size + 2.0 * sp.sum(markage[u])
+        D[u, :] += summand
+        D[:, u] += summand
+
+    for u in xrange(D.shape[0]):
+        for v in xrange(u, D.shape[1]):
+            js, ks = pairwise_max_idx_of_smaller_item(trains[u], trains[v])
+            start_j = sp.searchsorted(js, 0)
+            start_k = sp.searchsorted(ks, 0)
+            for i, j in enumerate(js[start_j:], start_j):
+                D[u, v] -= (2.0 * inv_exp_trains[u][i] * exp_trains[v][j] *
+                            (1.0 + markage[v][j]))
+            for i, k in enumerate(ks[start_k:], start_k):
+                D[u, v] -= (2.0 * inv_exp_trains[v][i] * exp_trains[u][k] *
+                            (1.0 + markage[u][k]))
+            D[v, u] = D[u, v]
+
+    return D
+
+
+def pairwise_max_idx_of_smaller_item(a, b):
+    idx_a = sp.empty(len(a))
+    idx_b = sp.empty(len(b))
+    i = j = 0
+    while i < len(a) and j < len(b):
+        i_inc = j_inc = 0
+        if a[i] < b[j]:
+            idx_a[i] = j - 1
+            i_inc = 1
+        elif a[i] >= b[j]:
+            idx_b[j] = i - 1
+            j_inc = 1
+        i += i_inc
+        j += j_inc
+    idx_a[i:] = j - 1
+    idx_b[j:] = i - 1
+    return idx_a, idx_b
