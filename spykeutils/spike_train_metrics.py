@@ -29,6 +29,7 @@ def victor_purpura_dist(a, b, q=1.0 * pq.s ** -1):
     :type q: Quantity scalar
     :rtype: float
     """
+
     if a.size <= 0 or b.size <= 0:
         return max(a.size, b.size)
 
@@ -71,6 +72,34 @@ def victor_purpura_dist(a, b, q=1.0 * pq.s ** -1):
 
 
 def van_rossum_dist(trains, tau=1.0 * pq.s):
+    """ Calculates the van Rossum distance.
+
+    It is defined as Euclidean distance of the spike trains convolved with a
+    causal decaying exponential function. A detailed description can be found in
+    *Rossum, M. C. W. (2001). A novel spike distance. Neural Computation,
+    13(4), 751-763.*
+
+    Given :math:`N` spike trains with :math:`n` spikes on average the run-time
+    complexity of this function is :math:`O(N^2 n)` and :math:`O(N^2 + Nn^2)`
+    memory will be needed.
+
+    :param sequence trains: SpikeTrains of which the van Rossum distance will be
+        calculated pairwise.
+    :param tau: Decay rate of the exponential function. Controls for which time
+        scale the metric will be sensitive.
+    :type tau: Quantity scalar
+    :returns: Matrix containing the van Rossum distances for all pairs of spike
+        trains.
+    :rtype: 2-D array
+    """
+
+    # The implementation is based on
+    #
+    # Houghton, C., & Kreuz, T. (2012). On the efficient calculation of van
+    # Rossum distances. Network: Computation in Neural Systems, 23(1-2), 48-58.
+    #
+    # Note that the cited paper contains some errors.
+
     exp_trains = [sp.exp(st / tau) for st in trains]
     inv_exp_trains = [1.0 / st for st in exp_trains]
     exp_diffs = [sp.outer(exp_train, inv_exp_train) for
@@ -82,12 +111,14 @@ def van_rossum_dist(trains, tau=1.0 * pq.s):
         for i in xrange(1, markage[u].size):
             markage[u][i] = (markage[u][i - 1] + 1.0) * exp_diffs[u][i - 1, i]
 
+    # Same spike train terms
     D = sp.zeros((len(trains), len(trains)))
     for u in xrange(D.shape[0]):
         summand = markage[u].size + 2.0 * sp.sum(markage[u])
         D[u, :] += summand
         D[:, u] += summand
 
+    # Cross spike train terms
     for u in xrange(D.shape[0]):
         for v in xrange(u, D.shape[1]):
             js, ks = searchsorted_pairwise(trains[u], trains[v])
