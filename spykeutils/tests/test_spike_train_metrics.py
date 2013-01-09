@@ -100,6 +100,21 @@ class Test_van_rossum_dist(ut.TestCase, CommonMetricTestCases):
     def calc_metric(self, a, b):
         return stm.van_rossum_dist((a, b))[0, 1]
 
+    def test_return_correct_distance(self):
+        a = neo.SpikeTrain(
+            sp.array([1.0, 4.0, 5.0, 6.0, 9.0, 11.0]) * pq.s,
+            t_stop=12.0 * pq.s)
+        b = neo.SpikeTrain(
+            sp.array([2.0, 4.0, 7.0, 10.0]) * pq.s,  t_stop=12.0 * pq.s)
+        c = neo.SpikeTrain(sp.array([3.0, 4.0]) * pq.s, t_stop=12.0 * pq.s)
+        tau = 2.0 * pq.s
+        expected = sp.array([
+            [0.0, 4.110894604256, 7.360459458523],
+            [4.110894604256, 0.0, 3.102934942579],
+            [7.360459458523, 3.102934942579, 0.0]])
+        actual = stm.van_rossum_dist((a, b, c), tau)
+        self.assertTrue(sp.all(sp.absolute(expected - actual) < 1e-7))
+
 
 class Test_pairwise_max_idx_of_smaller_item(ut.TestCase):
     def assert_array_tuple_equal(self, expected, actual):
