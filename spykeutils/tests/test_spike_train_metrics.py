@@ -116,7 +116,7 @@ class Test_van_rossum_dist(ut.TestCase, CommonMetricTestCases):
         self.assertTrue(sp.all(sp.absolute(expected - actual) < 1e-7))
 
 
-class Test_pairwise_max_idx_of_smaller_item(ut.TestCase):
+class Test_searchsorted_pairwise(ut.TestCase):
     def assert_array_tuple_equal(self, expected, actual):
         self.assertEqual(len(expected), len(actual))
         for e, a in zip(expected, actual):
@@ -128,21 +128,21 @@ class Test_pairwise_max_idx_of_smaller_item(ut.TestCase):
         a = [1, 3, 5, 8, 9, 11]
         b = [2, 4, 6, 7, 10]
         expected = ([-1, 0, 1, 3, 3, 4], [0, 1, 2, 2, 4])
-        actual = stm.pairwise_max_idx_of_smaller_item(a, b)
+        actual = stm.searchsorted_pairwise(a, b)
         self.assert_array_tuple_equal(expected, actual)
 
     def test_works_with_array(self):
         a = sp.array([1, 3, 5, 8, 9, 11])
         b = sp.array([2, 4, 6, 7, 10])
         expected = ([-1, 0, 1, 3, 3, 4], [0, 1, 2, 2, 4])
-        actual = stm.pairwise_max_idx_of_smaller_item(a, b)
+        actual = stm.searchsorted_pairwise(a, b)
         self.assert_array_tuple_equal(expected, actual)
 
     def test_equal_items_in_second_list_are_considered_smaller(self):
         a = [1, 3, 4]
         b = [2, 3]
         expected = ([-1, 1, 1], [0, 0])
-        actual = stm.pairwise_max_idx_of_smaller_item(a, b)
+        actual = stm.searchsorted_pairwise(a, b)
         self.assert_array_tuple_equal(expected, actual)
 
     def test_works_with_one_list_empty(self):
@@ -150,17 +150,17 @@ class Test_pairwise_max_idx_of_smaller_item(ut.TestCase):
         b = [1, 2, 3]
 
         expected = ([], [-1, -1, -1])
-        actual = stm.pairwise_max_idx_of_smaller_item(a, b)
+        actual = stm.searchsorted_pairwise(a, b)
         self.assert_array_tuple_equal(expected, actual)
 
         expected = ([-1, -1, -1], [])
-        actual = stm.pairwise_max_idx_of_smaller_item(b, a)
+        actual = stm.searchsorted_pairwise(b, a)
         self.assert_array_tuple_equal(expected, actual)
 
     def test_returns_empty_lists_if_both_lists_are_empty(self):
         self.assert_array_tuple_equal(
             ([], []),
-            stm.pairwise_max_idx_of_smaller_item([], []))
+            stm.searchsorted_pairwise([], []))
 
 
 if __name__ == '__main__':

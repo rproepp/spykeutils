@@ -90,7 +90,7 @@ def van_rossum_dist(trains, tau=1.0 * pq.s):
 
     for u in xrange(D.shape[0]):
         for v in xrange(u, D.shape[1]):
-            js, ks = pairwise_max_idx_of_smaller_item(trains[u], trains[v])
+            js, ks = searchsorted_pairwise(trains[u], trains[v])
             start_j = sp.searchsorted(js, 0)
             start_k = sp.searchsorted(ks, 0)
             for i, j in enumerate(js[start_j:], start_j):
@@ -104,7 +104,7 @@ def van_rossum_dist(trains, tau=1.0 * pq.s):
     return D
 
 
-def pairwise_max_idx_of_smaller_item(a, b):
+def searchsorted_pairwise(a, b):
     idx_a = sp.empty(len(a))
     idx_b = sp.empty(len(b))
     i = j = 0
