@@ -15,11 +15,41 @@ def create_empty_spike_train(t_start=0.0 * pq.s, t_stop=10.0 * pq.s):
     return neo.SpikeTrain(sp.array([]) * pq.s, t_start=t_start, t_stop=t_stop)
 
 
-class Test_victor_purpura_dist(ut.TestCase):
+class CommonMetricTestCases(object):
+    """ Provides some common test cases which should work for all spike train
+    metrics.
+    """
+
+    def calc_metric(self, a, b):
+        """ Calculates and returns the metric under test.
+
+        :param SpikeTrain a:
+        :param SpikeTrain b:
+        :rtype: float
+        """
+        raise NotImplementedError()
+
     def test_is_zero_for_identical_spike_trains(self):
         st = neo.SpikeTrain(
             sp.array([1, 2, 3]) * pq.s, t_start=0 * pq.s, t_stop=4 * pq.s)
-        self.assertAlmostEqual(0, stm.victor_purpura_dist(st, st.copy()))
+        self.assertAlmostEqual(0, self.calc_metric(st, st.copy()))
+
+    def test_is_symmetric(self):
+        a = neo.SpikeTrain(sp.array([
+            1.1844519,  1.57346687,  2.52261998,  3.65824785,  5.38988771,
+            5.63178278,  6.70500182,  7.99562401,  9.21135176
+        ]) * pq.s, t_stop=10.0 * pq.s)
+        b = neo.SpikeTrain(sp.array([
+            0.86096077,  3.54273148,  4.20476326,  6.02451599,  6.42851683,
+            6.5564268,  7.07864592,  7.2368936,  7.31784319,  8.15148958,
+            8.53540889
+        ]) * pq.s, t_stop=10.0 * pq.s)
+        self.assertAlmostEqual(self.calc_metric(a, b), self.calc_metric(b, a))
+
+
+class Test_victor_purpura_dist(ut.TestCase, CommonMetricTestCases):
+    def calc_metric(self, a, b):
+        return stm.victor_purpura_dist(a, b)
 
     def test_inserted_spikes_equal_cost_of_one(self):
         num_spikes = 3
@@ -49,21 +79,6 @@ class Test_victor_purpura_dist(ut.TestCase):
         expected = 2.0
         self.assertAlmostEqual(expected, stm.victor_purpura_dist(a, b, q))
 
-    def test_is_symmetric(self):
-        a = neo.SpikeTrain(sp.array([
-            1.1844519,  1.57346687,  2.52261998,  3.65824785,  5.38988771,
-            5.63178278,  6.70500182,  7.99562401,  9.21135176
-        ]) * pq.s, t_stop=10.0 * pq.s)
-        b = neo.SpikeTrain(sp.array([
-            0.86096077,  3.54273148,  4.20476326,  6.02451599,  6.42851683,
-            6.5564268,  7.07864592,  7.2368936,  7.31784319,  8.15148958,
-            8.53540889
-        ]) * pq.s, t_stop=10.0 * pq.s)
-        q = 1.0 * pq.s ** -1
-        self.assertAlmostEqual(
-            stm.victor_purpura_dist(a, b, q),
-            stm.victor_purpura_dist(b, a, q))
-
     def test_returns_correct_distance_for_two_spike_trains(self):
         q = 1.0 * pq.s ** -1
         a = neo.SpikeTrain(
@@ -80,6 +95,9 @@ class Test_victor_purpura_dist(ut.TestCase):
         expected = 4.3
         self.assertAlmostEqual(expected, stm.victor_purpura_dist(a, b, q))
 
+
+class Test_van_rossum_dist(ut.TestCase):
+    pass
 
 
 if __name__ == '__main__':
