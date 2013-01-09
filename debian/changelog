@@ -1,11 +1,11 @@
-spykeutils (0.2.0-1) unstable; urgency=low
+spykeutils (0.2.0-1) experimental; urgency=low
 
-  * Initial public release
+  * Initial public release (Closes: #687726).
 
  -- Robert Pröpper <robert.proepper@gmail.com>  Fri, 04 Jan 2013 17:47:09 +0100
 
 spykeutils (0.1.0+git8-g4c21317-1) unstable; urgency=low
 
-  * Initial release (Closes: #687726).
+  * Initial packaging.
 
  -- Yaroslav Halchenko <debian@onerussian.com>  Sat, 15 Sep 2012 09:07:33 -0400

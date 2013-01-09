@@ -20,6 +20,9 @@ override_dh_auto_build:
 	: # also doc source files only consume space
 	-rm -r doc/build/html/_sources
 
+override_dh_installchangelogs:
+	dh_installchangelogs doc/CHANGELOG.rst
+
 # enable when we believe that the tests should pass
 override_dh_auto_test:
 ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
