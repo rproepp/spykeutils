@@ -36,6 +36,13 @@
     :members:
     :undoc-members:
 
+:mod:`spike_train_metrics` Module
+------------------------------------
+
+.. automodule:: spykeutils.spike_train_metrics
+    :members:
+    :undoc-members:
+
 :mod:`sorting_quality_assesment` Module
 ---------------------------------------
 
@@ -53,6 +60,7 @@
 """
 
 __version__ = '0.2.1'
+
 
 class SpykeException(Exception):
     """ Exception thrown when a function in spykeutils encounters a
