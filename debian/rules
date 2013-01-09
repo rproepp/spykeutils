@@ -1,18 +1,24 @@
 #!/usr/bin/make -f
 # -*- mode: makefile; coding: utf-8 -*-
 
+# Prevent setup.py from downloading
+export http_proxy = http://127.0.9.1:9
+
 # one rule to rule them all ...
 %:
-	dh $@ --buildsystem=python_distutils
+	dh $@ --buildsystem=python_distutils --with python2
 
 override_dh_auto_build:
 	dh_auto_build
 	# and docs
 	$(MAKE) -C doc html
 	# but remove jquery copy (later on link to Debian's version)
-	-rm build/html/_static/jquery.js
+	-rm doc/build/html/_static/jquery.js
+	-rm doc/build/html/_static/underscore.js
 	# objects inventory is of no use for the package
-	-rm build/html/objects.inv
+	-rm doc/build/html/objects.inv
+	: # also doc source files only consume space
+	-rm -r doc/build/html/_sources
 
 # enable when we believe that the tests should pass
 override_dh_auto_test:

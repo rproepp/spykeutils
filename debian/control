@@ -2,12 +2,13 @@ Source: spykeutils
 Section: python
 Priority: extra
 Maintainer: NeuroDebian Team <team@neuro.debian.net>
-Uploaders:  Robert Pröpper <robert.proepper@gmail.com>,
-            Michael Hanke <michael.hanke@gmail.com>,
-            Yaroslav Halchenko <debian@onerussian.com>,
+Uploaders: Robert Pröpper <robert.proepper@gmail.com>,
+           Michael Hanke <michael.hanke@gmail.com>,
+           Yaroslav Halchenko <debian@onerussian.com>,
 Build-Depends: debhelper (>= 7.2.18),
                python-all (>= 2.7),
                python-neo (>= 0.2.1),
+               python-setuptools,
                python-nose,
                python-scipy,
                python-sphinx,
@@ -23,7 +24,7 @@ X-Python-Version: >= 2.7
 Package: python-spykeutils
 Architecture: all
 Depends: ${misc:Depends}, ${python:Depends},
-         python-neo,
+         python-neo (>= 0.2.1),
          python-nose,
          python-scipy,
          python-sphinx
@@ -31,6 +32,7 @@ Recommends: python-guidata,
             python-guiqwt,
             python-tables,
             libjs-jquery,
+            libjs-underscore,
 Provides: ${python:Provides}
 Description: utilities for analyzing electrophysiological data
  spykeutils is a Python library for analyzing and plotting data from

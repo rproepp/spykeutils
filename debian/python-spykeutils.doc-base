@@ -1,0 +1,9 @@
+Document: python-spykeutils
+Title: spykeutils documentation
+Author: Robert Pröpper <robert.proepper@gmail.com>
+Abstract: Documentation of spykeutils, a Python toolset for electrophysiological data analysis
+Section: Science/Data Analysis
+
+Format: HTML
+Index: /usr/share/doc/python-spykeutils/html/index.html
+Files: /usr/share/doc/python-spykeutils/html/*

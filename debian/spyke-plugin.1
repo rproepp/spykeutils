@@ -1,0 +1,23 @@
+.TH spyke-plugin 1 "January 2013" Linux "USER MANUAL"
+.SH NAME
+spyke\-plugin \- start a spyke plugin
+.SH SYNOPSIS
+.B spyke\-plugin
+[\-c path] [\-cf] [\-sf] Classname Code Selection
+.SH DESCRIPTION
+Start a plugin from spykeutils or Spyke Viewer through the command line.
+Accepts name of the plugin class, python code declaring the class and
+a JSON string with the selection that the plugin should process.
+.SH OPTIONS
+.TP
+\-c, \-\-config
+Pickled configuration file of analysis. If not specified, default
+configuration will be used.
+.TP
+\-cf, \-\-codefile
+Code represents a filename containing code (default: Code is a string
+containing code)
+.TP
+\-sf, \-\-selectionfile
+Selection represents a filename containing the serialized selection (default:
+Selection is a string)
