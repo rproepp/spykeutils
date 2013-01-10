@@ -24,6 +24,15 @@ def rectangular_kernel(x, half_width=1.0 * pq.s):
     return (sp.absolute(x) < half_width) / (2.0 * half_width)
 
 
+class Kernel(object):
+    def __init__(self, kernel_func, **params):
+        self.kernel_func = kernel_func
+        self.params = params
+
+    def __call__(self, x):
+        return self.kernel_func(x, **self.params)
+
+
 def _pq_arange(start, stop=None, step=1):
     if stop is None:
         stop = start
@@ -32,7 +41,7 @@ def _pq_arange(start, stop=None, step=1):
         start.rescale(stop.units), stop, step.rescale(stop.units)) * stop.units
 
 
-def st_convolve(train, kernel, sampling_rate=None, **kwargs):
+def st_convolve(train, kernel, sampling_rate=None):
     """ Convolves a spike train with a kernel.
 
     :param SpikeTrain train: Spike train to convolve.
@@ -60,6 +69,6 @@ def st_convolve(train, kernel, sampling_rate=None, **kwargs):
     t_step = duration / num_bins
     bins = sp.linspace(train.t_start, train.t_stop, num_bins)
     binned, _ = sp.histogram(train, bins)
-    k = kernel(_pq_arange(-duration, duration, t_step), **kwargs)
+    k = kernel(_pq_arange(-duration, duration, t_step))
     k /= (t_step * sp.sum(k))
     return scipy.signal.convolve(binned, k, 'same'), bins

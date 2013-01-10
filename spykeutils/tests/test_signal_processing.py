@@ -33,12 +33,12 @@ class Test_st_convolve(ut.TestCase):
 
     def test_returns_convolved_spike_train(self):
         st = neo.SpikeTrain(sp.array([1.0, 2.0]) * pq.s, t_stop=3.0 * pq.s)
+        kernel = sigproc.Kernel(
+            sigproc.rectangular_kernel, half_width=0.3 * pq.s)
         expected = sp.array(
             [0.0, 0.0, 0.0, 0.0, 1.4444444, 1.4444444, 1.4444444, 0.0,
              1.4444444, 1.4444444, 1.4444444, 0.0])
-        actual, _ = sigproc.st_convolve(
-            st, sigproc.rectangular_kernel, sampling_rate=4 * pq.Hz,
-            half_width=0.3 * pq.s)
+        actual, _ = sigproc.st_convolve(st, kernel, sampling_rate=4 * pq.Hz)
         assert_array_almost_equal(expected, actual)
 
     def test_uses_sampling_rate_of_spike_train_if_none_is_passed(self):
