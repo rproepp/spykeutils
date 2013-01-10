@@ -158,9 +158,8 @@ def minimum_spike_train_interval(trains):
     :returns: Maximum shared start time and minimum shared stop time.
     :rtype: Quantity scalar, Quantity scalar
     """
-    # Hoping that nobody needs a 1000 year long spike train
-    start = -1000 * pq.year
-    stop = 1000 * pq.year
+    start = -sp.inf * pq.s
+    stop = sp.inf * pq.s
 
     # Load data and find shortest spike train
     for st in trains.itervalues():
