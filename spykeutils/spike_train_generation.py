@@ -51,7 +51,7 @@ def gen_homogeneous_poisson(
 
 
 def gen_inhomogeneous_poisson(
-        modulation, max_rate, t_start=0 * pq.s, t_stop=None, max_spikes=None):
+        modulation, max_rate, t_start=0 * pq.s, t_stop=None):
     """ Generate an inhomogeneous Poisson spike train. The length is controlled
     with `t_stop` and `max_spikes`. Either one or both of these arguments have
     to be given.
@@ -71,12 +71,10 @@ def gen_inhomogeneous_poisson(
         generated spikes is controlled by `max_spikes` and `t_stop` will be
         equal to the last generated spike.
     :type t_stop: Quantity scalar
-    :param max_spikes: Maximum number of spikes to generate. Fewer spikes might
-        be generated.
 
     :returns: The generated spike train.
     :rtype: SpikeTrain
     """
 
-    st = gen_homogeneous_poisson(max_rate, t_start, t_stop, max_spikes)
+    st = gen_homogeneous_poisson(max_rate, t_start, t_stop)
     return st[numpy.random.rand(st.size) < modulation(st)]
