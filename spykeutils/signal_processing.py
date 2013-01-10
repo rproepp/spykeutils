@@ -4,6 +4,13 @@ import scipy as sp
 import scipy.signal
 
 
+def causal_decaying_exp_kernel(x, kernel_size=1.0 * pq.s):
+    return sp.piecewise(
+        x, [x < 0, x >= 0], [
+            lambda x: 0,
+            lambda x: sp.exp(-x / kernel_size) / kernel_size])
+
+
 def gauss_kernel(x, kernel_size=1.0 * pq.s):
     return (1.0 / (sp.sqrt(2 * sp.pi) * kernel_size) *
             sp.exp(-1 / 2 * (x / kernel_size) ** 2))
