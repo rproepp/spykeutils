@@ -26,7 +26,7 @@ override_dh_installchangelogs:
 # enable when we believe that the tests should pass
 override_dh_auto_test:
 ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
-	for buildver in $(shell pyversions -vr); do \
+	set -e; for buildver in $(shell pyversions -vr); do \
 		echo "I: Running spykeutils unittests using python$$buildver"; \
 		python$$buildver /usr/bin/nosetests spykeutils || exit 1 ;\
 	done
