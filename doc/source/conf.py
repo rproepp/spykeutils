@@ -27,7 +27,6 @@ try:
     import scipy
     import PyQt4
     import guiqwt
-    import blub
 except ImportError:
     from mock import MagicMock
 
