@@ -6,6 +6,7 @@ except ImportError:
     import unittest as ut
 
 from builders import create_empty_spike_train
+from numpy.testing import assert_array_almost_equal
 import neo
 import quantities as pq
 import scipy as sp
@@ -128,9 +129,9 @@ class Test_searchsorted_pairwise(ut.TestCase):
     def assert_array_tuple_equal(self, expected, actual):
         self.assertEqual(len(expected), len(actual))
         for e, a in zip(expected, actual):
-            self.assertTrue(
-                sp.all(sp.absolute(e - a) < 1e-7),
-                "Expected: {0}\nActual: {1}".format(expected, actual))
+            assert_array_almost_equal(
+                e, a,
+                err_msg="Expected: {0}\nActual: {1}".format(expected, actual))
 
     def test_works_with_lists(self):
         a = [1, 3, 5, 8, 9, 11]

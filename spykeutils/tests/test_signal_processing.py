@@ -6,6 +6,7 @@ except ImportError:
     import unittest as ut
 
 from builders import create_empty_spike_train
+from numpy.testing import assert_array_almost_equal
 import neo
 import quantities as pq
 import scipy as sp
@@ -38,7 +39,7 @@ class Test_st_convolve(ut.TestCase):
         actual, _ = sigproc.st_convolve(
             st, sigproc.rectangular_kernel, sampling_rate=4 * pq.Hz,
             half_width=0.3 * pq.s)
-        self.assertTrue(sp.all(sp.absolute(expected - actual) < 1e-7))
+        assert_array_almost_equal(expected, actual)
 
     def test_uses_sampling_rate_of_spike_train_if_none_is_passed(self):
         start = 2.0 * pq.s
@@ -61,7 +62,7 @@ class Test_st_convolve(ut.TestCase):
         st = create_empty_spike_train(start, stop)
         _, bins = sigproc.st_convolve(
             st, sigproc.gauss_kernel, sampling_rate=sampling_rate)
-        self.assertTrue(sp.all(sp.absolute(expected - bins) < 1e-7))
+        assert_array_almost_equal(expected, bins)
 
 
 if __name__ == '__main__':
