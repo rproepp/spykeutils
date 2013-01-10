@@ -15,7 +15,7 @@ import spykeutils.signal_processing as sigproc
 class Test_st_convolve(ut.TestCase):
     def test_convolution_with_empty_spike_train_returns_array_of_zeros(self):
         st = create_empty_spike_train()
-        result = sigproc.st_convolve(st, sigproc.gauss_kernel)
+        result, _ = sigproc.st_convolve(st, sigproc.gauss_kernel)
         self.assertTrue(sp.all(result == 0.0))
 
     def test_length_of_returned_array_equals_sampling_rate_times_duration(self):
@@ -26,7 +26,7 @@ class Test_st_convolve(ut.TestCase):
         expected_length = (sampling_rate * duration).simplified
 
         st = create_empty_spike_train(start, stop)
-        result = sigproc.st_convolve(
+        result, _ = sigproc.st_convolve(
             st, sigproc.gauss_kernel, sampling_rate=sampling_rate)
         self.assertEqual(expected_length, result.size)
 
@@ -35,10 +35,10 @@ class Test_st_convolve(ut.TestCase):
         expected = sp.array(
             [0.0, 0.0, 0.0, 0.0, 1.4444444, 1.4444444, 1.4444444, 0.0,
              1.4444444, 1.4444444, 1.4444444, 0.0])
-        actual = sigproc.st_convolve(
+        actual, _ = sigproc.st_convolve(
             st, sigproc.rectangular_kernel, sampling_rate=4 * pq.Hz,
             half_width=0.3 * pq.s)
-        self.assertTrue(sp.all(sp.absolute(expected - actual) < 1e7))
+        self.assertTrue(sp.all(sp.absolute(expected - actual) < 1e-7))
 
     def test_uses_sampling_rate_of_spike_train_if_none_is_passed(self):
         start = 2.0 * pq.s
@@ -49,8 +49,19 @@ class Test_st_convolve(ut.TestCase):
 
         st = create_empty_spike_train(start, stop)
         st.sampling_rate = sampling_rate
-        result = sigproc.st_convolve(st, sigproc.gauss_kernel)
+        result, _ = sigproc.st_convolve(st, sigproc.gauss_kernel)
         self.assertEqual(expected_length, result.size)
+
+    def test_returns_discretization_bins(self):
+        start = 2.0 * pq.s
+        stop = 5.0 * pq.s
+        sampling_rate = 2.0 * pq.Hz
+        expected = sp.array([2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0]) * pq.s
+
+        st = create_empty_spike_train(start, stop)
+        _, bins = sigproc.st_convolve(
+            st, sigproc.gauss_kernel, sampling_rate=sampling_rate)
+        self.assertTrue(sp.all(sp.absolute(expected - bins) < 1e-7))
 
 
 if __name__ == '__main__':

@@ -17,11 +17,6 @@ def rectangular_kernel(x, half_width=1.0 * pq.s):
     return (sp.absolute(x) < half_width) / (2.0 * half_width)
 
 
-def _pq_linspace(start, stop, num=50, endpoint=True, retstep=False):
-    return sp.linspace(
-        start.rescale(stop.units), stop, num, endpoint, retstep) * stop.units
-
-
 def _pq_arange(start, stop=None, step=1):
     if stop is None:
         stop = start
@@ -42,8 +37,9 @@ def st_convolve(train, kernel, sampling_rate=None, **kwargs):
         is also `None`, 100Hz will be used.
     :type sampling_rate: Quantity scalar
     :param kwargs: Additional arguments passed to the kernel function.
-    :returns: The convolved spike train.
-    :rtype: 1D array
+    :returns: The convolved spike train, the boundaries of the discretization
+        bins
+    :rtype: (1D array, Quantity 1D)
     """
 
     if sampling_rate is None:
@@ -55,8 +51,8 @@ def st_convolve(train, kernel, sampling_rate=None, **kwargs):
     duration = train.t_stop - train.t_start
     num_bins = sampling_rate * duration + 1
     t_step = duration / num_bins
-    bins = _pq_linspace(train.t_start, train.t_stop, num_bins)
+    bins = sp.linspace(train.t_start, train.t_stop, num_bins)
     binned, _ = sp.histogram(train, bins)
     k = kernel(_pq_arange(-duration, duration, t_step), **kwargs)
     k /= (t_step * sp.sum(k))
-    return scipy.signal.convolve(binned, k, 'same')
+    return scipy.signal.convolve(binned, k, 'same'), bins
