@@ -213,7 +213,7 @@ def spike_density_estimation(trains, start=0*pq.ms, stop=None,
     :type stop: Quantity scalar
     :param func kernel: The kernel function to use, should accept
         two parameters: A ndarray of distances and a kernel size.
-        The total area under the kernel function sould be 1.
+        The total area under the kernel function should be 1.
         Default: Gaussian kernel
     :param kernel_size: A uniform kernel size for all spike trains.
             Only used if optimization of kernel sizes is not used.
