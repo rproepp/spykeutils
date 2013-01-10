@@ -68,7 +68,7 @@ def st_convolve(train, kernel, sampling_rate=None):
     num_bins = sampling_rate * duration + 1
     t_step = duration / num_bins
     bins = sp.linspace(train.t_start, train.t_stop, num_bins)
-    binned, _ = sp.histogram(train, bins)
+    binned, _ = sp.histogram(train.rescale(bins.units), bins)
     k = kernel(_pq_arange(-duration, duration, t_step))
     k /= (t_step * sp.sum(k))
     return scipy.signal.convolve(binned, k, 'same'), bins
