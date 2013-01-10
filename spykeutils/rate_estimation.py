@@ -5,11 +5,12 @@
 """
 from __future__ import division
 
-import scipy as sp
-import quantities as pq
-import neo
-from progress_indicator import ProgressIndicator
 from . import SpykeException
+from progress_indicator import ProgressIndicator
+from signal_processing import gauss_kernel
+import neo
+import quantities as pq
+import scipy as sp
 
 
 def _binned_spike_trains(trains, bins):
@@ -168,11 +169,6 @@ def minimum_spike_train_interval(trains):
         stop = min(stop, min((t.t_stop for t in st)))
 
     return start, stop
-
-
-def gauss_kernel(x, kernel_size):
-    return 1.0 / (sp.sqrt(2*sp.pi) * kernel_size) * \
-           sp.exp(-1/2 *  (x / kernel_size)**2)
 
 
 def _hist_density(hist, kernel, ksize, start, stop):

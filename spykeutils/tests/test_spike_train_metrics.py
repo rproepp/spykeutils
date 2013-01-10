@@ -5,14 +5,11 @@ try:
 except ImportError:
     import unittest as ut
 
-import scipy as sp
-import quantities as pq
+from builders import create_empty_spike_train
 import neo
+import quantities as pq
+import scipy as sp
 import spykeutils.spike_train_metrics as stm
-
-
-def create_empty_spike_train(t_start=0.0 * pq.s, t_stop=10.0 * pq.s):
-    return neo.SpikeTrain(sp.array([]) * pq.s, t_start=t_start, t_stop=t_stop)
 
 
 class CommonMetricTestCases(object):
