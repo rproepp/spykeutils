@@ -29,6 +29,13 @@
     :members:
     :exclude-members: binned_spike_trains, psth, spike_density_estimation
 
+:mod:`signal_processing` Module
+-------------------------------
+
+.. automodule:: spykeutils.signal_processing
+    :members:
+    :undoc-members:
+
 :mod:`spike_train_generation` Module
 ------------------------------------
 
