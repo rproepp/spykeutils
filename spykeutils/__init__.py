@@ -34,6 +34,7 @@
 
 .. automodule:: spykeutils.signal_processing
     :members:
+    :show-inheritance:
     :undoc-members:
 
 :mod:`spike_train_generation` Module
