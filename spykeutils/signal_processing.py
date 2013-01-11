@@ -51,7 +51,7 @@ class CausalDecayingExpKernel(Kernel):
 
     def times_to_fall_below(self, threshold):
         return (0.0 * self.params['kernel_size'].units,
-            -self.params['kernel_size'] * scipy.log(
+                -self.params['kernel_size'] * scipy.log(
                 (self.params['kernel_size'] * threshold).simplified))
 
 
@@ -75,7 +75,7 @@ class LaplacianKernel(Kernel):
     @staticmethod
     def evaluate(t, kernel_size):
         return sp.exp(-(sp.absolute(t) / kernel_size).simplified) \
-                / (2.0 * kernel_size)
+            / (2.0 * kernel_size)
 
     def __init__(self, kernel_size=1.0 * pq.s):
         Kernel.__init__(self, self.evaluate, kernel_size=kernel_size)
