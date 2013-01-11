@@ -6,7 +6,7 @@ import quantities as pq
 import scipy as sp
 import scipy.signal
 
-default_sampling_rate = 100 * pq.Hz
+default_sampling_rate = 1000 * pq.Hz
 
 
 class Kernel(object):
