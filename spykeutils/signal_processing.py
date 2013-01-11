@@ -161,9 +161,7 @@ def st_convolve(
     """ Convolves a spike train with a kernel.
 
     :param SpikeTrain train: Spike train to convolve.
-    :param function kernel: The kernel function to convolve with. It has to
-        accept a `Quantity 1D` as first argument giving the time points at which
-        the kernel will be evaluated.
+    :param Kernel kernel: The kernel instance to convolve with.
     :param float kernel_area_fraction: A value between 0 and 1 which controls
         the interval over which the kernel will be discretized. At least the
         given fraction of the complete kernel area will be covered. Higher
