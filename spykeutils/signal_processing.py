@@ -31,7 +31,7 @@ class Kernel(object):
 
         :param threshold:
         :type threshold: Quanitity scalar
-        :returns: negative time shift, positive time shift
+        :returns: left bound, right bound
         :rtype: Quantity scalar, Quantity scalar
         """
         raise NotImplementedError()
@@ -39,46 +39,50 @@ class Kernel(object):
 
 class CausalDecayingExpKernel(Kernel):
     @staticmethod
-    def evaluate(x, kernel_size):
-        return sp.piecewise(
-            x, [x < 0, x >= 0], [
-                lambda x: 0,
-                lambda x: sp.exp(-x / kernel_size) / kernel_size])
+    def evaluate(t, kernel_size):
+        result = sp.piecewise(
+            t, [t < 0, t >= 0], [
+                lambda t: 0,
+                lambda t: sp.exp((-t / kernel_size).simplified) / kernel_size])
+        return result / kernel_size.units
 
     def __init__(self, kernel_size=1.0 * pq.s):
         Kernel.__init__(self, self.evaluate, kernel_size=kernel_size)
 
     def times_to_fall_below(self, threshold):
-        return (0.0, -self.params['kernel_size'] *
-                scipy.log(self.params['kernel_size'] * threshold))
+        return (0.0 * self.params['kernel_size'].units,
+            -self.params['kernel_size'] * scipy.log(
+                (self.params['kernel_size'] * threshold).simplified))
 
 
 class GaussianKernel(Kernel):
     @staticmethod
     def evaluate(t, kernel_size):
         return (1.0 / (sp.sqrt(2 * sp.pi) * kernel_size) *
-                sp.exp(-0.5 * (t / kernel_size) ** 2))
+                sp.exp(-0.5 * (t / kernel_size).simplified ** 2))
 
     def __init__(self, kernel_size=1.0 * pq.s):
         Kernel.__init__(self, self.evaluate, kernel_size=kernel_size)
 
     def times_to_fall_below(self, threshold):
         t = self.params['kernel_size'] * sp.sqrt(-2 * sp.log(
-            self.params['kernel_size'] * threshold * sp.sqrt(2 * sp.pi)))
+            (self.params['kernel_size'] * threshold).simplified *
+            sp.sqrt(2 * sp.pi)))
         return (-t, t)
 
 
 class LaplacianKernel(Kernel):
     @staticmethod
     def evaluate(t, kernel_size):
-        return sp.exp(-sp.absolute(t) / kernel_size) / (2.0 * kernel_size)
+        return sp.exp(-(sp.absolute(t) / kernel_size).simplified) \
+                / (2.0 * kernel_size)
 
     def __init__(self, kernel_size=1.0 * pq.s):
         Kernel.__init__(self, self.evaluate, kernel_size=kernel_size)
 
     def times_to_fall_below(self, threshold):
         t = -self.params['kernel_size'] * sp.log(
-            2 * self.params['kernel_size'] * threshold)
+            2 * (self.params['kernel_size'] * threshold).simplified)
         return (-t, t)
 
 

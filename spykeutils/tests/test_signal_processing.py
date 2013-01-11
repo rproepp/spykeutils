@@ -13,6 +13,78 @@ import scipy as sp
 import spykeutils.signal_processing as sigproc
 
 
+class TestCausalDecayingExpKernel(ut.TestCase):
+    def setUp(self):
+        self.kernel_size = 500 * pq.ms
+        self.kernel = sigproc.CausalDecayingExpKernel(self.kernel_size)
+
+    def test_evaluates_to_correct_values(self):
+        t = sp.array([-0.1, 0, 0.6, 1]) * pq.s
+        expected = sp.array([0.0, 2.0, 0.60238842, 0.27067057]) / pq.s
+        actual = self.kernel(t)
+        assert_array_almost_equal(expected, actual.rescale(expected.units))
+
+    def test_times_to_fall_below_are_correct(self):
+        left, right = self.kernel.times_to_fall_below(0.01 / pq.s)
+        self.assertAlmostEqual(left.rescale(pq.s), 0.0 * pq.s)
+        self.assertAlmostEqual(right.rescale(pq.s), 2.64915868 * pq.s)
+
+
+class TestGaussianKernel(ut.TestCase):
+    def setUp(self):
+        self.kernel_size = 500 * pq.ms
+        self.kernel = sigproc.GaussianKernel(self.kernel_size)
+
+    def test_evaluates_to_correct_values(self):
+        t = sp.array([-0.1, 0, 0.6, 1]) * pq.s
+        expected = sp.array([0.78208539, 0.79788456, 0.38837211, 0.10798193]) /\
+            pq.s
+        actual = self.kernel(t)
+        assert_array_almost_equal(expected, actual.rescale(expected.units))
+
+    def test_times_to_fall_below_are_correct(self):
+        left, right = self.kernel.times_to_fall_below(0.01 / pq.s)
+        expected = 1.47975992
+        self.assertAlmostEqual(left.rescale(pq.s), -expected * pq.s)
+        self.assertAlmostEqual(right.rescale(pq.s), expected * pq.s)
+
+
+class TestLaplacianKernel(ut.TestCase):
+    def setUp(self):
+        self.kernel_size = 500 * pq.ms
+        self.kernel = sigproc.LaplacianKernel(self.kernel_size)
+
+    def test_evaluates_to_correct_values(self):
+        t = sp.array([-0.1, 0, 0.6, 1]) * pq.s
+        expected = sp.array([0.81873075, 1.0, 0.30119421, 0.13533528]) /\
+            pq.s
+        actual = self.kernel(t)
+        assert_array_almost_equal(expected, actual.rescale(expected.units))
+
+    def test_times_to_fall_below_are_correct(self):
+        left, right = self.kernel.times_to_fall_below(0.01 / pq.s)
+        expected = 2.30258509
+        self.assertAlmostEqual(left.rescale(pq.s), -expected * pq.s)
+        self.assertAlmostEqual(right.rescale(pq.s), expected * pq.s)
+
+
+class TestRectangularKernel(ut.TestCase):
+    def setUp(self):
+        self.kernel_size = 500 * pq.ms
+        self.kernel = sigproc.RectangularKernel(self.kernel_size)
+
+    def test_evaluates_to_correct_values(self):
+        t = sp.array([-0.1, 0, 0.6, 1]) * pq.s
+        expected = sp.array([1.0, 1.0, 0.0, 0.0]) / pq.s
+        actual = self.kernel(t)
+        assert_array_almost_equal(expected, actual.rescale(expected.units))
+
+    def test_times_to_fall_below_are_correct(self):
+        left, right = self.kernel.times_to_fall_below(0.01 / pq.s)
+        self.assertAlmostEqual(left.rescale(pq.s), -self.kernel_size)
+        self.assertAlmostEqual(right.rescale(pq.s), self.kernel_size)
+
+
 class Test_st_convolve(ut.TestCase):
     def test_convolution_with_empty_spike_train_returns_array_of_zeros(self):
         st = create_empty_spike_train()
