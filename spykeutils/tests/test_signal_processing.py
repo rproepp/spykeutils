@@ -24,10 +24,9 @@ class TestCausalDecayingExpKernel(ut.TestCase):
         actual = self.kernel(t)
         assert_array_almost_equal(expected, actual.rescale(expected.units))
 
-    def test_interval_enclosing_at_least_is_correct(self):
-        left, right = self.kernel.interval_enclosing_at_least(0.99)
-        self.assertAlmostEqual(left.rescale(pq.s), 0.0 * pq.s)
-        self.assertAlmostEqual(right.rescale(pq.s), 2.30258509 * pq.s)
+    def test_boundary_enclosing_at_least_is_correct(self):
+        actual = self.kernel.boundary_enclosing_at_least(0.99)
+        self.assertAlmostEqual(actual.rescale(pq.s), 2.30258509 * pq.s)
 
 
 class TestGaussianKernel(ut.TestCase):
@@ -42,11 +41,9 @@ class TestGaussianKernel(ut.TestCase):
         actual = self.kernel(t)
         assert_array_almost_equal(expected, actual.rescale(expected.units))
 
-    def test_interval_enclosing_at_least_is_correct(self):
-        left, right = self.kernel.interval_enclosing_at_least(0.99)
-        expected = 1.28791465
-        self.assertAlmostEqual(left.rescale(pq.s), -expected * pq.s)
-        self.assertAlmostEqual(right.rescale(pq.s), expected * pq.s)
+    def test_boundary_enclosing_at_least_is_correct(self):
+        actual = self.kernel.boundary_enclosing_at_least(0.99)
+        self.assertAlmostEqual(actual.rescale(pq.s), 1.28791465 * pq.s)
 
 
 class TestLaplacianKernel(ut.TestCase):
@@ -61,11 +58,9 @@ class TestLaplacianKernel(ut.TestCase):
         actual = self.kernel(t)
         assert_array_almost_equal(expected, actual.rescale(expected.units))
 
-    def test_interval_enclosing_at_least_is_correct(self):
-        left, right = self.kernel.interval_enclosing_at_least(0.99)
-        expected = 2.30258509
-        self.assertAlmostEqual(left.rescale(pq.s), -expected * pq.s)
-        self.assertAlmostEqual(right.rescale(pq.s), expected * pq.s)
+    def test_boundary_enclosing_at_least_is_correct(self):
+        actual = self.kernel.boundary_enclosing_at_least(0.99)
+        self.assertAlmostEqual(actual.rescale(pq.s), 2.30258509 * pq.s)
 
 
 class TestRectangularKernel(ut.TestCase):
@@ -79,12 +74,10 @@ class TestRectangularKernel(ut.TestCase):
         actual = self.kernel(t)
         assert_array_almost_equal(expected, actual.rescale(expected.units))
 
-    def test_interval_enclosing_at_least_is_correct(self):
-        left, right = self.kernel.interval_enclosing_at_least(0.99)
+    def test_boundary_enclosing_at_least_is_correct(self):
+        actual = self.kernel.boundary_enclosing_at_least(0.99)
         self.assertAlmostEqual(
-            left.rescale(self.kernel_size.units), -self.kernel_size)
-        self.assertAlmostEqual(
-            right.rescale(self.kernel_size.units), self.kernel_size)
+            actual.rescale(self.kernel_size.units), self.kernel_size)
 
 
 class Test_st_convolve(ut.TestCase):

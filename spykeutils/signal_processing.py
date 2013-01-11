@@ -26,14 +26,15 @@ class Kernel(object):
     def __call__(self, t):
         return self.kernel_func(t, **self.params)
 
-    def interval_enclosing_at_least(self, fraction):
-        """ Calculates the interval enclosing a certain fraction of the integral
-        of the kernel.
+    def boundary_enclosing_at_least(self, fraction):
+        """ Calculates the boundary :math:`b` that the integral from :math:`-b`
+        to :math:`b` encloses at least a certain fraction of the integral
+        over the complete kernel.
 
         :param float fraction: Fraction of the whole area which at least has to
             be enclosed.
-        :returns: left bound, right bound
-        :rtype: Quantity scalar, Quantity scalar
+        :returns: boundary
+        :rtype: Quantity scalar
         """
         raise NotImplementedError()
 
@@ -49,9 +50,9 @@ class Kernel(object):
         """
 
         t_step = 1.0 / sampling_rate
-        t_start, t_stop = self.interval_enclosing_at_least(area_fraction)
-        t_start = sp.ceil(t_start / t_step) * t_step
-        t_stop = sp.floor(t_stop / t_step) * t_step + t_step
+        boundary = self.boundary_enclosing_at_least(area_fraction)
+        t_start = sp.ceil(-boundary / t_step) * t_step
+        t_stop = sp.floor(boundary / t_step) * t_step + t_step
         k = self(_pq_arange(t_start, t_stop, t_step))
         return k / (t_step * sp.sum(k))
 
@@ -68,9 +69,8 @@ class CausalDecayingExpKernel(Kernel):
     def __init__(self, kernel_size=1.0 * pq.s):
         Kernel.__init__(self, self.evaluate, kernel_size=kernel_size)
 
-    def interval_enclosing_at_least(self, fraction):
-        return (0.0 * self.params['kernel_size'].units,
-                - self.params['kernel_size'] * sp.log(1.0 - fraction))
+    def boundary_enclosing_at_least(self, fraction):
+        return -self.params['kernel_size'] * sp.log(1.0 - fraction)
 
 
 class GaussianKernel(Kernel):
@@ -82,10 +82,9 @@ class GaussianKernel(Kernel):
     def __init__(self, kernel_size=1.0 * pq.s):
         Kernel.__init__(self, self.evaluate, kernel_size=kernel_size)
 
-    def interval_enclosing_at_least(self, fraction):
-        t = self.params['kernel_size'] * sp.sqrt(2.0) * \
+    def boundary_enclosing_at_least(self, fraction):
+        return self.params['kernel_size'] * sp.sqrt(2.0) * \
             scipy.special.erfinv(fraction + scipy.special.erf(0.0))
-        return (-t, t)
 
 
 class LaplacianKernel(Kernel):
@@ -97,9 +96,8 @@ class LaplacianKernel(Kernel):
     def __init__(self, kernel_size=1.0 * pq.s):
         Kernel.__init__(self, self.evaluate, kernel_size=kernel_size)
 
-    def interval_enclosing_at_least(self, fraction):
-        t = - self.params['kernel_size'] * sp.log(1.0 - fraction)
-        return (-t, t)
+    def boundary_enclosing_at_least(self, fraction):
+        return -self.params['kernel_size'] * sp.log(1.0 - fraction)
 
 
 class RectangularKernel(Kernel):
@@ -110,8 +108,8 @@ class RectangularKernel(Kernel):
     def __init__(self, half_width=1.0 * pq.s):
         Kernel.__init__(self, self.evaluate, half_width=half_width)
 
-    def interval_enclosing_at_least(self, fraction):
-        return (-self.params['half_width'], self.params['half_width'])
+    def boundary_enclosing_at_least(self, fraction):
+        return self.params['half_width']
 
 
 def bin_spike_train(train, sampling_rate=None, t_start=None, t_stop=None):
