@@ -37,6 +37,24 @@ class Kernel(object):
         """
         raise NotImplementedError()
 
+    def discretize(self, area_fraction, sampling_rate=default_sampling_rate):
+        """ Discretizes the kernel.
+
+        :param float area_fraction: Fraction between 0 and 1 (exclusive)
+            of the integral of the kernel which will be at least covered by the
+            discretization.
+        :param sampling_rate: Sampling rate for the discretization.
+        :type sampling_rate: Quantity scalar
+        :rtype: 1D array
+        """
+
+        t_step = 1.0 / sampling_rate
+        t_start, t_stop = self.interval_enclosing_at_least(area_fraction)
+        t_start = sp.ceil(t_start / t_step) * t_step
+        t_stop = sp.floor(t_stop / t_step) * t_step + t_step
+        k = self(_pq_arange(t_start, t_stop, t_step))
+        return k / (t_step * sp.sum(k))
+
 
 class CausalDecayingExpKernel(Kernel):
     @staticmethod
@@ -148,6 +166,10 @@ def st_convolve(
     :param function kernel: The kernel function to convolve with. It has to
         accept a `Quantity 1D` as first argument giving the time points at which
         the kernel will be evaluated.
+    :param float kernel_area_fraction: A value between 0 and 1 which controls
+        the interval over which the kernel will be discretized. At least the
+        given fraction of the complete kernel area will be covered. Higher
+        values can lead to more accurate results (besides the sampling rate).
     :param discretizationParams: Additional discretization arguments which will
         be passed to func:`bin_spike_train`.
     :returns: The convolved spike train, the boundaries of the discretization
@@ -157,10 +179,5 @@ def st_convolve(
 
     binned, bins = bin_spike_train(train, **discretizationParams)
     sampling_rate = bins.size / (bins[-1] - bins[0])
-    t_step = 1.0 / sampling_rate
-    t_start, t_stop = kernel.interval_enclosing_at_least(kernel_area_fraction)
-    t_start = sp.ceil(t_start / t_step) * t_step
-    t_stop = sp.floor(t_stop / t_step) * t_step + t_step
-    k = kernel(_pq_arange(t_start, t_stop, t_step))
-    k /= (t_step * sp.sum(k))
+    k = kernel.discretize(kernel_area_fraction, sampling_rate)
     return scipy.signal.convolve(binned, k, 'same'), bins
