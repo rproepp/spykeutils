@@ -1,36 +1,97 @@
+"""
+.. data:: default_sampling_rate
+"""
 
 import quantities as pq
 import scipy as sp
 import scipy.signal
 
-
-def causal_decaying_exp_kernel(x, kernel_size=1.0 * pq.s):
-    return sp.piecewise(
-        x, [x < 0, x >= 0], [
-            lambda x: 0,
-            lambda x: sp.exp(-x / kernel_size) / kernel_size])
-
-
-def gauss_kernel(x, kernel_size=1.0 * pq.s):
-    return (1.0 / (sp.sqrt(2 * sp.pi) * kernel_size) *
-            sp.exp(-1 / 2 * (x / kernel_size) ** 2))
-
-
-def laplace_kernel(x, kernel_size=1.0 * pq.s):
-    return sp.exp(-sp.absolute(x) / kernel_size) / (2.0 * kernel_size)
-
-
-def rectangular_kernel(x, half_width=1.0 * pq.s):
-    return (sp.absolute(x) < half_width) / (2.0 * half_width)
+default_sampling_rate = 100 * pq.Hz
 
 
 class Kernel(object):
+    """ Base class for kernels. """
+
     def __init__(self, kernel_func, **params):
+        """
+        :param function kernel_func: Kernel function which takes an array
+            of time points as first argument.
+        :param dict params: Additional parameters to be passed to the kernel
+            function.
+        """
         self.kernel_func = kernel_func
         self.params = params
 
-    def __call__(self, x):
-        return self.kernel_func(x, **self.params)
+    def __call__(self, t):
+        return self.kernel_func(t, **self.params)
+
+    def times_to_fall_below(self, threshold):
+        """ Calculates the time shifts it which the kernel value falls below a
+        certain threshold.
+
+        :param threshold:
+        :type threshold: Quanitity scalar
+        :returns: negative time shift, positive time shift
+        :rtype: Quantity scalar, Quantity scalar
+        """
+        raise NotImplementedError()
+
+
+class CausalDecayingExpKernel(Kernel):
+    @staticmethod
+    def evaluate(x, kernel_size):
+        return sp.piecewise(
+            x, [x < 0, x >= 0], [
+                lambda x: 0,
+                lambda x: sp.exp(-x / kernel_size) / kernel_size])
+
+    def __init__(self, kernel_size=1.0 * pq.s):
+        Kernel.__init__(self, self.evaluate, kernel_size=kernel_size)
+
+    def times_to_fall_below(self, threshold):
+        return (0.0, -self.params['kernel_size'] *
+                scipy.log(self.params['kernel_size'] * threshold))
+
+
+class GaussianKernel(Kernel):
+    @staticmethod
+    def evaluate(t, kernel_size):
+        return (1.0 / (sp.sqrt(2 * sp.pi) * kernel_size) *
+                sp.exp(-0.5 * (t / kernel_size) ** 2))
+
+    def __init__(self, kernel_size=1.0 * pq.s):
+        Kernel.__init__(self, self.evaluate, kernel_size=kernel_size)
+
+    def times_to_fall_below(self, threshold):
+        t = self.params['kernel_size'] * sp.sqrt(-2 * sp.log(
+            self.params['kernel_size'] * threshold * sp.sqrt(2 * sp.pi)))
+        return (-t, t)
+
+
+class LaplacianKernel(Kernel):
+    @staticmethod
+    def evaluate(t, kernel_size):
+        return sp.exp(-sp.absolute(t) / kernel_size) / (2.0 * kernel_size)
+
+    def __init__(self, kernel_size=1.0 * pq.s):
+        Kernel.__init__(self, self.evaluate, kernel_size=kernel_size)
+
+    def times_to_fall_below(self, threshold):
+        t = -self.params['kernel_size'] * sp.log(
+            2 * self.params['kernel_size'] * threshold)
+        return (-t, t)
+
+
+class RectangularKernel(Kernel):
+    @staticmethod
+    def evaluate(t, half_width):
+        return (sp.absolute(t) < half_width) / (2.0 * half_width)
+
+    def __init__(self, half_width=1.0 * pq.s):
+        Kernel.__init__(self, self.evaluate, half_width=half_width)
+
+    def times_to_fall_below(self, threshold):
+        return (-self.params['half_width'], self.params['half_width'])
 
 
 def _pq_arange(start, stop=None, step=1):
@@ -50,7 +111,7 @@ def st_convolve(train, kernel, sampling_rate=None):
         the kernel will be evaluated.
     :param sampling_rate: The sampling rate which will be used to discretize
         the spike train. If `None`, `train.sampling_rate` will be used. If that
-        is also `None`, 100Hz will be used.
+        is also `None`, :py:const:`default_sampling_rate` will be used.
     :type sampling_rate: Quantity scalar
     :param kwargs: Additional arguments passed to the kernel function.
     :returns: The convolved spike train, the boundaries of the discretization
@@ -62,7 +123,7 @@ def st_convolve(train, kernel, sampling_rate=None):
         if train.sampling_rate is not None:
             sampling_rate = train.sampling_rate
         else:
-            sampling_rate = 100 * pq.Hz
+            sampling_rate = default_sampling_rate
 
     duration = train.t_stop - train.t_start
     num_bins = sampling_rate * duration + 1

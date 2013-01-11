@@ -16,7 +16,7 @@ import spykeutils.signal_processing as sigproc
 class Test_st_convolve(ut.TestCase):
     def test_convolution_with_empty_spike_train_returns_array_of_zeros(self):
         st = create_empty_spike_train()
-        result, _ = sigproc.st_convolve(st, sigproc.gauss_kernel)
+        result, _ = sigproc.st_convolve(st, sigproc.GaussianKernel())
         self.assertTrue(sp.all(result == 0.0))
 
     def test_length_of_returned_array_equals_sampling_rate_times_duration(self):
@@ -28,13 +28,13 @@ class Test_st_convolve(ut.TestCase):
 
         st = create_empty_spike_train(start, stop)
         result, _ = sigproc.st_convolve(
-            st, sigproc.gauss_kernel, sampling_rate=sampling_rate)
+            st, sigproc.GaussianKernel(), sampling_rate=sampling_rate)
         self.assertEqual(expected_length, result.size)
 
     def test_returns_convolved_spike_train(self):
         st = neo.SpikeTrain(sp.array([1.0, 2.0]) * pq.s, t_stop=3.0 * pq.s)
         kernel = sigproc.Kernel(
-            sigproc.rectangular_kernel, half_width=0.3 * pq.s)
+            sigproc.RectangularKernel(0.3 * pq.s))
         expected = sp.array(
             [0.0, 0.0, 0.0, 0.0, 1.4444444, 1.4444444, 1.4444444, 0.0,
              1.4444444, 1.4444444, 1.4444444, 0.0])
@@ -50,7 +50,7 @@ class Test_st_convolve(ut.TestCase):
 
         st = create_empty_spike_train(start, stop)
         st.sampling_rate = sampling_rate
-        result, _ = sigproc.st_convolve(st, sigproc.gauss_kernel)
+        result, _ = sigproc.st_convolve(st, sigproc.GaussianKernel())
         self.assertEqual(expected_length, result.size)
 
     def test_returns_discretization_bins(self):
@@ -61,7 +61,7 @@ class Test_st_convolve(ut.TestCase):
 
         st = create_empty_spike_train(start, stop)
         _, bins = sigproc.st_convolve(
-            st, sigproc.gauss_kernel, sampling_rate=sampling_rate)
+            st, sigproc.GaussianKernel(), sampling_rate=sampling_rate)
         assert_array_almost_equal(expected, bins)
 
 
