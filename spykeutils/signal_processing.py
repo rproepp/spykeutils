@@ -5,6 +5,7 @@
 import quantities as pq
 import scipy as sp
 import scipy.signal
+import scipy.special
 
 default_sampling_rate = 1000 * pq.Hz
 
@@ -25,12 +26,12 @@ class Kernel(object):
     def __call__(self, t):
         return self.kernel_func(t, **self.params)
 
-    def times_to_fall_below(self, threshold):
-        """ Calculates the time shifts it which the kernel value falls below a
-        certain threshold.
+    def interval_enclosing_at_least(self, fraction):
+        """ Calculates the interval enclosing a certain fraction of the integral
+        of the kernel.
 
-        :param threshold:
-        :type threshold: Quanitity scalar
+        :param float fraction: Fraction of the whole area which at least has to
+            be enclosed.
         :returns: left bound, right bound
         :rtype: Quantity scalar, Quantity scalar
         """
@@ -49,10 +50,9 @@ class CausalDecayingExpKernel(Kernel):
     def __init__(self, kernel_size=1.0 * pq.s):
         Kernel.__init__(self, self.evaluate, kernel_size=kernel_size)
 
-    def times_to_fall_below(self, threshold):
+    def interval_enclosing_at_least(self, fraction):
         return (0.0 * self.params['kernel_size'].units,
-                -self.params['kernel_size'] * scipy.log(
-                (self.params['kernel_size'] * threshold).simplified))
+                - self.params['kernel_size'] * sp.log(1.0 - fraction))
 
 
 class GaussianKernel(Kernel):
@@ -64,10 +64,9 @@ class GaussianKernel(Kernel):
     def __init__(self, kernel_size=1.0 * pq.s):
         Kernel.__init__(self, self.evaluate, kernel_size=kernel_size)
 
-    def times_to_fall_below(self, threshold):
-        t = self.params['kernel_size'] * sp.sqrt(-2 * sp.log(
-            (self.params['kernel_size'] * threshold).simplified *
-            sp.sqrt(2 * sp.pi)))
+    def interval_enclosing_at_least(self, fraction):
+        t = self.params['kernel_size'] * sp.sqrt(2.0) * \
+            scipy.special.erfinv(fraction + scipy.special.erf(0.0))
         return (-t, t)
 
 
@@ -80,9 +79,8 @@ class LaplacianKernel(Kernel):
     def __init__(self, kernel_size=1.0 * pq.s):
         Kernel.__init__(self, self.evaluate, kernel_size=kernel_size)
 
-    def times_to_fall_below(self, threshold):
-        t = -self.params['kernel_size'] * sp.log(
-            2 * (self.params['kernel_size'] * threshold).simplified)
+    def interval_enclosing_at_least(self, fraction):
+        t = - self.params['kernel_size'] * sp.log(1.0 - fraction)
         return (-t, t)
 
 
@@ -94,7 +92,7 @@ class RectangularKernel(Kernel):
     def __init__(self, half_width=1.0 * pq.s):
         Kernel.__init__(self, self.evaluate, half_width=half_width)
 
-    def times_to_fall_below(self, threshold):
+    def interval_enclosing_at_least(self, fraction):
         return (-self.params['half_width'], self.params['half_width'])
 
 

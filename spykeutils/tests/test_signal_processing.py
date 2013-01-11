@@ -24,10 +24,10 @@ class TestCausalDecayingExpKernel(ut.TestCase):
         actual = self.kernel(t)
         assert_array_almost_equal(expected, actual.rescale(expected.units))
 
-    def test_times_to_fall_below_are_correct(self):
-        left, right = self.kernel.times_to_fall_below(0.01 / pq.s)
+    def test_interval_enclosing_at_least_is_correct(self):
+        left, right = self.kernel.interval_enclosing_at_least(0.99)
         self.assertAlmostEqual(left.rescale(pq.s), 0.0 * pq.s)
-        self.assertAlmostEqual(right.rescale(pq.s), 2.64915868 * pq.s)
+        self.assertAlmostEqual(right.rescale(pq.s), 2.30258509 * pq.s)
 
 
 class TestGaussianKernel(ut.TestCase):
@@ -42,9 +42,9 @@ class TestGaussianKernel(ut.TestCase):
         actual = self.kernel(t)
         assert_array_almost_equal(expected, actual.rescale(expected.units))
 
-    def test_times_to_fall_below_are_correct(self):
-        left, right = self.kernel.times_to_fall_below(0.01 / pq.s)
-        expected = 1.47975992
+    def test_interval_enclosing_at_least_is_correct(self):
+        left, right = self.kernel.interval_enclosing_at_least(0.99)
+        expected = 1.28791465
         self.assertAlmostEqual(left.rescale(pq.s), -expected * pq.s)
         self.assertAlmostEqual(right.rescale(pq.s), expected * pq.s)
 
@@ -61,8 +61,8 @@ class TestLaplacianKernel(ut.TestCase):
         actual = self.kernel(t)
         assert_array_almost_equal(expected, actual.rescale(expected.units))
 
-    def test_times_to_fall_below_are_correct(self):
-        left, right = self.kernel.times_to_fall_below(0.01 / pq.s)
+    def test_interval_enclosing_at_least_is_correct(self):
+        left, right = self.kernel.interval_enclosing_at_least(0.99)
         expected = 2.30258509
         self.assertAlmostEqual(left.rescale(pq.s), -expected * pq.s)
         self.assertAlmostEqual(right.rescale(pq.s), expected * pq.s)
@@ -79,10 +79,12 @@ class TestRectangularKernel(ut.TestCase):
         actual = self.kernel(t)
         assert_array_almost_equal(expected, actual.rescale(expected.units))
 
-    def test_times_to_fall_below_are_correct(self):
-        left, right = self.kernel.times_to_fall_below(0.01 / pq.s)
-        self.assertAlmostEqual(left.rescale(pq.s), -self.kernel_size)
-        self.assertAlmostEqual(right.rescale(pq.s), self.kernel_size)
+    def test_interval_enclosing_at_least_is_correct(self):
+        left, right = self.kernel.interval_enclosing_at_least(0.99)
+        self.assertAlmostEqual(
+            left.rescale(self.kernel_size.units), -self.kernel_size)
+        self.assertAlmostEqual(
+            right.rescale(self.kernel_size.units), self.kernel_size)
 
 
 class Test_st_convolve(ut.TestCase):
