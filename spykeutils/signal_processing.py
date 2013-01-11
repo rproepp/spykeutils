@@ -157,17 +157,30 @@ def _pq_arange(start, stop=None, step=1):
 
 
 def st_convolve(
-        train, kernel, kernel_area_fraction=0.999, **discretizationParams):
+        train, kernel, kernel_area_fraction=0.999, mode='same',
+        **discretizationParams):
     """ Convolves a spike train with a kernel.
 
     :param SpikeTrain train: Spike train to convolve.
-    :param Kernel kernel: The kernel instance to convolve with.
+    :param kernel: The kernel instance to convolve with.
+    :type kernel: :class:`Kernel`
     :param float kernel_area_fraction: A value between 0 and 1 which controls
         the interval over which the kernel will be discretized. At least the
         given fraction of the complete kernel area will be covered. Higher
         values can lead to more accurate results (besides the sampling rate).
+    :param mode:
+        * 'same': The default which returns an array covering the whole
+          the duration of the spike train `train`.
+        * 'full': Returns an array with additional discretization bins in the
+          beginning and end so that for each spike the whole discretized
+          kernel is included.
+        * 'valid': Returns only the discretization bins where the discretized
+          kernel and spike train completely overlap.
+        See also `numpy.convolve
+        <http://docs.scipy.org/doc/numpy/reference/generated/numpy.convolve.html>`_.
+    :type mode: {'same', 'full', 'valid'}
     :param discretizationParams: Additional discretization arguments which will
-        be passed to func:`bin_spike_train`.
+        be passed to :func:`bin_spike_train`.
     :returns: The convolved spike train, the boundaries of the discretization
         bins
     :rtype: (1D array, Quantity 1D)
@@ -176,4 +189,13 @@ def st_convolve(
     binned, bins = bin_spike_train(train, **discretizationParams)
     sampling_rate = binned.size / (bins[-1] - bins[0])
     k = kernel.discretize(kernel_area_fraction, sampling_rate)
-    return scipy.signal.convolve(binned, k, 'same'), bins
+    result = scipy.signal.convolve(binned, k, mode)
+
+    assert (result.size - binned.size) % 2 == 0
+    num_additional_bins = (result.size - binned.size) // 2
+    bins = sp.linspace(
+        bins[0] - num_additional_bins / sampling_rate,
+        bins[-1] + num_additional_bins / sampling_rate,
+        result.size + 1)
+
+    return result, bins

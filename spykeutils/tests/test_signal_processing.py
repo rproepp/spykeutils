@@ -130,6 +130,37 @@ class Test_st_convolve(ut.TestCase):
             st, sigproc.GaussianKernel(), sampling_rate=sampling_rate)
         assert_array_almost_equal(expected, bins)
 
+    def test_mode_allows_full_convolution(self):
+        start = 2.0 * pq.s
+        stop = 5.0 * pq.s
+        sampling_rate = 2.0 * pq.Hz
+        kernel = sigproc.RectangularKernel(0.6 * pq.s)
+        st = create_empty_spike_train(start, stop)
+
+        expected_length = (stop - start) * sampling_rate + 2
+        expected_bins = sp.array(
+            [1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5]) * pq.s
+
+        binned, bins = sigproc.st_convolve(
+            st, kernel, mode='full', sampling_rate=sampling_rate)
+        self.assertEqual(binned.size, expected_length)
+        assert_array_almost_equal(expected_bins, bins)
+
+    def test_mode_allows_valid_convolution(self):
+        start = 2.0 * pq.s
+        stop = 5.0 * pq.s
+        sampling_rate = 2.0 * pq.Hz
+        kernel = sigproc.RectangularKernel(0.6 * pq.s)
+        st = create_empty_spike_train(start, stop)
+
+        expected_length = (stop - start) * sampling_rate - 2
+        expected_bins = sp.array([2.5, 3.0, 3.5, 4.0, 4.5]) * pq.s
+
+        binned, bins = sigproc.st_convolve(
+            st, kernel, mode='valid', sampling_rate=sampling_rate)
+        self.assertEqual(binned.size, expected_length)
+        assert_array_almost_equal(expected_bins, bins)
+
 
 if __name__ == '__main__':
     ut.main()
