@@ -226,5 +226,58 @@ class Test_st_norm(ut.TestCase):
             expected, actual.rescale(expected.units), places=3)
 
 
+class Test_st_norm_dist(ut.TestCase):
+    def test_returns_zero_for_equal_spike_trains(self):
+        a = neo.SpikeTrain(sp.array([
+            1.1844519,  1.57346687,  2.52261998,  3.65824785,  5.38988771,
+            5.63178278,  6.70500182,  7.99562401,  9.21135176
+        ]) * pq.s, t_stop=10.0 * pq.s, sampling_rate=100 * pq.Hz)
+        k = sigproc.GaussianKernel()
+        self.assertAlmostEqual(
+            0.0 * pq.Hz ** 0.5, stm.st_norm_dist(a, a.copy(), k))
+
+    def test_returns_norm_if_one_spike_train_is_empty(self):
+        empty = create_empty_spike_train()
+        non_empty = neo.SpikeTrain(sp.array([1.0]) * pq.s, t_stop=2.0 * pq.s)
+        sampling_rate = 100 * pq.Hz
+        kernel = sigproc.GaussianKernel()
+        expected = stm.st_norm(non_empty, kernel, sampling_rate=sampling_rate)
+        self.assertAlmostEqual(
+            expected, stm.st_norm_dist(
+                empty, non_empty, kernel, sampling_rate=sampling_rate),
+            places=3)
+        self.assertAlmostEqual(
+            expected, stm.st_norm_dist(
+                non_empty, empty, kernel, sampling_rate=sampling_rate),
+            places=3)
+
+    def test_returns_correct_spike_train_norm_distance(self):
+        a = neo.SpikeTrain(
+            sp.array([1.0]) * pq.s, t_start=0.6 * pq.s, t_stop=1.4 * pq.s)
+        b = neo.SpikeTrain(
+            sp.array([0.5, 1.5]) * pq.s, t_stop=2.0 * pq.s)
+        kernel = sigproc.GaussianKernel(1.0 * pq.s)
+        expected = (0.225662 * pq.Hz) ** 0.5
+        actual = stm.st_norm_dist(a, b, kernel, sampling_rate=200 * pq.Hz)
+        self.assertAlmostEqual(
+            expected, actual.rescale(expected.units), places=3)
+
+    def test_is_symmetric(self):
+        a = neo.SpikeTrain(sp.array([
+            1.1844519,  1.57346687,  2.52261998,  3.65824785,  5.38988771,
+            5.63178278,  6.70500182,  7.99562401,  9.21135176
+        ]) * pq.s, t_stop=10.0 * pq.s)
+        b = neo.SpikeTrain(sp.array([
+            0.86096077,  3.54273148,  4.20476326,  6.02451599,  6.42851683,
+            6.5564268,  7.07864592,  7.2368936,  7.31784319,  8.15148958,
+            8.53540889
+        ]) * pq.s, t_stop=10.0 * pq.s)
+        k = sigproc.GaussianKernel()
+        sampling_rate = 350 * pq.Hz
+        self.assertAlmostEqual(
+            stm.st_norm_dist(a, b, k, sampling_rate=sampling_rate),
+            stm.st_norm_dist(b, a, k, sampling_rate=sampling_rate), places=3)
+
+
 if __name__ == '__main__':
     ut.main()

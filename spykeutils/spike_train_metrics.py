@@ -247,3 +247,11 @@ def st_norm(train, kernel, **inner_params):
     :rtype: Quantity scalar
     """
     return st_inner(train, train, kernel, **inner_params) ** 0.5
+
+
+def st_norm_dist(a, b, kernel, **inner_params):
+    return max(
+        0.0 * pq.Hz,
+        st_inner(a, a, kernel, **inner_params) +
+        st_inner(b, b, kernel, **inner_params) -
+        2 * st_inner(a, b, kernel, **inner_params)) ** 0.5
