@@ -227,4 +227,23 @@ def st_inner(
 
 
 def st_norm(train, kernel, **inner_params):
+    """ Calculates the spike train norm given a kernel.
+
+    Let :math:`v(t)` with :math:`t \\in \\mathcal{T}` be a spike trains
+    convolved with some kernel. Then, the norm of the spike train is defined as
+    :math:`\\int_{\\mathcal{T}} v(t)^2 dt`.
+
+    Further information can be found in *Paiva, A. R. C., Park, I., & Principe,
+    J. (2010). Inner products for representation and learning in the spike
+    train domain. Statistical Signal Processing for Neuroscience and
+    Neurotechnology, Academic Press, New York.*
+
+    :param SpikeTrain a: A spike train.
+    :param kernel: Kernel to be convolved with the spike trains.
+    :type kernel: :class:`.signal_processing.Kernel`
+    :param dict inner_params: Additional parameter for controlling the precision
+        which will be passed to :func:`st_inner`.
+    :returns: The of the spike train given the kernel.
+    :rtype: Quantity scalar
+    """
     return st_inner(train, train, kernel, **inner_params) ** 0.5
