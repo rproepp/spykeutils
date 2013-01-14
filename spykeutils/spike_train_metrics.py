@@ -234,7 +234,7 @@ def st_norm(
         sampling_rate=None):
     """ Calculates the spike train norm given a kernel.
 
-    Let :math:`v(t)` with :math:`t \\in \\mathcal{T}` be a spike trains
+    Let :math:`v(t)` with :math:`t \\in \\mathcal{T}` be a spike train
     convolved with some kernel. Then, the norm of the spike train is defined as
     :math:`\\int_{\\mathcal{T}} v(t)^2 dt`.
 
@@ -243,8 +243,8 @@ def st_norm(
     train domain. Statistical Signal Processing for Neuroscience and
     Neurotechnology, Academic Press, New York.*
 
-    :param SpikeTrain a: A spike train.
-    :param kernel: Kernel to be convolved with the spike trains.
+    :param SpikeTrain train: A spike train.
+    :param kernel: Kernel to be convolved with the spike train.
     :type kernel: :class:`.signal_processing.Kernel`
     :param float kernel_area_fraction: A value between 0 and 1 which controls
         the interval over which the kernel will be discretized. At least the
@@ -257,7 +257,7 @@ def st_norm(
         trains, that, :py:const:`signal_processing.default_sampling_rate`
         will be used.
     :type sampling_rate: Quantity scalar
-    :returns: The of the spike train given the kernel.
+    :returns: The of norm the spike train given the kernel.
     :rtype: Quantity scalar
     """
 
