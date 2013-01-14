@@ -168,6 +168,7 @@ def st_convolve(
           kernel is included.
         * 'valid': Returns only the discretization bins where the discretized
           kernel and spike train completely overlap.
+
         See also `numpy.convolve
         <http://docs.scipy.org/doc/numpy/reference/generated/numpy.convolve.html>`_.
     :type mode: {'same', 'full', 'valid'}
