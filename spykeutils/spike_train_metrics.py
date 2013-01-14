@@ -308,3 +308,13 @@ def st_norm_dist(
             sp.inner(convolved[1], convolved[1]) -
             2 * sp.inner(*convolved)) *
         convolved[0].units * convolved[1].units / sampling_rate) ** 0.5
+
+
+def cs_dist(
+        a, b, kernel, kernel_area_fraction=sigproc.default_kernel_area_fraction,
+        sampling_rate=sigproc.default_sampling_rate):
+    convolved, sampling_rate = _prepare_for_inner_prod(
+        [a, b], kernel, kernel_area_fraction, sampling_rate)
+    return sp.arccos(
+        sp.inner(*convolved) ** 2 / sp.inner(convolved[0], convolved[0]) /
+        sp.inner(convolved[1], convolved[1]))
