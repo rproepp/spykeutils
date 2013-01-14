@@ -314,6 +314,37 @@ def st_norm_dist(
 def cs_dist(
         a, b, kernel, kernel_area_fraction=sigproc.default_kernel_area_fraction,
         sampling_rate=sigproc.default_sampling_rate):
+    """ Calculates the Cauchy-Schwarz distance between two spike trains given a kernel.
+
+    Let :math:`v_a(t)` and :math:`v_b(t)` with :math:`t \\in \\mathcal{T}` be
+    the spike trains convolved with some kernel and :math:`V(a, b)
+    = \\int_{\\mathcal{T}} v_a(t) v_b(t) dt`. Then, the Cauchy-Schwarz distance
+    of the spike trains is defined as :math:`d_{CS}(a, b) = \\arccos \\frac{V(a,
+    b)^2}{V(a, a) V(b, b)}`.
+
+    Further information can be found in *Paiva, A. R. C., Park, I., & Principe,
+    J. (2010). Inner products for representation and learning in the spike
+    train domain. Statistical Signal Processing for Neuroscience and
+    Neurotechnology, Academic Press, New York.*
+
+    :param SpikeTrain a: First spike train.
+    :param SpikeTrain b: Second spike train.
+    :param kernel: Kernel to be convolved with the spike trains.
+    :type kernel: :class:`.signal_processing.Kernel`
+    :param float kernel_area_fraction: A value between 0 and 1 which controls
+        the interval over which the kernel will be discretized. At least the
+        given fraction of the complete kernel area will be covered. Higher
+        values can lead to more accurate results (besides the sampling rate).
+    :param float kernel_area_fraction:
+    :param sampling_rate: The sampling rate which will be used to bin
+        the spike trains. If `None`, the maximum sampling rate stored in the
+        two spike trains will be used. If it is also `None` for both spike
+        trains, that, :py:const:`signal_processing.default_sampling_rate`
+        will be used.
+    :type sampling_rate: Quantity scalar
+    :returns: The Cauchy-Schwarz distance of the spike trains given the kernel.
+    :rtype: Quantity scalar
+    """
     convolved, sampling_rate = _prepare_for_inner_prod(
         [a, b], kernel, kernel_area_fraction, sampling_rate)
     return sp.arccos(
