@@ -7,6 +7,7 @@ import scipy as sp
 import scipy.signal
 import scipy.special
 
+default_kernel_area_fraction = 0.99999
 default_sampling_rate = 1000 * pq.Hz
 
 
@@ -149,8 +150,8 @@ def bin_spike_train(train, sampling_rate=None, t_start=None, t_stop=None):
 
 
 def st_convolve(
-        train, kernel, kernel_area_fraction=0.99999, mode='same',
-        **discretizationParams):
+        train, kernel, kernel_area_fraction=default_kernel_area_fraction,
+        mode='same', **discretizationParams):
     """ Convolves a spike train with a kernel.
 
     :param SpikeTrain train: Spike train to convolve.

@@ -172,7 +172,8 @@ def _searchsorted_pairwise(a, b):
 
 
 def st_inner(
-        a, b, kernel, kernel_area_fraction=0.99999, sampling_rate=None):
+        a, b, kernel, kernel_area_fraction=sigproc.default_kernel_area_fraction,
+        sampling_rate=None):
     """ Calculates the inner product of two spike trains given a kernel.
 
     Let :math:`v_a(t)` and :math:`v_b(t)` with :math:`t \\in \\mathcal{T}` be
@@ -203,30 +204,34 @@ def st_inner(
     :rtype: Quantity scalar
     """
 
+    convolved, sampling_rate = _prepare_for_inner_prod(
+        [a, b], kernel, kernel_area_fraction, sampling_rate)
+    return (sp.inner(*convolved) * convolved[0].units * convolved[1].units
+            / sampling_rate)
+
+
+def _prepare_for_inner_prod(
+        trains, kernel, kernel_area_fraction, sampling_rate):
     if sampling_rate is None:
-        sampling_rate = max(a.sampling_rate, b.sampling_rate)
+        sampling_rate = max([st.sampling_rate for st in trains])
         if sampling_rate is None or sampling_rate <= 0 * pq.Hz:
             sampling_rate = sigproc.default_sampling_rate
 
-    t_start, t_stop = rate_estimation.minimum_spike_train_interval({0: (a, b)})
+    t_start, t_stop = rate_estimation.minimum_spike_train_interval({0: trains})
     padding = kernel.boundary_enclosing_at_least(kernel_area_fraction)
     t_start -= 2 * padding
     t_stop += 2 * padding
 
-    conv_a, _ = sigproc.st_convolve(
-        a, kernel, kernel_area_fraction, t_start=t_start, t_stop=t_stop,
-        mode='full', sampling_rate=sampling_rate)
-    if a is b:
-        conv_b = conv_a
-    else:
-        conv_b, _ = sigproc.st_convolve(
-            b, kernel, kernel_area_fraction, t_start=t_start, t_stop=t_stop,
-            mode='full', sampling_rate=sampling_rate)
-    return (sp.inner(conv_a, conv_b) * conv_a.units * conv_b.units
-            / sampling_rate)
+    return [sigproc.st_convolve(
+        st, kernel, kernel_area_fraction, t_start=t_start, t_stop=t_stop,
+        mode='full', sampling_rate=sampling_rate)[0] for st in trains], \
+        sampling_rate
 
 
-def st_norm(train, kernel, **inner_params):
+def st_norm(
+        train, kernel,
+        kernel_area_fraction=sigproc.default_kernel_area_fraction,
+        sampling_rate=None):
     """ Calculates the spike train norm given a kernel.
 
     Let :math:`v(t)` with :math:`t \\in \\mathcal{T}` be a spike trains
@@ -241,17 +246,35 @@ def st_norm(train, kernel, **inner_params):
     :param SpikeTrain a: A spike train.
     :param kernel: Kernel to be convolved with the spike trains.
     :type kernel: :class:`.signal_processing.Kernel`
-    :param dict inner_params: Additional parameter for controlling the precision
-        which will be passed to :func:`st_inner`.
+    :param float kernel_area_fraction: A value between 0 and 1 which controls
+        the interval over which the kernel will be discretized. At least the
+        given fraction of the complete kernel area will be covered. Higher
+        values can lead to more accurate results (besides the sampling rate).
+    :param float kernel_area_fraction:
+    :param sampling_rate: The sampling rate which will be used to bin
+        the spike trains. If `None`, the maximum sampling rate stored in the
+        two spike trains will be used. If it is also `None` for both spike
+        trains, that, :py:const:`signal_processing.default_sampling_rate`
+        will be used.
+    :type sampling_rate: Quantity scalar
     :returns: The of the spike train given the kernel.
     :rtype: Quantity scalar
     """
-    return st_inner(train, train, kernel, **inner_params) ** 0.5
+
+    convolved, sampling_rate = _prepare_for_inner_prod(
+        [train], kernel, kernel_area_fraction, sampling_rate)
+    return ((sp.inner(convolved[0], convolved[0]) / sampling_rate) ** 0.5 *
+            convolved[0].units)
 
 
-def st_norm_dist(a, b, kernel, **inner_params):
+def st_norm_dist(
+        a, b, kernel, kernel_area_fraction=sigproc.default_kernel_area_fraction,
+        sampling_rate=sigproc.default_sampling_rate):
+    convolved, sampling_rate = _prepare_for_inner_prod(
+        [a, b], kernel, kernel_area_fraction, sampling_rate)
     return max(
         0.0 * pq.Hz,
-        st_inner(a, a, kernel, **inner_params) +
-        st_inner(b, b, kernel, **inner_params) -
-        2 * st_inner(a, b, kernel, **inner_params)) ** 0.5
+        (sp.inner(convolved[0], convolved[0]) +
+            sp.inner(convolved[1], convolved[1]) -
+            2 * sp.inner(*convolved)) *
+        convolved[0].units * convolved[1].units / sampling_rate) ** 0.5
