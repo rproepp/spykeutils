@@ -267,7 +267,7 @@ def st_norm(
             convolved[0].units)
 
 
-def st_norm_dist(
+def norm_dist(
         a, b, kernel, kernel_area_fraction=sigproc.default_kernel_area_fraction,
         sampling_rate=sigproc.default_sampling_rate):
     """ Calculates the norm distance between two spike trains given a kernel.

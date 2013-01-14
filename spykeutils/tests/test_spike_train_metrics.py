@@ -226,7 +226,7 @@ class Test_st_norm(ut.TestCase):
             expected, actual.rescale(expected.units), places=3)
 
 
-class Test_st_norm_dist(ut.TestCase):
+class Test_norm_dist(ut.TestCase):
     def test_returns_zero_for_equal_spike_trains(self):
         a = neo.SpikeTrain(sp.array([
             1.1844519,  1.57346687,  2.52261998,  3.65824785,  5.38988771,
@@ -234,7 +234,7 @@ class Test_st_norm_dist(ut.TestCase):
         ]) * pq.s, t_stop=10.0 * pq.s, sampling_rate=100 * pq.Hz)
         k = sigproc.GaussianKernel()
         self.assertAlmostEqual(
-            0.0 * pq.Hz ** 0.5, stm.st_norm_dist(a, a.copy(), k))
+            0.0 * pq.Hz ** 0.5, stm.norm_dist(a, a.copy(), k))
 
     def test_returns_norm_if_one_spike_train_is_empty(self):
         empty = create_empty_spike_train()
@@ -243,11 +243,11 @@ class Test_st_norm_dist(ut.TestCase):
         kernel = sigproc.GaussianKernel()
         expected = stm.st_norm(non_empty, kernel, sampling_rate=sampling_rate)
         self.assertAlmostEqual(
-            expected, stm.st_norm_dist(
+            expected, stm.norm_dist(
                 empty, non_empty, kernel, sampling_rate=sampling_rate),
             places=3)
         self.assertAlmostEqual(
-            expected, stm.st_norm_dist(
+            expected, stm.norm_dist(
                 non_empty, empty, kernel, sampling_rate=sampling_rate),
             places=3)
 
@@ -258,7 +258,7 @@ class Test_st_norm_dist(ut.TestCase):
             sp.array([0.5, 1.5]) * pq.s, t_stop=2.0 * pq.s)
         kernel = sigproc.GaussianKernel(1.0 * pq.s)
         expected = (0.225662 * pq.Hz) ** 0.5
-        actual = stm.st_norm_dist(a, b, kernel, sampling_rate=200 * pq.Hz)
+        actual = stm.norm_dist(a, b, kernel, sampling_rate=200 * pq.Hz)
         self.assertAlmostEqual(
             expected, actual.rescale(expected.units), places=3)
 
@@ -275,8 +275,8 @@ class Test_st_norm_dist(ut.TestCase):
         k = sigproc.GaussianKernel()
         sampling_rate = 350 * pq.Hz
         self.assertAlmostEqual(
-            stm.st_norm_dist(a, b, k, sampling_rate=sampling_rate),
-            stm.st_norm_dist(b, a, k, sampling_rate=sampling_rate), places=3)
+            stm.norm_dist(a, b, k, sampling_rate=sampling_rate),
+            stm.norm_dist(b, a, k, sampling_rate=sampling_rate), places=3)
 
 
 class Test_cs_dist(ut.TestCase):
