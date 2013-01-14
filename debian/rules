@@ -36,3 +36,8 @@ endif
 ## and exemplar data (they are small excerpts anyway)
 override_dh_compress:
 	dh_compress -X.py -X.html -X.css -X.jpg -X.txt -X.js -X.json -X.rtc -X.par -X.bin
+
+override_dh_auto_clean:
+	dh_auto_clean
+	-rm -rf doc/build build
+	-rm -rf spykeutils.egg-info
