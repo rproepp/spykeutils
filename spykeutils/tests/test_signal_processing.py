@@ -128,9 +128,11 @@ class Test_st_convolve(ut.TestCase):
     def test_returns_convolved_spike_train(self):
         st = neo.SpikeTrain(sp.array([1.0, 2.0]) * pq.s, t_stop=3.0 * pq.s)
         kernel = sigproc.RectangularKernel(0.3 * pq.s)
+        # Because of the low sampling rate the expected result is a bit off
+        # from the analytical result.
         expected = sp.array(
-            [0.0, 0.0, 0.0, 1.3333333, 1.3333333, 1.3333333, 0.0,
-             1.3333333, 1.3333333, 1.3333333, 0.0, 0.0])
+            [0.0, 0.0, 0.0, 1.6666666, 1.6666666, 1.6666666, 0.0,
+             1.6666666, 1.6666666, 1.6666666, 0.0, 0.0]) * pq.Hz
         actual, _ = sigproc.st_convolve(st, kernel, sampling_rate=4 * pq.Hz)
         assert_array_almost_equal(expected, actual)
 

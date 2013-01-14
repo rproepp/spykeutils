@@ -51,10 +51,10 @@ class Kernel(object):
 
         t_step = 1.0 / sampling_rate
         boundary = self.boundary_enclosing_at_least(area_fraction)
-        t_start = sp.ceil(-boundary / t_step) * t_step
-        t_stop = sp.floor(boundary / t_step) * t_step + t_step
-        k = self(_pq_arange(t_start, t_stop, t_step))
-        return k / (t_step * sp.sum(k))
+        start = sp.ceil(-boundary / t_step)
+        stop = sp.floor(boundary / t_step) + 1
+        k = self(sp.arange(start, stop) * t_step)
+        return k
 
 
 class CausalDecayingExpKernel(Kernel):
@@ -146,14 +146,6 @@ def bin_spike_train(train, sampling_rate=None, t_start=None, t_stop=None):
     bins = sp.linspace(t_start, t_stop, num_bins)
     binned, _ = sp.histogram(train.rescale(bins.units), bins)
     return binned, bins
-
-
-def _pq_arange(start, stop=None, step=1):
-    if stop is None:
-        stop = start
-        start = 0 * stop.units
-    return sp.arange(
-        start.rescale(stop.units), stop, step.rescale(stop.units)) * stop.units
 
 
 def st_convolve(
