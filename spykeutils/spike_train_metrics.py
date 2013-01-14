@@ -345,6 +345,9 @@ def cs_dist(
     :returns: The Cauchy-Schwarz distance of the spike trains given the kernel.
     :rtype: Quantity scalar
     """
+    if a.size <= 0 or b.size <= 0:
+        return sp.nan
+
     convolved, sampling_rate = _prepare_for_inner_prod(
         [a, b], kernel, kernel_area_fraction, sampling_rate)
     return sp.arccos(

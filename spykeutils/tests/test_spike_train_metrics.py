@@ -289,20 +289,17 @@ class Test_cs_dist(ut.TestCase):
         self.assertAlmostEqual(
             0.0 * pq.Hz ** 0.5, stm.cs_dist(a, a.copy(), k))
 
-    #def test_returns_norm_if_one_spike_train_is_empty(self):
-        #empty = create_empty_spike_train()
-        #non_empty = neo.SpikeTrain(sp.array([1.0]) * pq.s, t_stop=2.0 * pq.s)
-        #sampling_rate = 100 * pq.Hz
-        #kernel = sigproc.GaussianKernel()
-        #expected = stm.st_norm(non_empty, kernel, sampling_rate=sampling_rate)
-        #self.assertAlmostEqual(
-            #expected, stm.cs_dist(
-                #empty, non_empty, kernel, sampling_rate=sampling_rate),
-            #places=3)
-        #self.assertAlmostEqual(
-            #expected, stm.cs_dist(
-                #non_empty, empty, kernel, sampling_rate=sampling_rate),
-            #places=3)
+    def test_returns_nan_if_one_spike_train_is_empty(self):
+        empty = create_empty_spike_train()
+        non_empty = neo.SpikeTrain(sp.array([1.0]) * pq.s, t_stop=2.0 * pq.s)
+        sampling_rate = 100 * pq.Hz
+        kernel = sigproc.GaussianKernel()
+        self.assertIs(stm.cs_dist(
+            empty, empty, kernel, sampling_rate=sampling_rate), sp.nan)
+        self.assertIs(stm.cs_dist(
+            empty, non_empty, kernel, sampling_rate=sampling_rate), sp.nan)
+        self.assertIs(stm.cs_dist(
+            non_empty, empty, kernel, sampling_rate=sampling_rate), sp.nan)
 
     def test_returns_correct_spike_train_cauchy_schwarz_distance(self):
         a = neo.SpikeTrain(
