@@ -274,8 +274,8 @@ def st_norm_dist(
 
     Let :math:`v_a(t)` and :math:`v_b(t)` with :math:`t \\in \\mathcal{T}` be
     the spike trains convolved with some kernel. Then, the norm distance of the
-    spike trains is defined as :math:`\\sqrt{\\int_{\\mathcal{T}} (v_a(t)
-    - v_b(t))^2 dt}`.
+    spike trains is defined as :math:`d_{ND}(a, b)
+    = \\sqrt{\\int_{\\mathcal{T}} (v_a(t) - v_b(t))^2 dt}`.
 
     Further information can be found in *Paiva, A. R. C., Park, I., & Principe,
     J. (2010). Inner products for representation and learning in the spike
@@ -300,6 +300,7 @@ def st_norm_dist(
     :returns: The norm distance of the spike trains given the kernel.
     :rtype: Quantity scalar
     """
+
     convolved, sampling_rate = _prepare_for_inner_prod(
         [a, b], kernel, kernel_area_fraction, sampling_rate)
     return max(
