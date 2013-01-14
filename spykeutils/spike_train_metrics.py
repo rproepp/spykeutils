@@ -1,6 +1,8 @@
 
 import quantities as pq
+import rate_estimation
 import scipy as sp
+import signal_processing as sigproc
 
 
 def victor_purpura_dist(a, b, q=1.0 * pq.s ** -1):
@@ -167,3 +169,25 @@ def _searchsorted_pairwise(a, b):
     idx_a[i:] = j - 1
     idx_b[j:] = i - 1
     return idx_a, idx_b
+
+
+def st_inner(
+        a, b, kernel, kernel_area_fraction=0.99999, sampling_rate=None):
+    if sampling_rate is None:
+        sampling_rate = max(a.sampling_rate, b.sampling_rate)
+        if sampling_rate is None or sampling_rate <= 0 * pq.Hz:
+            sampling_rate = sigproc.default_sampling_rate
+
+    t_start, t_stop = rate_estimation.minimum_spike_train_interval({0: (a, b)})
+    padding = kernel.boundary_enclosing_at_least(kernel_area_fraction)
+    t_start -= 2 * padding
+    t_stop += 2 * padding
+
+    conv_a, bins1 = sigproc.st_convolve(
+        a, kernel, kernel_area_fraction, t_start=t_start, t_stop=t_stop,
+        mode='full', sampling_rate=sampling_rate)
+    conv_b, bins2 = sigproc.st_convolve(
+        b, kernel, kernel_area_fraction, t_start=t_start, t_stop=t_stop,
+        mode='full', sampling_rate=sampling_rate)
+    return (sp.inner(conv_a, conv_b) * conv_a.units * conv_b.units
+            / sampling_rate)

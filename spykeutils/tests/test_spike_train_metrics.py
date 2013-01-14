@@ -10,6 +10,7 @@ from numpy.testing import assert_array_almost_equal
 import neo
 import quantities as pq
 import scipy as sp
+import spykeutils.signal_processing as sigproc
 import spykeutils.spike_train_metrics as stm
 
 
@@ -170,6 +171,43 @@ class Test_searchsorted_pairwise(ut.TestCase):
         self.assert_array_tuple_equal(
             ([], []),
             stm._searchsorted_pairwise([], []))
+
+
+class Test_st_inner(ut.TestCase):
+    def test_returns_zero_if_any_spike_train_is_empty(self):
+        empty = create_empty_spike_train()
+        non_empty = neo.SpikeTrain(sp.array([1.0]) * pq.s, t_stop=2.0 * pq.s)
+        kernel = sigproc.GaussianKernel()
+        self.assertAlmostEqual(0.0, stm.st_inner(empty, empty, kernel))
+        self.assertAlmostEqual(0.0, stm.st_inner(empty, non_empty, kernel))
+        self.assertAlmostEqual(0.0, stm.st_inner(non_empty, empty, kernel))
+
+    def test_returns_correct_inner_spike_train_product(self):
+        a = neo.SpikeTrain(
+            sp.array([1.0]) * pq.s, t_start=0.6 * pq.s, t_stop=1.4 * pq.s)
+        b = neo.SpikeTrain(
+            sp.array([0.5, 1.5]) * pq.s, t_stop=2.0 * pq.s)
+        kernel = sigproc.GaussianKernel(1.0 * pq.s)
+        expected = 0.530007 * pq.Hz
+        actual = stm.st_inner(a, b, kernel, sampling_rate=100 * pq.Hz)
+        self.assertAlmostEqual(
+            expected, actual.rescale(expected.units), places=3)
+
+    def test_is_symmetric(self):
+        a = neo.SpikeTrain(sp.array([
+            1.1844519,  1.57346687,  2.52261998,  3.65824785,  5.38988771,
+            5.63178278,  6.70500182,  7.99562401,  9.21135176
+        ]) * pq.s, t_stop=10.0 * pq.s)
+        b = neo.SpikeTrain(sp.array([
+            0.86096077,  3.54273148,  4.20476326,  6.02451599,  6.42851683,
+            6.5564268,  7.07864592,  7.2368936,  7.31784319,  8.15148958,
+            8.53540889
+        ]) * pq.s, t_stop=10.0 * pq.s)
+        k = sigproc.GaussianKernel()
+        sampling_rate = 100 * pq.Hz
+        self.assertAlmostEqual(
+            stm.st_inner(a, b, k, sampling_rate=sampling_rate),
+            stm.st_inner(b, a, k, sampling_rate=sampling_rate))
 
 
 if __name__ == '__main__':
