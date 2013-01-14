@@ -149,7 +149,7 @@ def bin_spike_train(train, sampling_rate=None, t_start=None, t_stop=None):
 
 
 def st_convolve(
-        train, kernel, kernel_area_fraction=0.999, mode='same',
+        train, kernel, kernel_area_fraction=0.99999, mode='same',
         **discretizationParams):
     """ Convolves a spike train with a kernel.
 
