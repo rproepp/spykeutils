@@ -173,6 +173,36 @@ def _searchsorted_pairwise(a, b):
 
 def st_inner(
         a, b, kernel, kernel_area_fraction=0.99999, sampling_rate=None):
+    """ Calculates the inner product of two spike trains given a kernel.
+
+    Let :math:`v_a(t)` and :math:`v_b(t)` with :math:`t \\in \\mathcal{T}` be
+    the spike trains convolved with some kernel. Then, the inner product of the
+    spike trains is defined as :math:`\\int_{\\mathcal{T}} v_a(t)v_b(t) dt`.
+
+    Further information can be found in *Paiva, A. R. C., Park, I., & Principe,
+    J. (2010). Inner products for representation and learning in the spike
+    train domain. Statistical Signal Processing for Neuroscience and
+    Neurotechnology, Academic Press, New York.*
+
+    :param SpikeTrain a: First spike train.
+    :param SpikeTrain b: Second spike train.
+    :param kernel: Kernel to be convolved with the spike trains.
+    :type kernel: :class:`.signal_processing.Kernel`
+    :param float kernel_area_fraction: A value between 0 and 1 which controls
+        the interval over which the kernel will be discretized. At least the
+        given fraction of the complete kernel area will be covered. Higher
+        values can lead to more accurate results (besides the sampling rate).
+    :param float kernel_area_fraction:
+    :param sampling_rate: The sampling rate which will be used to bin
+        the spike trains. If `None`, the maximum sampling rate stored in the
+        two spike trains will be used. If it is also `None` for both spike
+        trains, that, :py:const:`signal_processing.default_sampling_rate`
+        will be used.
+    :type sampling_rate: Quantity scalar
+    :returns: The inner product of the two spike trains given the kernel.
+    :rtype: Quantity scalar
+    """
+
     if sampling_rate is None:
         sampling_rate = max(a.sampling_rate, b.sampling_rate)
         if sampling_rate is None or sampling_rate <= 0 * pq.Hz:
