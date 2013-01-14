@@ -175,7 +175,7 @@ def st_convolve(
         be passed to :func:`bin_spike_train`.
     :returns: The convolved spike train, the boundaries of the discretization
         bins
-    :rtype: (1D array, Quantity 1D)
+    :rtype: (Quantity 1D, Quantity 1D)
     """
 
     binned, bins = bin_spike_train(train, **discretizationParams)
