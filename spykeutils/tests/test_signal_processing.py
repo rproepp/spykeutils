@@ -6,7 +6,7 @@ except ImportError:
     import unittest as ut
 
 from builders import create_empty_spike_train
-from numpy.testing import assert_array_almost_equal
+from numpy.testing import assert_array_almost_equal, assert_array_equal
 import neo
 import quantities as pq
 import scipy as sp
@@ -78,6 +78,33 @@ class TestRectangularKernel(ut.TestCase):
         actual = self.kernel.boundary_enclosing_at_least(0.99)
         self.assertAlmostEqual(
             actual.rescale(self.kernel_size.units), self.kernel_size)
+
+
+class Test_bin_spike_train(ut.TestCase):
+    def test_bins_spike_train_using_its_properties(self):
+        a = neo.SpikeTrain(
+            sp.array([1.0]) * pq.s, t_start=0.5 * pq.s, t_stop=1.5 * pq.s)
+        a.sampling_rate = 4.0 * pq.Hz
+        expected = sp.array([0, 0, 1, 0])
+        expectedBins = sp.array([0.5, 0.75, 1.0, 1.25, 1.5]) * pq.s
+        actual, actualBins = sigproc.bin_spike_train(a)
+        assert_array_equal(expected, actual)
+        assert_array_almost_equal(
+            expectedBins, actualBins.rescale(expectedBins.units))
+
+    def test_bins_spike_train_using_passed_properties(self):
+        a = neo.SpikeTrain(
+            sp.array([1.0]) * pq.s, t_start=0.0 * pq.s, t_stop=5.0 * pq.s)
+        sampling_rate = 4.0 * pq.Hz
+        t_start = 0.5 * pq.s
+        t_stop = 1.5 * pq.s
+        expected = sp.array([0, 0, 1, 0])
+        expectedBins = sp.array([0.5, 0.75, 1.0, 1.25, 1.5]) * pq.s
+        actual, actualBins = sigproc.bin_spike_train(
+            a, sampling_rate=sampling_rate, t_start=t_start, t_stop=t_stop)
+        assert_array_equal(expected, actual)
+        assert_array_almost_equal(
+            expectedBins, actualBins.rescale(expectedBins.units))
 
 
 class Test_st_convolve(ut.TestCase):

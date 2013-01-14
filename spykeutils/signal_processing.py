@@ -141,9 +141,9 @@ def bin_spike_train(train, sampling_rate=None, t_start=None, t_stop=None):
     if t_stop is None:
         t_stop = train.t_stop
 
-    duration = train.t_stop - train.t_start
+    duration = t_stop - t_start
     num_bins = sampling_rate * duration + 1
-    bins = sp.linspace(train.t_start, train.t_stop, num_bins)
+    bins = sp.linspace(t_start, t_stop, num_bins)
     binned, _ = sp.histogram(train.rescale(bins.units), bins)
     return binned, bins
 
