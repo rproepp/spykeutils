@@ -181,7 +181,7 @@ def st_convolve(
     binned, bins = bin_spike_train(train, **discretizationParams)
     sampling_rate = binned.size / (bins[-1] - bins[0])
     k = kernel.discretize(kernel_area_fraction, sampling_rate)
-    result = scipy.signal.convolve(binned, k, mode)
+    result = scipy.signal.convolve(binned, k, mode) * k.units
 
     assert (result.size - binned.size) % 2 == 0
     num_additional_bins = (result.size - binned.size) // 2
