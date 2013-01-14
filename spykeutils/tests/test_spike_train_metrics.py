@@ -210,5 +210,21 @@ class Test_st_inner(ut.TestCase):
             stm.st_inner(b, a, k, sampling_rate=sampling_rate))
 
 
+class Test_st_norm(ut.TestCase):
+    def test_returns_zero_if_spike_train_is_empty(self):
+        empty = create_empty_spike_train()
+        kernel = sigproc.GaussianKernel()
+        self.assertAlmostEqual(0.0, stm.st_norm(empty, kernel))
+
+    def test_returns_correct_spike_train_norm(self):
+        st = neo.SpikeTrain(
+            sp.array([0.5, 1.0, 1.5]) * pq.s, t_stop=2.0 * pq.s)
+        kernel = sigproc.GaussianKernel(1.0 * pq.s)
+        expected = (2.34569 * pq.Hz) ** 0.5
+        actual = stm.st_norm(st, kernel, sampling_rate=200 * pq.Hz)
+        self.assertAlmostEqual(
+            expected, actual.rescale(expected.units), places=3)
+
+
 if __name__ == '__main__':
     ut.main()

@@ -213,11 +213,18 @@ def st_inner(
     t_start -= 2 * padding
     t_stop += 2 * padding
 
-    conv_a, bins1 = sigproc.st_convolve(
+    conv_a, _ = sigproc.st_convolve(
         a, kernel, kernel_area_fraction, t_start=t_start, t_stop=t_stop,
         mode='full', sampling_rate=sampling_rate)
-    conv_b, bins2 = sigproc.st_convolve(
-        b, kernel, kernel_area_fraction, t_start=t_start, t_stop=t_stop,
-        mode='full', sampling_rate=sampling_rate)
+    if a is b:
+        conv_b = conv_a
+    else:
+        conv_b, _ = sigproc.st_convolve(
+            b, kernel, kernel_area_fraction, t_start=t_start, t_stop=t_stop,
+            mode='full', sampling_rate=sampling_rate)
     return (sp.inner(conv_a, conv_b) * conv_a.units * conv_b.units
             / sampling_rate)
+
+
+def st_norm(train, kernel, **inner_params):
+    return st_inner(train, train, kernel, **inner_params) ** 0.5
