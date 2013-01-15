@@ -314,7 +314,8 @@ def norm_dist(
 def cs_dist(
         a, b, kernel, kernel_area_fraction=sigproc.default_kernel_area_fraction,
         sampling_rate=sigproc.default_sampling_rate):
-    """ Calculates the Cauchy-Schwarz distance between two spike trains given a kernel.
+    """ Calculates the Cauchy-Schwarz distance between two spike trains given
+    a kernel.
 
     Let :math:`v_a(t)` and :math:`v_b(t)` with :math:`t \\in \\mathcal{T}` be
     the spike trains convolved with some kernel and :math:`V(a, b)
