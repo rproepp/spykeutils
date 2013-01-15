@@ -177,19 +177,22 @@ class Test_st_inner(ut.TestCase):
     def test_returns_zero_if_any_spike_train_is_empty(self):
         empty = create_empty_spike_train()
         non_empty = neo.SpikeTrain(sp.array([1.0]) * pq.s, t_stop=2.0 * pq.s)
-        kernel = sigproc.GaussianKernel()
-        self.assertAlmostEqual(0.0, stm.st_inner(empty, empty, kernel))
-        self.assertAlmostEqual(0.0, stm.st_inner(empty, non_empty, kernel))
-        self.assertAlmostEqual(0.0, stm.st_inner(non_empty, empty, kernel))
+        smoothing_filter = sigproc.GaussianKernel()
+        self.assertAlmostEqual(
+            0.0, stm.st_inner(empty, empty, smoothing_filter))
+        self.assertAlmostEqual(
+            0.0, stm.st_inner(empty, non_empty, smoothing_filter))
+        self.assertAlmostEqual(
+            0.0, stm.st_inner(non_empty, empty, smoothing_filter))
 
     def test_returns_correct_inner_spike_train_product(self):
         a = neo.SpikeTrain(
             sp.array([1.0]) * pq.s, t_start=0.6 * pq.s, t_stop=1.4 * pq.s)
         b = neo.SpikeTrain(
             sp.array([0.5, 1.5]) * pq.s, t_stop=2.0 * pq.s)
-        kernel = sigproc.GaussianKernel(1.0 * pq.s)
+        smoothing_filter = sigproc.GaussianKernel(1.0 * pq.s)
         expected = 0.530007 * pq.Hz
-        actual = stm.st_inner(a, b, kernel, sampling_rate=100 * pq.Hz)
+        actual = stm.st_inner(a, b, smoothing_filter, sampling_rate=100 * pq.Hz)
         self.assertAlmostEqual(
             expected, actual.rescale(expected.units), places=3)
 
@@ -203,25 +206,25 @@ class Test_st_inner(ut.TestCase):
             6.5564268,  7.07864592,  7.2368936,  7.31784319,  8.15148958,
             8.53540889
         ]) * pq.s, t_stop=10.0 * pq.s)
-        k = sigproc.GaussianKernel()
+        f = sigproc.GaussianKernel()
         sampling_rate = 100 * pq.Hz
         self.assertAlmostEqual(
-            stm.st_inner(a, b, k, sampling_rate=sampling_rate),
-            stm.st_inner(b, a, k, sampling_rate=sampling_rate))
+            stm.st_inner(a, b, f, sampling_rate=sampling_rate),
+            stm.st_inner(b, a, f, sampling_rate=sampling_rate))
 
 
 class Test_st_norm(ut.TestCase):
     def test_returns_zero_if_spike_train_is_empty(self):
         empty = create_empty_spike_train()
-        kernel = sigproc.GaussianKernel()
-        self.assertAlmostEqual(0.0, stm.st_norm(empty, kernel))
+        smoothing_filter = sigproc.GaussianKernel()
+        self.assertAlmostEqual(0.0, stm.st_norm(empty, smoothing_filter))
 
     def test_returns_correct_spike_train_norm(self):
         st = neo.SpikeTrain(
             sp.array([0.5, 1.0, 1.5]) * pq.s, t_stop=2.0 * pq.s)
-        kernel = sigproc.GaussianKernel(1.0 * pq.s)
+        smoothing_filter = sigproc.GaussianKernel(1.0 * pq.s)
         expected = (2.34569 * pq.Hz) ** 0.5
-        actual = stm.st_norm(st, kernel, sampling_rate=200 * pq.Hz)
+        actual = stm.st_norm(st, smoothing_filter, sampling_rate=200 * pq.Hz)
         self.assertAlmostEqual(
             expected, actual.rescale(expected.units), places=3)
 
@@ -232,23 +235,26 @@ class Test_norm_dist(ut.TestCase):
             1.1844519,  1.57346687,  2.52261998,  3.65824785,  5.38988771,
             5.63178278,  6.70500182,  7.99562401,  9.21135176
         ]) * pq.s, t_stop=10.0 * pq.s, sampling_rate=100 * pq.Hz)
-        k = sigproc.GaussianKernel()
+        f = sigproc.GaussianKernel()
         self.assertAlmostEqual(
-            0.0 * pq.Hz ** 0.5, stm.norm_dist(a, a.copy(), k))
+            0.0 * pq.Hz ** 0.5, stm.norm_dist(a, a.copy(), f))
 
     def test_returns_norm_if_one_spike_train_is_empty(self):
         empty = create_empty_spike_train()
         non_empty = neo.SpikeTrain(sp.array([1.0]) * pq.s, t_stop=2.0 * pq.s)
         sampling_rate = 100 * pq.Hz
-        kernel = sigproc.GaussianKernel()
-        expected = stm.st_norm(non_empty, kernel, sampling_rate=sampling_rate)
+        smoothing_filter = sigproc.GaussianKernel()
+        expected = stm.st_norm(
+            non_empty, smoothing_filter, sampling_rate=sampling_rate)
         self.assertAlmostEqual(
             expected, stm.norm_dist(
-                empty, non_empty, kernel, sampling_rate=sampling_rate),
+                empty, non_empty, smoothing_filter,
+                sampling_rate=sampling_rate),
             places=3)
         self.assertAlmostEqual(
             expected, stm.norm_dist(
-                non_empty, empty, kernel, sampling_rate=sampling_rate),
+                non_empty, empty, smoothing_filter,
+                sampling_rate=sampling_rate),
             places=3)
 
     def test_returns_correct_spike_train_norm_distance(self):
@@ -256,9 +262,10 @@ class Test_norm_dist(ut.TestCase):
             sp.array([1.0]) * pq.s, t_start=0.6 * pq.s, t_stop=1.4 * pq.s)
         b = neo.SpikeTrain(
             sp.array([0.5, 1.5]) * pq.s, t_stop=2.0 * pq.s)
-        kernel = sigproc.GaussianKernel(1.0 * pq.s)
+        smoothing_filter = sigproc.GaussianKernel(1.0 * pq.s)
         expected = (0.225662 * pq.Hz) ** 0.5
-        actual = stm.norm_dist(a, b, kernel, sampling_rate=200 * pq.Hz)
+        actual = stm.norm_dist(
+            a, b, smoothing_filter, sampling_rate=200 * pq.Hz)
         self.assertAlmostEqual(
             expected, actual.rescale(expected.units), places=3)
 
@@ -272,11 +279,11 @@ class Test_norm_dist(ut.TestCase):
             6.5564268,  7.07864592,  7.2368936,  7.31784319,  8.15148958,
             8.53540889
         ]) * pq.s, t_stop=10.0 * pq.s)
-        k = sigproc.GaussianKernel()
+        f = sigproc.GaussianKernel()
         sampling_rate = 350 * pq.Hz
         self.assertAlmostEqual(
-            stm.norm_dist(a, b, k, sampling_rate=sampling_rate),
-            stm.norm_dist(b, a, k, sampling_rate=sampling_rate), places=3)
+            stm.norm_dist(a, b, f, sampling_rate=sampling_rate),
+            stm.norm_dist(b, a, f, sampling_rate=sampling_rate), places=3)
 
 
 class Test_cs_dist(ut.TestCase):
@@ -285,30 +292,33 @@ class Test_cs_dist(ut.TestCase):
             1.1844519,  1.57346687,  2.52261998,  3.65824785,  5.38988771,
             5.63178278,  6.70500182,  7.99562401,  9.21135176
         ]) * pq.s, t_stop=10.0 * pq.s, sampling_rate=100 * pq.Hz)
-        k = sigproc.GaussianKernel()
+        f = sigproc.GaussianKernel()
         self.assertAlmostEqual(
-            0.0 * pq.Hz ** 0.5, stm.cs_dist(a, a.copy(), k))
+            0.0 * pq.Hz ** 0.5, stm.cs_dist(a, a.copy(), f))
 
     def test_returns_nan_if_one_spike_train_is_empty(self):
         empty = create_empty_spike_train()
         non_empty = neo.SpikeTrain(sp.array([1.0]) * pq.s, t_stop=2.0 * pq.s)
         sampling_rate = 100 * pq.Hz
-        kernel = sigproc.GaussianKernel()
+        smoothing_filter = sigproc.GaussianKernel()
         self.assertIs(stm.cs_dist(
-            empty, empty, kernel, sampling_rate=sampling_rate), sp.nan)
+            empty, empty, smoothing_filter,
+            sampling_rate=sampling_rate), sp.nan)
         self.assertIs(stm.cs_dist(
-            empty, non_empty, kernel, sampling_rate=sampling_rate), sp.nan)
+            empty, non_empty, smoothing_filter,
+            sampling_rate=sampling_rate), sp.nan)
         self.assertIs(stm.cs_dist(
-            non_empty, empty, kernel, sampling_rate=sampling_rate), sp.nan)
+            non_empty, empty, smoothing_filter,
+            sampling_rate=sampling_rate), sp.nan)
 
     def test_returns_correct_spike_train_cauchy_schwarz_distance(self):
         a = neo.SpikeTrain(
             sp.array([1.0]) * pq.s, t_start=0.6 * pq.s, t_stop=1.4 * pq.s)
         b = neo.SpikeTrain(
             sp.array([0.5, 1.5]) * pq.s, t_stop=2.0 * pq.s)
-        kernel = sigproc.GaussianKernel(1.0 * pq.s)
+        smoothing_filter = sigproc.GaussianKernel(1.0 * pq.s)
         expected = 0.124677
-        actual = stm.cs_dist(a, b, kernel, sampling_rate=200 * pq.Hz)
+        actual = stm.cs_dist(a, b, smoothing_filter, sampling_rate=200 * pq.Hz)
         self.assertAlmostEqual(expected, actual, places=3)
 
     def test_is_symmetric(self):
@@ -321,11 +331,11 @@ class Test_cs_dist(ut.TestCase):
             6.5564268,  7.07864592,  7.2368936,  7.31784319,  8.15148958,
             8.53540889
         ]) * pq.s, t_stop=10.0 * pq.s)
-        k = sigproc.GaussianKernel()
+        f = sigproc.GaussianKernel()
         sampling_rate = 350 * pq.Hz
         self.assertAlmostEqual(
-            stm.cs_dist(a, b, k, sampling_rate=sampling_rate),
-            stm.cs_dist(b, a, k, sampling_rate=sampling_rate), places=3)
+            stm.cs_dist(a, b, f, sampling_rate=sampling_rate),
+            stm.cs_dist(b, a, f, sampling_rate=sampling_rate), places=3)
 
 
 if __name__ == '__main__':
