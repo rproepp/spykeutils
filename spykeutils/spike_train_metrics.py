@@ -364,3 +364,13 @@ def cs_dist(
     return sp.arccos(
         sp.inner(*convolved) ** 2 / sp.inner(convolved[0], convolved[0]) /
         sp.inner(convolved[1], convolved[1]))
+
+
+def schreiber_similarity(a, b, kernel):
+    if a.size <= 0 or b.size <= 0:
+        return sp.nan
+
+    cross_term = sp.sum(kernel((a - sp.atleast_2d(b).T).flatten()))
+    within_a = sp.sum(kernel((a - sp.atleast_2d(a).T).flatten()))
+    within_b = sp.sum(kernel((b - sp.atleast_2d(b).T).flatten()))
+    return cross_term / ((within_a * within_b) ** 0.5)
