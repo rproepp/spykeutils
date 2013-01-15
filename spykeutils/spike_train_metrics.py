@@ -332,6 +332,14 @@ def cs_dist(
     of the spike trains is defined as :math:`d_{CS}(a, b) = \\arccos \\frac{V(a,
     b)^2}{V(a, a) V(b, b)}`.
 
+    The Cauchy-Schwarz distance is closely related to the Schreiber et al.
+    similarity measure :math:`S_S` by :math:`\\arccos S_S^2`
+
+    This function numerically convolves the spike trains with the smoothing
+    filter which can be quite slow and inaccurate. If the analytical result of
+    the autocorrelation of the smoothing filter is known, one can use
+    :func:`schreiber_similarity` for a more efficient and precise calculation.
+
     Further information can be found in *Paiva, A. R. C., Park, I., & Principe,
     J. (2010). Inner products for representation and learning in the spike
     train domain. Statistical Signal Processing for Neuroscience and
@@ -353,8 +361,9 @@ def cs_dist(
         trains, that, :py:const:`signal_processing.default_sampling_rate`
         will be used.
     :type sampling_rate: Quantity scalar
-    :returns: The Cauchy-Schwarz distance of the spike trains given the smoothing_filter.
-    :rtype: Quantity scalar
+    :returns: The Cauchy-Schwarz distance of the spike trains given the
+        smoothing filter.
+    :rtype: float
     """
     if a.size <= 0 or b.size <= 0:
         return sp.nan
@@ -367,6 +376,42 @@ def cs_dist(
 
 
 def schreiber_similarity(a, b, kernel):
+    """ Calculates the Schreiber et al. similarity measure between two spike
+    trains given a kernel.
+
+    Let :math:`v_a(t)` and :math:`v_b(t)` with :math:`t \\in \\mathcal{T}` be
+    the spike trains convolved with some smoothing filter and :math:`V(a, b)
+    = \\int_{\\mathcal{T}} v_a(t) v_b(t) dt`. The autocorrelation of the
+    smoothing filter corresponds to the kernel used to analytically calculate
+    the Schreiber et al. similarity measure. It is defined as :math:`S_{S}(a,
+    b) = \\frac{V(a, b)}{\\sqrt{V(a, a) V(b, b)}}`. It is closely related to
+    the Cauchy-Schwarz distance :math:`d_{CS}` by :math:`S_S = \\sqrt{\\cos
+    d_{CS}}`.
+
+    In opposite to :func:`cs_dist` which numerically convolves the spike trains
+    with a smoothing filter, this function directly uses the kernel resulting
+    from the smoothing filter's autocorrelation. This allows a more accurate
+    and faster calculation.
+
+    Further information can be found in:
+
+    - *Dauwels, J., Vialatte, F., Weber, T., & Cichocki, A. (2009). On
+      similarity measures for spike trains. Advances in Neuro-Information
+      Processing, 177-185.*
+    - *Paiva, A. R. C., Park, I., & Principe, J. C. (2009). A comparison of
+      binless spike train measures. Neural Computing and Applications, 19(3),
+      405-419. doi:10.1007/s00521-009-0307-6*
+
+    :param SpikeTrain a: First spike train.
+    :param SpikeTrain b: Second spike train.
+    :param function kernel: Kernel to use. It corresponds to a smoothing filter
+        by being the autocorrelation of such a filter. The kernel function
+        expects Quantity 1D array as argument denoting the time points for
+        evaluation and should return a Quantity 1D array.
+    :returns: The Schreiber et al. similarity measure of the spike trains given
+        the kernel.
+    :rtype: float
+    """
     if a.size <= 0 or b.size <= 0:
         return sp.nan
 
