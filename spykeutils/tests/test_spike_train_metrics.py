@@ -7,6 +7,7 @@ except ImportError:
 
 from builders import create_empty_spike_train
 import neo
+from numpy.testing import assert_array_almost_equal
 import quantities as pq
 import scipy as sp
 import spykeutils.signal_processing as sigproc
@@ -252,15 +253,15 @@ class Test_cs_dist(ut.TestCase):
         non_empty = neo.SpikeTrain(sp.array([1.0]) * pq.s, t_stop=2.0 * pq.s)
         sampling_rate = 100 * pq.Hz
         smoothing_filter = sigproc.GaussianKernel()
-        self.assertIs(stm.cs_dist(
+        self.assertTrue(sp.isnan(stm.cs_dist(
             empty, empty, smoothing_filter,
-            sampling_rate=sampling_rate), sp.nan)
-        self.assertIs(stm.cs_dist(
+            sampling_rate=sampling_rate)))
+        self.assertTrue(sp.isnan(stm.cs_dist(
             empty, non_empty, smoothing_filter,
-            sampling_rate=sampling_rate), sp.nan)
-        self.assertIs(stm.cs_dist(
+            sampling_rate=sampling_rate)))
+        self.assertTrue(sp.isnan(stm.cs_dist(
             non_empty, empty, smoothing_filter,
-            sampling_rate=sampling_rate), sp.nan)
+            sampling_rate=sampling_rate)))
 
     def test_returns_correct_spike_train_cauchy_schwarz_distance(self):
         a = neo.SpikeTrain(
@@ -296,15 +297,17 @@ class Test_schreiber_similarity(ut.TestCase):
             5.63178278,  6.70500182,  7.99562401,  9.21135176
         ]) * pq.s, t_stop=10.0 * pq.s)
         k = sigproc.GaussianKernel()
-        self.assertAlmostEqual(1.0, stm.schreiber_similarity(a, a.copy(), k))
+        actual = stm.schreiber_similarity([a, a.copy()], k)
+        self.assertAlmostEqual(1.0, actual[0, 1])
 
     def test_returns_nan_if_one_spike_train_is_empty(self):
         empty = create_empty_spike_train()
         non_empty = neo.SpikeTrain(sp.array([1.0]) * pq.s, t_stop=2.0 * pq.s)
         k = sigproc.GaussianKernel()
-        self.assertIs(stm.schreiber_similarity(empty, empty, k), sp.nan)
-        self.assertIs(stm.schreiber_similarity(empty, non_empty, k), sp.nan)
-        self.assertIs(stm.schreiber_similarity(non_empty, empty, k), sp.nan)
+        actual = stm.schreiber_similarity([empty, non_empty], k)
+        self.assertTrue(sp.isnan(actual[0, 0]))
+        self.assertTrue(sp.isnan(actual[0, 1]))
+        self.assertTrue(sp.isnan(actual[1, 0]))
 
     def test_returns_correct_spike_train_schreiber_similarity(self):
         a = neo.SpikeTrain(
@@ -313,8 +316,8 @@ class Test_schreiber_similarity(ut.TestCase):
             sp.array([0.5, 1.5]) * pq.s, t_stop=2.0 * pq.s)
         k = sigproc.GaussianKernel(sp.sqrt(2.0) * pq.s)
         expected = 0.9961114
-        actual = stm.schreiber_similarity(a, b, k)
-        self.assertAlmostEqual(expected, actual, places=6)
+        actual = stm.schreiber_similarity([a, b], k)
+        self.assertAlmostEqual(expected, actual[0, 1], places=6)
 
     def test_is_symmetric(self):
         a = neo.SpikeTrain(sp.array([
@@ -327,9 +330,9 @@ class Test_schreiber_similarity(ut.TestCase):
             8.53540889
         ]) * pq.s, t_stop=10.0 * pq.s)
         k = sigproc.GaussianKernel()
-        self.assertAlmostEqual(
-            stm.schreiber_similarity(a, b, k),
-            stm.schreiber_similarity(b, a, k))
+        assert_array_almost_equal(
+            stm.schreiber_similarity([a, b], k),
+            stm.schreiber_similarity([b, a], k))
 
 
 if __name__ == '__main__':

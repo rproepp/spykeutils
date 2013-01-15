@@ -330,7 +330,7 @@ def cs_dist(
         sp.inner(convolved[1], convolved[1]))
 
 
-def schreiber_similarity(a, b, kernel):
+def schreiber_similarity(trains, kernel):
     """ Calculates the Schreiber et al. similarity measure between two spike
     trains given a kernel.
 
@@ -366,9 +366,13 @@ def schreiber_similarity(a, b, kernel):
         the kernel.
     :rtype: float
     """
-    if a.size <= 0 or b.size <= 0:
-        return sp.nan
 
-    D = kernel.summed_dist_matrix([a, b])
-    assert abs(D[1, 0] - D[0, 1]) < abs(1e-7 * D[1, 0])
-    return D[0, 1] / ((D[0, 0] * D[1, 1]) ** 0.5)
+    k_dist = kernel.summed_dist_matrix(trains)
+    vr_dist = sp.empty(k_dist.shape)
+    for i, j in sp.ndindex(*k_dist.shape):
+        if k_dist[i, i] == 0.0 or k_dist[j, j] == 0.0:
+            vr_dist[i, j] = sp.nan
+        else:
+            vr_dist[i, j] = sp.sqrt(
+                k_dist[i, j] * k_dist[j, i] / k_dist[i, i] / k_dist[j, j])
+    return vr_dist
