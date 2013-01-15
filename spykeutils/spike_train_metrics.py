@@ -5,7 +5,7 @@ import scipy as sp
 import signal_processing as sigproc
 
 
-def victor_purpura_dist(a, b, q=1.0 * pq.s ** -1):
+def victor_purpura_dist(a, b, q=1.0 * pq.Hz, kernel=None):
     """ Calculates the Victor-Purpura's (VP) distance. It is often denoted as
     :math:`D^{\\text{spike}}[q]`.
 
@@ -27,8 +27,13 @@ def victor_purpura_dist(a, b, q=1.0 * pq.s ** -1):
 
     :param SpikeTrain a:
     :param SpikeTrain b:
-    :param q: Cost factor for spike shifts.
+    :param q: Cost factor for spike shifts. If `kernel` is not `None`, `q` will
+        be ignored.
     :type q: Quantity scalar
+    :param kernel: Kernel to use in the calculation of the distance. If
+        `kernel` is `None`, an unnormalized triangular kernel with a half width
+        of `2.0/q` will be used.
+    :type kernel: :class:`.signal_processing.Kernel`
     :rtype: float
     """
 
@@ -37,6 +42,9 @@ def victor_purpura_dist(a, b, q=1.0 * pq.s ** -1):
 
     if a.size < b.size:
         a, b = b, a
+
+    if kernel is None:
+        kernel = sigproc.TriangularKernel(2.0 / q, normalize=False)
 
     # The algorithm used is based on the one given in
     #
@@ -57,18 +65,20 @@ def victor_purpura_dist(a, b, q=1.0 * pq.s ** -1):
 
     for num_spikes_processed in xrange(b.size):
         cost_a[0] = cost_b[0] = min(
-            cost_b[1] + 1, cost_a[1] + 1, cost_a[0] + q * abs(
-                a[num_spikes_processed] - b[num_spikes_processed]))
+            cost_b[1] + 1, cost_a[1] + 1, cost_a[0] + 2 - 2 * kernel(
+                a[num_spikes_processed] - b[num_spikes_processed]).simplified)
         for i in xrange(1, cost_a.size - num_spikes_processed - 1):
             cost_a[i] = min(
                 cost_a[i - 1] + 1, cost_a[i + 1] + 1,
-                cost_a[i] + q * abs(
-                    a[num_spikes_processed + i] - b[num_spikes_processed]))
+                cost_a[i] + 2 - 2 * kernel(
+                    a[num_spikes_processed + i] -
+                    b[num_spikes_processed]).simplified)
         for j in xrange(1, cost_b.size - num_spikes_processed - 1):
             cost_b[j] = min(
                 cost_b[j - 1] + 1, cost_b[j + 1] + 1,
-                cost_b[j] + q * abs(
-                    a[num_spikes_processed] - b[num_spikes_processed + j]))
+                cost_b[j] + 2 - kernel(
+                    a[num_spikes_processed] -
+                    b[num_spikes_processed + j]).simplified)
 
     return cost_a[-cost_b.size]
 

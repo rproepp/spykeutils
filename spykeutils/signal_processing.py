@@ -124,7 +124,8 @@ class CausalDecayingExpKernel(Kernel):
     def __init__(self, kernel_size=1.0 * pq.s, normalize=True):
         Kernel.__init__(
             self, self.evaluate, kernel_size=kernel_size,
-            normalization=1.0 / kernel_size if normalize else 1.0)
+            normalization=1.0 / kernel_size
+            if normalize else 1.0 * pq.dimensionless)
 
     def boundary_enclosing_at_least(self, fraction):
         return -self.params['kernel_size'] * sp.log(1.0 - fraction)
@@ -139,7 +140,7 @@ class GaussianKernel(Kernel):
         Kernel.__init__(
             self, self.evaluate, kernel_size=kernel_size,
             normalization=1.0 / (sp.sqrt(2.0 * sp.pi) * kernel_size)
-            if normalize else 1.0)
+            if normalize else 1.0 * pq.dimensionless)
 
     def boundary_enclosing_at_least(self, fraction):
         return self.params['kernel_size'] * sp.sqrt(2.0) * \
@@ -155,7 +156,8 @@ class LaplacianKernel(Kernel):
     def __init__(self, kernel_size=1.0 * pq.s, normalize=True):
         Kernel.__init__(
             self, self.evaluate, kernel_size=kernel_size,
-            normalization=0.5 / kernel_size if normalize else 1.0)
+            normalization=0.5 / kernel_size
+            if normalize else 1.0 * pq.dimensionless)
 
     def boundary_enclosing_at_least(self, fraction):
         return -self.params['kernel_size'] * sp.log(1.0 - fraction)
@@ -216,7 +218,23 @@ class RectangularKernel(Kernel):
     def __init__(self, half_width=1.0 * pq.s, normalize=True):
         Kernel.__init__(
             self, self.evaluate, half_width=half_width,
-            normalization=0.5 / half_width if normalize else 1.0)
+            normalization=0.5 / half_width
+            if normalize else 1.0 * pq.dimensionless)
+
+    def boundary_enclosing_at_least(self, fraction):
+        return self.params['half_width']
+
+
+class TriangularKernel(Kernel):
+    @staticmethod
+    def evaluate(t, half_width, normalization):
+        return max(0.0, (1.0 - sp.absolute(t) / half_width)) * normalization
+
+    def __init__(self, half_width=1.0 * pq.s, normalize=True):
+        Kernel.__init__(
+            self, self.evaluate, half_width=half_width,
+            normalization=1.0 / half_width
+            if normalize else 1.0 * pq.dimensionless)
 
     def boundary_enclosing_at_least(self, fraction):
         return self.params['half_width']
