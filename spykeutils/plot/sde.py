@@ -65,6 +65,14 @@ def sde(trains, events=None, start=0*pq.ms, stop=None,
     if not progress:
         progress = ProgressIndicator()
 
+        # Catch old API call to remain compatible and make Debian happy.
+        # Can be removed in 0.3.0
+        if isinstance(kernel_function, pq.Quantity):
+            if isinstance(unit, ProgressIndicator):
+                progress = unit
+            unit = kernel_function
+            kernel_function = None
+
     start.units = unit
     if stop:
         stop.units = unit
