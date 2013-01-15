@@ -73,37 +73,47 @@ def victor_purpura_dist(a, b, q=1.0 * pq.s ** -1):
     return cost_a[-cost_b.size]
 
 
-def van_rossum_dist(trains, tau=1.0 * pq.s):
+def van_rossum_dist(trains, tau=1.0 * pq.s, kernel=None):
     """ Calculates the van Rossum distance.
 
     It is defined as Euclidean distance of the spike trains convolved with a
-    causal decaying exponential function. A detailed description can be found in
-    *Rossum, M. C. W. (2001). A novel spike distance. Neural Computation,
-    13(4), 751-763.* This implementation is normalized to yield a distance of
-    1.0 for the distance between an empty spike train and a spike train with a
-    single spike. Divide the result by sqrt(2.0) to get the normalization used
-    in the cited paper.
+    causal decaying exponential smoothing filter. A detailed description can be
+    found in *Rossum, M. C. W. (2001). A novel spike distance. Neural
+    Computation, 13(4), 751-763.* This implementation is normalized to yield
+    a distance of 1.0 for the distance between an empty spike train and a spike
+    train with a single spike. Divide the result by sqrt(2.0) to get the
+    normalization used in the cited paper.
 
     Given :math:`N` spike trains with :math:`n` spikes on average the run-time
     complexity of this function is :math:`O(N^2 n)` and :math:`O(N^2 + Nn^2)`
-    memory will be needed.
+    memory will be needed, if the default Laplacian kernel is used (which
+    corresponds to the causal decaying exponential smoothing function). Other
+    kernels have probably a worse performance.
 
     :param sequence trains: SpikeTrains of which the van Rossum distance will be
         calculated pairwise.
     :param tau: Decay rate of the exponential function. Controls for which time
-        scale the metric will be sensitive.
+        scale the metric will be sensitive. This parameter will be ignored if
+        `kernel` is not `None`.
     :type tau: Quantity scalar
+    :param kernel: Kernel to use in the calculation of the distance. This is not
+        the smoothing filter, but its autocorrelation. If `kernel` is `None`, an
+        unnormalized Laplacian kernel with a size of `tau` will be used.
+    :type kernel: :class:`.signal_processing.Kernel`
     :returns: Matrix containing the van Rossum distances for all pairs of spike
         trains.
     :rtype: 2-D array
     """
 
-    k_dist = sigproc.LaplacianKernel(tau).summed_dist_matrix(trains)
+    if kernel is None:
+        kernel = sigproc.LaplacianKernel(tau, normalize=False)
+
+    k_dist = kernel.summed_dist_matrix(trains)
     vr_dist = sp.empty_like(k_dist)
     for i, j in sp.ndindex(*k_dist.shape):
         vr_dist[i, j] = (
             k_dist[i, i] + k_dist[j, j] - k_dist[i, j] - k_dist[j, i])
-    return sp.sqrt(2.0 * tau * vr_dist)
+    return sp.sqrt(vr_dist)
 
 
 def st_inner(
@@ -339,11 +349,9 @@ def schreiber_similarity(a, b, kernel):
 
     :param SpikeTrain a: First spike train.
     :param SpikeTrain b: Second spike train.
-    :param function kernel: Kernel to use. It corresponds to a smoothing filter
-        by being the autocorrelation of such a filter. The kernel function
-        expects Quantity 1D array as argument denoting the time points for
-        evaluation and should return a Quantity 1D array. The kernel has to be
-        symmetric.
+    :param kernel: Kernel to use. It corresponds to a smoothing filter
+        by being the autocorrelation of such a filter.
+    :type kernel: :class:`.signal_processing.Kernel`
     :returns: The Schreiber et al. similarity measure of the spike trains given
         the kernel.
     :rtype: float

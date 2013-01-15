@@ -114,15 +114,17 @@ class Kernel(object):
 
 class CausalDecayingExpKernel(Kernel):
     @staticmethod
-    def evaluate(t, kernel_size):
+    def evaluate(t, kernel_size, normalization):
         result = sp.piecewise(
             t, [t < 0, t >= 0], [
                 lambda t: 0,
-                lambda t: sp.exp((-t / kernel_size).simplified) / kernel_size])
-        return result / kernel_size.units
+                lambda t: sp.exp((-t / kernel_size).simplified)])
+        return result * normalization
 
-    def __init__(self, kernel_size=1.0 * pq.s):
-        Kernel.__init__(self, self.evaluate, kernel_size=kernel_size)
+    def __init__(self, kernel_size=1.0 * pq.s, normalize=True):
+        Kernel.__init__(
+            self, self.evaluate, kernel_size=kernel_size,
+            normalization=1.0 / kernel_size if normalize else 1.0)
 
     def boundary_enclosing_at_least(self, fraction):
         return -self.params['kernel_size'] * sp.log(1.0 - fraction)
@@ -130,12 +132,14 @@ class CausalDecayingExpKernel(Kernel):
 
 class GaussianKernel(Kernel):
     @staticmethod
-    def evaluate(t, kernel_size):
-        return (1.0 / (sp.sqrt(2 * sp.pi) * kernel_size) *
-                sp.exp(-0.5 * (t / kernel_size).simplified ** 2))
+    def evaluate(t, kernel_size, normalization):
+        return normalization * sp.exp(-0.5 * (t / kernel_size).simplified ** 2)
 
-    def __init__(self, kernel_size=1.0 * pq.s):
-        Kernel.__init__(self, self.evaluate, kernel_size=kernel_size)
+    def __init__(self, kernel_size=1.0 * pq.s, normalize=True):
+        Kernel.__init__(
+            self, self.evaluate, kernel_size=kernel_size,
+            normalization=1.0 / (sp.sqrt(2.0 * sp.pi) * kernel_size)
+            if normalize else 1.0)
 
     def boundary_enclosing_at_least(self, fraction):
         return self.params['kernel_size'] * sp.sqrt(2.0) * \
@@ -144,12 +148,14 @@ class GaussianKernel(Kernel):
 
 class LaplacianKernel(Kernel):
     @staticmethod
-    def evaluate(t, kernel_size):
-        return sp.exp(-(sp.absolute(t) / kernel_size).simplified) \
-            / (2.0 * kernel_size)
+    def evaluate(t, kernel_size, normalization):
+        return normalization * \
+            sp.exp(-(sp.absolute(t) / kernel_size).simplified)
 
-    def __init__(self, kernel_size=1.0 * pq.s):
-        Kernel.__init__(self, self.evaluate, kernel_size=kernel_size)
+    def __init__(self, kernel_size=1.0 * pq.s, normalize=True):
+        Kernel.__init__(
+            self, self.evaluate, kernel_size=kernel_size,
+            normalization=0.5 / kernel_size if normalize else 1.0)
 
     def boundary_enclosing_at_least(self, fraction):
         return -self.params['kernel_size'] * sp.log(1.0 - fraction)
@@ -199,16 +205,18 @@ class LaplacianKernel(Kernel):
                                 (1.0 + markage[u][k]))
                 D[v, u] = D[u, v]
 
-        return D / 2.0 / kernel_size
+        return self.params['normalization'] * D
 
 
 class RectangularKernel(Kernel):
     @staticmethod
-    def evaluate(t, half_width):
+    def evaluate(t, half_width, normalization):
         return (sp.absolute(t) < half_width) / (2.0 * half_width)
 
-    def __init__(self, half_width=1.0 * pq.s):
-        Kernel.__init__(self, self.evaluate, half_width=half_width)
+    def __init__(self, half_width=1.0 * pq.s, normalize=True):
+        Kernel.__init__(
+            self, self.evaluate, half_width=half_width,
+            normalization=0.5 / half_width if normalize else 1.0)
 
     def boundary_enclosing_at_least(self, fraction):
         return self.params['half_width']
