@@ -47,7 +47,7 @@ class Kernel(object):
             discretization.
         :param sampling_rate: Sampling rate for the discretization.
         :type sampling_rate: Quantity scalar
-        :rtype: 1D array
+        :rtype: Quantity 1D
         """
 
         t_step = 1.0 / sampling_rate
@@ -56,6 +56,31 @@ class Kernel(object):
         stop = sp.floor(boundary / t_step) + 1
         k = self(sp.arange(start, stop) * t_step)
         return k
+
+    def summed_dist_matrix(self, vectors):
+        """ Calculates the sum of all distances element pair distances for each
+        pair of vectors.
+
+        If :math:`(a_1, \\dots, a_n)` and :math:`(b_1, \\dots, b_m)` is a pair
+        of vectors from `vectors` and :math:`K` the kernel, the resulting entry
+        in the 2D array will be :math:`D_{ij} = \\sum_{i=1}^{n} \\sum_{j=1}^{m}
+        K(a_i - b_j)`.
+
+        :param sequence vectors: A sequence of 1D arrays to calculate the summed
+            distances for each pair.
+        :rtype: 2D array
+        """
+
+        D = sp.empty((len(vectors), len(vectors)))
+        if len(vectors) > 0:
+            might_have_units = self(vectors[0])
+            if hasattr(might_have_units, 'units'):
+                D = D * might_have_units.units
+
+        for i, j in sp.ndindex(len(vectors), len(vectors)):
+            D[i, j] = sp.sum(self(
+                (vectors[i] - sp.atleast_2d(vectors[j]).T).flatten()))
+        return D
 
 
 class CausalDecayingExpKernel(Kernel):

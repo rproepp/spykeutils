@@ -407,7 +407,8 @@ def schreiber_similarity(a, b, kernel):
     :param function kernel: Kernel to use. It corresponds to a smoothing filter
         by being the autocorrelation of such a filter. The kernel function
         expects Quantity 1D array as argument denoting the time points for
-        evaluation and should return a Quantity 1D array.
+        evaluation and should return a Quantity 1D array. The kernel has to be
+        symmetric.
     :returns: The Schreiber et al. similarity measure of the spike trains given
         the kernel.
     :rtype: float
@@ -415,7 +416,6 @@ def schreiber_similarity(a, b, kernel):
     if a.size <= 0 or b.size <= 0:
         return sp.nan
 
-    cross_term = sp.sum(kernel((a - sp.atleast_2d(b).T).flatten()))
-    within_a = sp.sum(kernel((a - sp.atleast_2d(a).T).flatten()))
-    within_b = sp.sum(kernel((b - sp.atleast_2d(b).T).flatten()))
-    return cross_term / ((within_a * within_b) ** 0.5)
+    D = kernel.summed_dist_matrix([a, b])
+    assert abs(D[1, 0] - D[0, 1]) < abs(1e-7 * D[1, 0])
+    return D[0, 1] / ((D[0, 0] * D[1, 1]) ** 0.5)
