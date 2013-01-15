@@ -293,8 +293,7 @@ class Test_cs_dist(ut.TestCase):
             5.63178278,  6.70500182,  7.99562401,  9.21135176
         ]) * pq.s, t_stop=10.0 * pq.s, sampling_rate=100 * pq.Hz)
         f = sigproc.GaussianKernel()
-        self.assertAlmostEqual(
-            0.0 * pq.Hz ** 0.5, stm.cs_dist(a, a.copy(), f))
+        self.assertAlmostEqual(0.0, stm.cs_dist(a, a.copy(), f))
 
     def test_returns_nan_if_one_spike_train_is_empty(self):
         empty = create_empty_spike_train()
