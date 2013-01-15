@@ -6,7 +6,6 @@ except ImportError:
     import unittest as ut
 
 from builders import create_empty_spike_train
-from numpy.testing import assert_array_almost_equal
 import neo
 import quantities as pq
 import scipy as sp
@@ -124,53 +123,6 @@ class Test_van_rossum_dist(ut.TestCase, CommonMetricTestCases):
         expected = sp.array([[0.0, 1.0], [1.0, 0.0]])
         actual = stm.van_rossum_dist((a, b), 3.0 * pq.s)
         self.assertTrue(sp.all(sp.absolute(expected - actual) < 1e-7))
-
-
-class Test_searchsorted_pairwise(ut.TestCase):
-    def assert_array_tuple_equal(self, expected, actual):
-        self.assertEqual(len(expected), len(actual))
-        for e, a in zip(expected, actual):
-            assert_array_almost_equal(
-                e, a,
-                err_msg="Expected: {0}\nActual: {1}".format(expected, actual))
-
-    def test_works_with_lists(self):
-        a = [1, 3, 5, 8, 9, 11]
-        b = [2, 4, 6, 7, 10]
-        expected = ([-1, 0, 1, 3, 3, 4], [0, 1, 2, 2, 4])
-        actual = stm._searchsorted_pairwise(a, b)
-        self.assert_array_tuple_equal(expected, actual)
-
-    def test_works_with_array(self):
-        a = sp.array([1, 3, 5, 8, 9, 11])
-        b = sp.array([2, 4, 6, 7, 10])
-        expected = ([-1, 0, 1, 3, 3, 4], [0, 1, 2, 2, 4])
-        actual = stm._searchsorted_pairwise(a, b)
-        self.assert_array_tuple_equal(expected, actual)
-
-    def test_equal_items_in_second_list_are_considered_smaller(self):
-        a = [1, 3, 4]
-        b = [2, 3]
-        expected = ([-1, 1, 1], [0, 0])
-        actual = stm._searchsorted_pairwise(a, b)
-        self.assert_array_tuple_equal(expected, actual)
-
-    def test_works_with_one_list_empty(self):
-        a = []
-        b = [1, 2, 3]
-
-        expected = ([], [-1, -1, -1])
-        actual = stm._searchsorted_pairwise(a, b)
-        self.assert_array_tuple_equal(expected, actual)
-
-        expected = ([-1, -1, -1], [])
-        actual = stm._searchsorted_pairwise(b, a)
-        self.assert_array_tuple_equal(expected, actual)
-
-    def test_returns_empty_lists_if_both_lists_are_empty(self):
-        self.assert_array_tuple_equal(
-            ([], []),
-            stm._searchsorted_pairwise([], []))
 
 
 class Test_st_inner(ut.TestCase):
@@ -378,6 +330,7 @@ class Test_schreiber_similarity(ut.TestCase):
         self.assertAlmostEqual(
             stm.schreiber_similarity(a, b, k),
             stm.schreiber_similarity(b, a, k))
+
 
 if __name__ == '__main__':
     ut.main()

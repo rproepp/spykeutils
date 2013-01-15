@@ -98,77 +98,12 @@ def van_rossum_dist(trains, tau=1.0 * pq.s):
     :rtype: 2-D array
     """
 
-    # The implementation is based on
-    #
-    # Houghton, C., & Kreuz, T. (2012). On the efficient calculation of van
-    # Rossum distances. Network: Computation in Neural Systems, 23(1-2), 48-58.
-    #
-    # Note that the cited paper contains some errors.
-
-    exp_trains = [sp.exp(st / tau) for st in trains]
-    inv_exp_trains = [1.0 / st for st in exp_trains]
-    exp_diffs = [sp.outer(exp_train, inv_exp_train) for
-                 exp_train, inv_exp_train in zip(exp_trains, inv_exp_trains)]
-
-    markage = [sp.empty(st.size) for st in trains]
-    for u in xrange(len(markage)):
-        if markage[u].size <= 0:
-            continue
-        markage[u][0] = 0
-        for i in xrange(1, markage[u].size):
-            markage[u][i] = (markage[u][i - 1] + 1.0) * exp_diffs[u][i - 1, i]
-
-    # Same spike train terms
-    D = sp.zeros((len(trains), len(trains)))
-    for u in xrange(D.shape[0]):
-        summand = markage[u].size + 2.0 * sp.sum(markage[u])
-        D[u, :] += summand
-        D[:, u] += summand
-
-    # Cross spike train terms
-    for u in xrange(D.shape[0]):
-        for v in xrange(u, D.shape[1]):
-            js, ks = _searchsorted_pairwise(trains[u], trains[v])
-            start_j = sp.searchsorted(js, 0)
-            start_k = sp.searchsorted(ks, 0)
-            for i, j in enumerate(js[start_j:], start_j):
-                D[u, v] -= (2.0 * inv_exp_trains[u][i] * exp_trains[v][j] *
-                            (1.0 + markage[v][j]))
-            for i, k in enumerate(ks[start_k:], start_k):
-                D[u, v] -= (2.0 * inv_exp_trains[v][i] * exp_trains[u][k] *
-                            (1.0 + markage[u][k]))
-            D[v, u] = D[u, v]
-
-    return sp.sqrt(D)
-
-
-def _searchsorted_pairwise(a, b):
-    """ Find indices for both of the two sequences where elements from one
-    sequence should be inserted into the other sequence to maintain order.
-
-    If values in `a` and `b` are equal, the values in `b` will always be
-    considered as smaller.
-
-    :param sequence a: A sorted sequence.
-    :param sequence b: A sorted sequence.
-    :returns: The indices for insertion of `a` into `b` and for insertion of `b`
-        into `a`
-    :rtype: Tuple of arrays.
-    """
-
-    idx_a = sp.empty(len(a))
-    idx_b = sp.empty(len(b))
-    i = j = 0
-    while i < len(a) and j < len(b):
-        if a[i] < b[j]:
-            idx_a[i] = j - 1
-            i += 1
-        elif a[i] >= b[j]:
-            idx_b[j] = i - 1
-            j += 1
-    idx_a[i:] = j - 1
-    idx_b[j:] = i - 1
-    return idx_a, idx_b
+    k_dist = sigproc.LaplacianKernel(tau).summed_dist_matrix(trains)
+    vr_dist = sp.empty_like(k_dist)
+    for i, j in sp.ndindex(*k_dist.shape):
+        vr_dist[i, j] = (
+            k_dist[i, i] + k_dist[j, j] - k_dist[i, j] - k_dist[j, i])
+    return sp.sqrt(2.0 * tau * vr_dist)
 
 
 def st_inner(
