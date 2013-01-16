@@ -71,19 +71,19 @@ class Test_victor_purpura_dist(ut.TestCase, CommonMetricTestCases):
     def test_returns_q_weighted_dist_for_close_spike_pair(self):
         a = neo.SpikeTrain(sp.array([1.0]) * pq.s, t_stop=2 * pq.s)
         b = neo.SpikeTrain(sp.array([1.5]) * pq.s, t_stop=2 * pq.s)
-        q = 2.0 * pq.s ** -1
+        q = 2.0 / pq.s
         expected = 0.5 * 2.0
         self.assertAlmostEqual(expected, stm.victor_purpura_dist(a, b, q))
 
     def test_returns_two_for_distant_spike_pair(self):
         a = neo.SpikeTrain(sp.array([1.0]) * pq.s, t_stop=6 * pq.s)
         b = neo.SpikeTrain(sp.array([5.0]) * pq.s, t_stop=6 * pq.s)
-        q = 1.0 * pq.s ** -1
+        q = 1.0 / pq.s
         expected = 2.0
         self.assertAlmostEqual(expected, stm.victor_purpura_dist(a, b, q))
 
     def test_returns_correct_distance_for_two_spike_trains(self):
-        q = 1.0 * pq.s ** -1
+        q = 1.0 / pq.s
         a = neo.SpikeTrain(
             sp.array([1.0, 2.0, 4.1, 7.0, 7.1]) * pq.s, t_stop=8.0 * pq.s)
         b = neo.SpikeTrain(
@@ -97,6 +97,23 @@ class Test_victor_purpura_dist(ut.TestCase, CommonMetricTestCases):
         #   - delete 7.1 (cost 1.0)
         expected = 4.3
         self.assertAlmostEqual(expected, stm.victor_purpura_dist(a, b, q))
+
+    def test_allows_use_of_different_kernel(self):
+        k = sigproc.LaplacianKernel(1.0 * pq.s, normalize=False)
+        a = neo.SpikeTrain(
+            sp.array([1.0, 2.0, 4.1, 7.0, 7.1]) * pq.s, t_stop=8.0 * pq.s)
+        b = neo.SpikeTrain(
+            sp.array([1.2, 4.0, 4.3]) * pq.s, t_stop=8.0 * pq.s)
+        # From a to b:
+        #   - shift 1.0 to 1.2 (cost 0.3625385)
+        #   - delete 2.0 (cost 1.0)
+        #   - shift 4.1 to 4.0 (cost 0.1903252)
+        #   - shift 4.3 to 7.0 (cost 1.8655890)
+        #   - delete 7.0 (cost 1.0)
+        #   - delete 7.1 (cost 1.0)
+        expected = 4.4184526
+        self.assertAlmostEqual(
+            expected, stm.victor_purpura_dist(a, b, kernel=k))
 
 
 class Test_van_rossum_dist(ut.TestCase, CommonMetricTestCases):
@@ -116,14 +133,24 @@ class Test_van_rossum_dist(ut.TestCase, CommonMetricTestCases):
             [1.895846644204, 0.0, 1.760192079676],
             [2.878796160479, 1.760192079676, 0.0]])
         actual = stm.van_rossum_dist((a, b, c), tau)
-        self.assertTrue(sp.all(sp.absolute(expected - actual) < 1e-7))
+        assert_array_almost_equal(expected, actual)
 
     def test_distance_of_empty_spiketrain_and_single_spike_equals_one(self):
         a = neo.SpikeTrain(sp.array([]) * pq.s, t_stop=2.0 * pq.s)
         b = neo.SpikeTrain(sp.array([1.0]) * pq.s, t_stop=2.0 * pq.s)
         expected = sp.array([[0.0, 1.0], [1.0, 0.0]])
         actual = stm.van_rossum_dist((a, b), 3.0 * pq.s)
-        self.assertTrue(sp.all(sp.absolute(expected - actual) < 1e-7))
+        assert_array_almost_equal(expected, actual)
+
+    def test_allows_use_of_different_kernel(self):
+        a = neo.SpikeTrain(sp.array([1.0, 2.0]) * pq.s, t_stop=3.0 * pq.s)
+        b = neo.SpikeTrain(sp.array([1.5]) * pq.s, t_stop=2.0 * pq.s)
+        k = sigproc.GaussianKernel(1.0 * pq.s, normalize=False)
+        expected = sp.array([
+            [0.0, 0.8264827],
+            [0.8264827, 0.0]])
+        actual = stm.van_rossum_dist((a, b), kernel=k)
+        assert_array_almost_equal(expected, actual)
 
 
 class Test_st_inner(ut.TestCase):
@@ -297,14 +324,14 @@ class Test_schreiber_similarity(ut.TestCase):
             5.63178278,  6.70500182,  7.99562401,  9.21135176
         ]) * pq.s, t_stop=10.0 * pq.s)
         k = sigproc.GaussianKernel()
-        actual = stm.schreiber_similarity([a, a.copy()], k)
+        actual = stm.schreiber_similarity((a, a.copy()), k)
         self.assertAlmostEqual(1.0, actual[0, 1])
 
     def test_returns_nan_if_one_spike_train_is_empty(self):
         empty = create_empty_spike_train()
         non_empty = neo.SpikeTrain(sp.array([1.0]) * pq.s, t_stop=2.0 * pq.s)
         k = sigproc.GaussianKernel()
-        actual = stm.schreiber_similarity([empty, non_empty], k)
+        actual = stm.schreiber_similarity((empty, non_empty), k)
         self.assertTrue(sp.isnan(actual[0, 0]))
         self.assertTrue(sp.isnan(actual[0, 1]))
         self.assertTrue(sp.isnan(actual[1, 0]))
@@ -314,10 +341,15 @@ class Test_schreiber_similarity(ut.TestCase):
             sp.array([1.0]) * pq.s, t_start=0.6 * pq.s, t_stop=1.4 * pq.s)
         b = neo.SpikeTrain(
             sp.array([0.5, 1.5]) * pq.s, t_stop=2.0 * pq.s)
+        c = neo.SpikeTrain(
+            sp.array([1.0, 2.0]) * pq.s, t_start=0.6 * pq.s, t_stop=2.4 * pq.s)
         k = sigproc.GaussianKernel(sp.sqrt(2.0) * pq.s)
-        expected = 0.9961114
-        actual = stm.schreiber_similarity([a, b], k)
-        self.assertAlmostEqual(expected, actual[0, 1], places=6)
+        expected = sp.array([
+            [1.0, 0.9961114, 0.9430803],
+            [0.9961114, 1.0, 0.9523332],
+            [0.9430803, 0.9523332, 1.0]])
+        actual = stm.schreiber_similarity((a, b, c), k)
+        assert_array_almost_equal(expected, actual)
 
     def test_is_symmetric(self):
         a = neo.SpikeTrain(sp.array([
@@ -331,8 +363,8 @@ class Test_schreiber_similarity(ut.TestCase):
         ]) * pq.s, t_stop=10.0 * pq.s)
         k = sigproc.GaussianKernel()
         assert_array_almost_equal(
-            stm.schreiber_similarity([a, b], k),
-            stm.schreiber_similarity([b, a], k))
+            stm.schreiber_similarity((a, b), k),
+            stm.schreiber_similarity((b, a), k))
 
 
 if __name__ == '__main__':
