@@ -116,6 +116,12 @@ class Test_victor_purpura_dist(ut.TestCase, CommonMetricTestCases):
             expected, stm.victor_purpura_dist(a, b, kernel=k))
 
 
+class Test_victor_purpura_multiunit_dist(ut.TestCase, CommonMetricTestCases):
+    # With only one spike train each we should get the normal VP distance.
+    def calc_metric(self, a, b):
+        return stm.victor_purpura_multiunit_dist({0: a}, {0: b}, 1)
+
+
 class Test_van_rossum_dist(ut.TestCase, CommonMetricTestCases):
     def calc_metric(self, a, b):
         return stm.van_rossum_dist((a, b))[0, 1]
