@@ -112,6 +112,32 @@ class Kernel(object):
         return D
 
 
+class SymmetricKernel(Kernel):
+    """ Base class for kernels. """
+
+    def __init__(self, kernel_func, **params):
+        """
+        :param function kernel_func: Kernel function which takes an array
+            of time points as first argument.
+        :param dict params: Additional parameters to be passed to the kernel
+            function.
+        """
+        Kernel.__init__(self, kernel_func, **params)
+
+    def summed_dist_matrix(self, vectors):
+        D = sp.empty((len(vectors), len(vectors)))
+        if len(vectors) > 0:
+            might_have_units = self(vectors[0])
+            if hasattr(might_have_units, 'units'):
+                D = D * might_have_units.units
+
+        for i, in xrange(len(vectors)):
+            for j in xrange(i, len(vectors)):
+                D[i, j] = D[j, i] = sp.sum(self(
+                    (vectors[i] - sp.atleast_2d(vectors[j]).T).flatten()))
+        return D
+
+
 class CausalDecayingExpKernel(Kernel):
     @staticmethod
     def evaluate(t, kernel_size, normalization):
