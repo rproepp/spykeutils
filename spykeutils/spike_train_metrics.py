@@ -6,21 +6,22 @@ import scipy as sp
 import signal_processing as sigproc
 
 
+def _dicts_to_lists(dicts, keys_to_extract):
+    return ([d[k] for k in keys_to_extract] for d in dicts)
+
+
+def _merge_trains_and_label_spikes(trains):
+    labeled_trains = (zip(st, len(st) * (label,)) for label, st
+                      in enumerate(trains))
+    return list(heapq.merge(*labeled_trains))
+
+
 def victor_purpura_multiunit_dist(
         a, b, reassignment_cost, q=1.0 * pq.Hz, kernel=None):
 
     if len(a) != len(b):
         raise ValueError("Number of spike trains in a and b differs.")
-    b = [b[k] for k in a.iterkeys()]
-    a = [a[k] for k in a.iterkeys()]
-
-    a_num_spikes = [st.size for st in a]
-    b_num_spikes = [st.size for st in b]
-    complexity_same = sp.sum(a_num_spikes) * sp.prod(b_num_spikes)
-    complexity_swapped = sp.prod(a_num_spikes) * sp.sum(b_num_spikes)
-    if complexity_swapped < complexity_same:
-        a, b = b, a
-        a_num_spikes, b_num_spikes = b_num_spikes, a_num_spikes
+    a, b = _dicts_to_lists((a, b), a.keys())
 
     if kernel is None:
         kernel = sigproc.TriangularKernel(2.0 / q, normalize=False)
@@ -36,9 +37,16 @@ def victor_purpura_multiunit_dist(
     # j_w spikes of the spike trains of b (the reference given above denotes
     # this matrix with G).
 
-    labeled_trains = (zip(st, len(st) * (label,)) for label, st in enumerate(a))
-    a_merged = list(heapq.merge(*labeled_trains))
+    # The algorithm is not asymmetric, swap a and b if that will save us time.
+    a_num_spikes = [st.size for st in a]
+    b_num_spikes = [st.size for st in b]
+    complexity_same = sp.sum(a_num_spikes) * sp.prod(b_num_spikes)
+    complexity_swapped = sp.prod(a_num_spikes) * sp.sum(b_num_spikes)
+    if complexity_swapped < complexity_same:
+        a, b = b, a
+        a_num_spikes, b_num_spikes = b_num_spikes, a_num_spikes
 
+    a_merged = _merge_trains_and_label_spikes(a)
     b_dims = sp.asarray(b_num_spikes) + 1
     cost = sp.empty((sp.sum(a_num_spikes) + 1,) + tuple(b_dims))
     cost[(sp.s_[:],) + len(b) * (0,)] = sp.arange(cost.shape[0])
@@ -51,11 +59,16 @@ def victor_purpura_multiunit_dist(
         b_idx_iter = sp.ndindex(*b_dims)
         b_idx_iter.next()  # cost[:, 0, ..., 0] has already been initialized
         for b_idx in b_idx_iter:
+            # Generate set of indices
+            # {(j_1, ..., j_w - 1, ... j_L) | 1 <= w <= L}
+            # and determine the calculated cost for each element.
             b_origin_indices = [
                 tuple(sp.atleast_1d(sp.squeeze(idx))) for idx in sp.split(
                     sp.asarray(b_idx) - sp.eye(len(b_idx)), len(b_idx), axis=1)]
+            invalid_origin_indices = sp.asarray(b_idx) == 0
             origin_costs = cost[[a_idx - 1] + b_origin_indices]
-            origin_costs[sp.asarray(b_idx) == 0] = sp.inf
+            origin_costs[invalid_origin_indices] = sp.inf
+
             b_spike_label = sp.argmin(origin_costs)
             b_spike_time = b[b_spike_label][b_idx[b_spike_label] - 1]
             cost_shift = origin_costs[b_spike_label] + \
@@ -63,10 +76,13 @@ def victor_purpura_multiunit_dist(
                 reassignment_cost * (a_spike_label != b_spike_label)
 
             cost_delete_in_a = cost[(a_idx - 1,) + b_idx] + 1
-            if sp.all(sp.asarray(b_idx) == 0):
+            if sp.all(invalid_origin_indices):
                 cost_delete_in_b = sp.inf
             else:
-                cost_delete_in_b = sp.amin(cost[[a_idx] + b_origin_indices][sp.asarray(b_idx) != 0]) + 1
+                cost_delete_in_b = sp.amin(
+                    cost[[a_idx] + b_origin_indices]
+                    [sp.logical_not(invalid_origin_indices) != 0]) + 1
+
             cost[(a_idx,) + b_idx] = min(
                 cost_delete_in_b, cost_delete_in_a, cost_shift)
 
