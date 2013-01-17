@@ -225,7 +225,8 @@ def van_rossum_dist(trains, tau=1.0 * pq.s, kernel=None):
         calculated pairwise.
     :param tau: Decay rate of the exponential function. Controls for which time
         scale the metric will be sensitive. This parameter will be ignored if
-        `kernel` is not `None`.
+        `kernel` is not `None`. May also be `inf` which will lead to only
+        measuring differences in spike count.
     :type tau: Quantity scalar
     :param kernel: Kernel to use in the calculation of the distance. This is not
         the smoothing filter, but its autocorrelation. If `kernel` is `None`, an
@@ -282,7 +283,8 @@ def van_rossum_multiunit_dist(a, b, weighting, tau=1.0 * pq.s, kernel=None):
         and a summed population coding.
     :param tau: Decay rate of the exponential function. Controls for which time
         scale the metric will be sensitive. This parameter will be ignored if
-        `kernel` is not `None`.
+        `kernel` is not `None`. May also be `inf` which will lead to only
+        measuring differences in spike count.
     :type tau: Quantity scalar
     :param kernel: Kernel to use in the calculation of the distance. This is not
         the smoothing filter, but its autocorrelation. If `kernel` is `None`, an
