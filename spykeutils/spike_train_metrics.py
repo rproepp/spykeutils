@@ -247,6 +247,72 @@ def van_rossum_dist(trains, tau=1.0 * pq.s, kernel=None):
     return sp.sqrt(vr_dist)
 
 
+def van_rossum_multiunit_dist(a, b, weighting, tau=1.0 * pq.s, kernel=None):
+    """ Calculates the van Rossum multi-unit distance.
+
+    The single-unit distance is defined as Euclidean distance of the spike
+    trains convolved with a causal decaying exponential smoothing filter.
+    A detailed description can be found in *Rossum, M. C. W. (2001). A novel
+    spike distance. Neural Computation, 13(4), 751-763.* This implementation is
+    normalized to yield a distance of 1.0 for the distance between an empty
+    spike train and a spike train with a single spike. Divide the result by
+    sqrt(2.0) to get the normalization used in the cited paper.
+
+    Given the :math:`p`- and :math:`q`-th spike train of `a` and respectively
+    `b` let :math:`R_{pq}` be the squared single-unit distance between these
+    two spike trains. Then the multi-unit distance is :math:`\\sqrt{\\sum_p
+    (R_{pp} + c \\cdot \\sum_{q \\neq p} R_{pq})}` with :math:`c` being
+    equal to `weighting`. The weighting parameter controls the interpolation
+    between a labeled line and a summed population coding.
+
+    More information can be found in
+    *Houghton, C., & Kreuz, T. (2012). On the efficient calculation of van
+    Rossum distances. Network: Computation in Neural Systems, 23(1-2), 48-58.*
+
+    Given :math:`N` spike trains in total with :math:`n` spikes on average the
+    run-time complexity of this function is :math:`O(N^2 n)` and :math:`O(N^2
+    + Nn^2)` memory will be needed, if the default Laplacian kernel is used
+    (which corresponds to the causal decaying exponential smoothing function).
+    Other kernels have probably a worse performance.
+
+    :param dict a: Dictionary of spike trains.
+    :param dict b: Dictionary of spike trains. Must have the same set of keys as
+        `a`.
+    :param float weighting: Controls the interpolation between a labeled line
+        and a summed population coding.
+    :param tau: Decay rate of the exponential function. Controls for which time
+        scale the metric will be sensitive. This parameter will be ignored if
+        `kernel` is not `None`.
+    :type tau: Quantity scalar
+    :param kernel: Kernel to use in the calculation of the distance. This is not
+        the smoothing filter, but its autocorrelation. If `kernel` is `None`, an
+        unnormalized Laplacian kernel with a size of `tau` will be used.
+    :type kernel: :class:`.signal_processing.Kernel`
+    :returns: Matrix containing the van Rossum distances for all pairs of spike
+        trains.
+    :rtype: 2-D array
+    """
+
+    if len(a) != len(b):
+        raise ValueError("Number of spike trains in a and b differs.")
+    a, b = _dicts_to_lists((a, b), a.keys())
+
+    if kernel is None:
+        kernel = sigproc.LaplacianKernel(tau, normalize=False)
+
+    k_dist = kernel.summed_dist_matrix(a + b)
+
+    non_diagonal = sp.logical_not(sp.eye(len(a)))
+    summed_population = (
+        sp.trace(k_dist) - sp.trace(k_dist, len(a)) - sp.trace(k_dist, -len(a)))
+    labeled_line = (
+        sp.sum(k_dist[:len(a), :len(a)][non_diagonal]) +
+        sp.sum(k_dist[len(a):, len(a):][non_diagonal]) -
+        sp.sum(k_dist[:len(a), len(a):][non_diagonal]) -
+        sp.sum(k_dist[len(a):, :len(a)][non_diagonal]))
+    return sp.sqrt(summed_population + weighting * labeled_line)
+
+
 def st_inner(
         a, b, smoothing_filter,
         filter_area_fraction=sigproc.default_kernel_area_fraction,

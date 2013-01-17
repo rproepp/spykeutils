@@ -173,6 +173,27 @@ class Test_van_rossum_dist(ut.TestCase, CommonMetricTestCases):
         assert_array_almost_equal(expected, actual)
 
 
+class Test_van_rossum_multiunit_dist(ut.TestCase, CommonMetricTestCases):
+    # With only one spike train each we should get the normal van Rossum
+    # distance.
+    def calc_metric(self, a, b):
+        return stm.van_rossum_multiunit_dist({0: a}, {0: b}, 1)
+
+    def test_returns_correct_distance_for_multiunits(self):
+        a0 = neo.SpikeTrain(sp.array([1.0, 5.0, 7.0]) * pq.s, t_stop=8.0 * pq.s)
+        a1 = neo.SpikeTrain(sp.array([2.0, 4.0, 5.0]) * pq.s, t_stop=8.0 * pq.s)
+        b0 = neo.SpikeTrain(sp.array([1.0, 2.0, 5.0]) * pq.s, t_stop=8.0 * pq.s)
+        b1 = neo.SpikeTrain(sp.array([3.0, 8.0]) * pq.s, t_stop=9.0 * pq.s)
+        a = {0: a0, 1: a1}
+        b = {1: b1, 0: b0}
+        weighting = 0.3
+        expected = 2.37006181
+        actual = stm.van_rossum_multiunit_dist(a, b, weighting)
+        self.assertAlmostEqual(expected, actual)
+        actual = stm.van_rossum_multiunit_dist(b, a, weighting)
+        self.assertAlmostEqual(expected, actual)
+
+
 class Test_st_inner(ut.TestCase):
     def test_returns_zero_if_any_spike_train_is_empty(self):
         empty = create_empty_spike_train()
