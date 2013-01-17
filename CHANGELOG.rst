@@ -10,6 +10,9 @@ Version 0.2.1
   changed.
 * New parameter for DataProvider AnalogSignal methods: AnalogSignalArrays can
   be automatically converted and returned.
+* Significantly improved speed of spike density estimation and optimal kernel
+  size calculation.
+* Renamed "spyke-plugin" script to "spykeplugin"
 
 Version 0.2.0
 -------------
