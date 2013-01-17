@@ -238,6 +238,9 @@ def van_rossum_dist(trains, tau=1.0 * pq.s, kernel=None):
     """
 
     if kernel is None:
+        if tau == sp.inf:
+            spike_counts = [st.size for st in trains]
+            return sp.absolute(spike_counts - sp.atleast_2d(spike_counts).T)
         kernel = sigproc.LaplacianKernel(tau, normalize=False)
 
     k_dist = kernel.summed_dist_matrix(trains)
@@ -299,10 +302,14 @@ def van_rossum_multiunit_dist(a, b, weighting, tau=1.0 * pq.s, kernel=None):
         raise ValueError("Number of spike trains in a and b differs.")
     a, b = _dicts_to_lists((a, b), a.keys())
 
-    if kernel is None:
+    if kernel is None and tau != sp.inf:
         kernel = sigproc.LaplacianKernel(tau, normalize=False)
 
-    k_dist = kernel.summed_dist_matrix(a + b)
+    if kernel is None:
+        spike_counts = sp.atleast_2d([st.size for st in a + b])
+        k_dist = spike_counts.T * (spike_counts - spike_counts.T)
+    else:
+        k_dist = kernel.summed_dist_matrix(a + b)
 
     non_diagonal = sp.logical_not(sp.eye(len(a)))
     summed_population = (
