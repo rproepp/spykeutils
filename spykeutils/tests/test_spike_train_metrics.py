@@ -121,6 +121,20 @@ class Test_victor_purpura_multiunit_dist(ut.TestCase, CommonMetricTestCases):
     def calc_metric(self, a, b):
         return stm.victor_purpura_multiunit_dist({0: a}, {0: b}, 1)
 
+    def test_returns_correct_distance_for_multiunits(self):
+        a0 = neo.SpikeTrain(sp.array([1.0, 5.0, 7.0]) * pq.s, t_stop=8.0 * pq.s)
+        a1 = neo.SpikeTrain(sp.array([2.0, 4.0, 5.0]) * pq.s, t_stop=8.0 * pq.s)
+        b0 = neo.SpikeTrain(sp.array([1.0, 2.0, 5.0]) * pq.s, t_stop=8.0 * pq.s)
+        b1 = neo.SpikeTrain(sp.array([3.0, 8.0]) * pq.s, t_stop=9.0 * pq.s)
+        a = {0: a0, 1: a1}
+        b = {1: b1, 0: b0}
+        reassignment_cost = 0.7
+        expected = 4.4
+        actual = stm.victor_purpura_multiunit_dist(a, b, reassignment_cost)
+        self.assertAlmostEqual(expected, actual)
+        actual = stm.victor_purpura_multiunit_dist(b, a, reassignment_cost)
+        self.assertAlmostEqual(expected, actual)
+
 
 class Test_van_rossum_dist(ut.TestCase, CommonMetricTestCases):
     def calc_metric(self, a, b):

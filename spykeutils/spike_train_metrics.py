@@ -6,7 +6,8 @@ import scipy as sp
 import signal_processing as sigproc
 
 
-def victor_purpura_multiunit_dist(a, b, k, q=1.0 * pq.Hz, kernel=None):
+def victor_purpura_multiunit_dist(
+        a, b, reassignment_cost, q=1.0 * pq.Hz, kernel=None):
 
     if len(a) != len(b):
         raise ValueError("Number of spike trains in a and b differs.")
@@ -47,22 +48,26 @@ def victor_purpura_multiunit_dist(a, b, k, q=1.0 * pq.Hz, kernel=None):
         a_spike_time = a_merged[a_idx - 1][0]
         a_spike_label = a_merged[a_idx - 1][1]
 
-        b_idx_iter = sp.ndindex(b_dims)
+        b_idx_iter = sp.ndindex(*b_dims)
         b_idx_iter.next()  # cost[:, 0, ..., 0] has already been initialized
         for b_idx in b_idx_iter:
             b_origin_indices = [
                 tuple(sp.atleast_1d(sp.squeeze(idx))) for idx in sp.split(
                     sp.asarray(b_idx) - sp.eye(len(b_idx)), len(b_idx), axis=1)]
             origin_costs = cost[[a_idx - 1] + b_origin_indices]
+            origin_costs[sp.asarray(b_idx) == 0] = sp.inf
             b_spike_label = sp.argmin(origin_costs)
             b_spike_time = b[b_spike_label][b_idx[b_spike_label] - 1]
             cost_shift = origin_costs[b_spike_label] + \
                 2 - 2 * kernel(a_spike_time - b_spike_time).simplified + \
-                k * (a_spike_label == b_spike_label)
+                reassignment_cost * (a_spike_label != b_spike_label)
 
-            cost_delete_in_a = cost[a_idx - 1, b_idx] + 1
-            cost_delete_in_b = sp.amin(cost[[a_idx] + b_origin_indices]) + 1
-            cost[a_idx, b_idx] = min(
+            cost_delete_in_a = cost[(a_idx - 1,) + b_idx] + 1
+            if sp.all(sp.asarray(b_idx) == 0):
+                cost_delete_in_b = sp.inf
+            else:
+                cost_delete_in_b = sp.amin(cost[[a_idx] + b_origin_indices][sp.asarray(b_idx) != 0]) + 1
+            cost[(a_idx,) + b_idx] = min(
                 cost_delete_in_b, cost_delete_in_a, cost_shift)
 
     return cost.flat[-1]
