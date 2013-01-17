@@ -18,6 +18,43 @@ def _merge_trains_and_label_spikes(trains):
 
 def victor_purpura_multiunit_dist(
         a, b, reassignment_cost, q=1.0 * pq.Hz, kernel=None):
+    """ Calculates the Victor-Purpura's (VP) multi-unit distance.
+
+    It is defined as the minimal cost of transforming the spike trains `a` into
+    spike trains `b` by using the following operations:
+
+        * Inserting or deleting a spike (cost 1.0).
+        * Shifting a spike from :math:`t` to :math:`t'` (cost :math:`q \\cdot |t
+          - t'|`).
+        * Moving a spike to another spike train (cost `reassignment_cost`).
+
+    A detailed description can be found in
+    *Aronov, D. (2003). Fast algorithm for the metric-space analysis of
+    simultaneous responses of multiple single neurons. Journal of Neuroscience
+    Methods.*
+
+    Given the average number of spikes :math:`N` in a spike train and :math:`L`
+    spike trains the run-time and memory complexity are :math:`O(LN^{L+1})`
+
+    For calculating the distance between only two spike trains one should use
+    :func:`victor_purpura_dist` which is more memory efficient.
+
+    :param dict a: Dictionary of spike trains.
+    :param dict b: Dictionary of spike trains. Must have the same set of keys as
+        `a`.
+    :param float reassignment_cost: Cost to reassign a spike from one train to
+        another (sometimes denoted with :math:`k`). Should be between 0 and 2.
+        For 0 spikes can be reassigned without any cost, for 2 and above it is
+        cheaper to delete and reinsert a spike.
+    :param q: Cost factor for spike shifts. If `kernel` is not `None`, `q` will
+        be ignored.
+    :type q: Quantity scalar
+    :param kernel: Kernel to use in the calculation of the distance. If
+        `kernel` is `None`, an unnormalized triangular kernel with a half width
+        of `2.0/q` will be used.
+    :type kernel: :class:`.signal_processing.Kernel`
+    :rtype: float
+    """
 
     if len(a) != len(b):
         raise ValueError("Number of spike trains in a and b differs.")
