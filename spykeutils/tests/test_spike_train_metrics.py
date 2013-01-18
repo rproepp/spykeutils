@@ -50,6 +50,43 @@ class CommonMetricTestCases(object):
         self.assertAlmostEqual(self.calc_metric(a, b), self.calc_metric(b, a))
 
 
+class CommonSimilarityTestCases(object):
+    """ Provides some common test cases which should work for all spike train
+    similarity measures.
+    """
+
+    def calc_similarity(self, a, b):
+        """ Calculates and returns the similarity measure under test.
+
+        :param SpikeTrain a:
+        :param SpikeTrain b:
+        :rtype: float
+        """
+        raise NotImplementedError()
+
+    def test_returns_one_for_equal_spike_trains(self):
+        a = neo.SpikeTrain(sp.array([
+            1.1844519,  1.57346687,  2.52261998,  3.65824785,  5.38988771,
+            5.63178278,  6.70500182,  7.99562401,  9.21135176
+        ]) * pq.s, t_stop=10.0 * pq.s)
+        actual = self.calc_similarity(a, a.copy())
+        self.assertAlmostEqual(1.0, actual)
+
+    def test_is_symmetric(self):
+        a = neo.SpikeTrain(sp.array([
+            1.1844519,  1.57346687,  2.52261998,  3.65824785,  5.38988771,
+            5.63178278,  6.70500182,  7.99562401,  9.21135176
+        ]) * pq.s, t_stop=10.0 * pq.s)
+        b = neo.SpikeTrain(sp.array([
+            0.86096077,  3.54273148,  4.20476326,  6.02451599,  6.42851683,
+            6.5564268,  7.07864592,  7.2368936,  7.31784319,  8.15148958,
+            8.53540889
+        ]) * pq.s, t_stop=10.0 * pq.s)
+        assert_array_almost_equal(
+            self.calc_similarity(a, b),
+            self.calc_similarity(b, a))
+
+
 class Test_victor_purpura_dist(ut.TestCase, CommonMetricTestCases):
     def calc_metric(self, a, b):
         return stm.victor_purpura_dist(a, b)
@@ -381,15 +418,10 @@ class Test_cs_dist(ut.TestCase):
             stm.cs_dist(b, a, f, sampling_rate=sampling_rate), places=3)
 
 
-class Test_schreiber_similarity(ut.TestCase):
-    def test_returns_one_for_equal_spike_trains(self):
-        a = neo.SpikeTrain(sp.array([
-            1.1844519,  1.57346687,  2.52261998,  3.65824785,  5.38988771,
-            5.63178278,  6.70500182,  7.99562401,  9.21135176
-        ]) * pq.s, t_stop=10.0 * pq.s)
+class Test_schreiber_similarity(ut.TestCase, CommonSimilarityTestCases):
+    def calc_similarity(self, a, b):
         k = sigproc.GaussianKernel()
-        actual = stm.schreiber_similarity((a, a.copy()), k)
-        self.assertAlmostEqual(1.0, actual[0, 1])
+        return stm.schreiber_similarity((a, b), k)[0, 1]
 
     def test_returns_nan_if_one_spike_train_is_empty(self):
         empty = create_empty_spike_train()
@@ -414,21 +446,6 @@ class Test_schreiber_similarity(ut.TestCase):
             [0.9430803, 0.9523332, 1.0]])
         actual = stm.schreiber_similarity((a, b, c), k)
         assert_array_almost_equal(expected, actual)
-
-    def test_is_symmetric(self):
-        a = neo.SpikeTrain(sp.array([
-            1.1844519,  1.57346687,  2.52261998,  3.65824785,  5.38988771,
-            5.63178278,  6.70500182,  7.99562401,  9.21135176
-        ]) * pq.s, t_stop=10.0 * pq.s)
-        b = neo.SpikeTrain(sp.array([
-            0.86096077,  3.54273148,  4.20476326,  6.02451599,  6.42851683,
-            6.5564268,  7.07864592,  7.2368936,  7.31784319,  8.15148958,
-            8.53540889
-        ]) * pq.s, t_stop=10.0 * pq.s)
-        k = sigproc.GaussianKernel()
-        assert_array_almost_equal(
-            stm.schreiber_similarity((a, b), k),
-            stm.schreiber_similarity((b, a), k))
 
 
 if __name__ == '__main__':
