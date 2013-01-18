@@ -157,7 +157,7 @@ class CausalDecayingExpKernel(Kernel):
         return -self.params['kernel_size'] * sp.log(1.0 - fraction)
 
 
-class GaussianKernel(Kernel):
+class GaussianKernel(SymmetricKernel):
     @staticmethod
     def evaluate(t, kernel_size, normalization):
         return normalization * sp.exp(-0.5 * (t / kernel_size).simplified ** 2)
@@ -173,7 +173,7 @@ class GaussianKernel(Kernel):
             scipy.special.erfinv(fraction + scipy.special.erf(0.0))
 
 
-class LaplacianKernel(Kernel):
+class LaplacianKernel(SymmetricKernel):
     @staticmethod
     def evaluate(t, kernel_size, normalization):
         return normalization * \
@@ -236,7 +236,7 @@ class LaplacianKernel(Kernel):
         return self.params['normalization'] * D
 
 
-class RectangularKernel(Kernel):
+class RectangularKernel(SymmetricKernel):
     @staticmethod
     def evaluate(t, half_width, normalization):
         return (sp.absolute(t) < half_width) / (2.0 * half_width)
@@ -251,7 +251,7 @@ class RectangularKernel(Kernel):
         return self.params['half_width']
 
 
-class TriangularKernel(Kernel):
+class TriangularKernel(SymmetricKernel):
     @staticmethod
     def evaluate(t, half_width, normalization):
         return max(0.0, (1.0 - sp.absolute(t) / half_width)) * normalization
