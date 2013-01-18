@@ -131,7 +131,7 @@ class SymmetricKernel(Kernel):
             if hasattr(might_have_units, 'units'):
                 D = D * might_have_units.units
 
-        for i, in xrange(len(vectors)):
+        for i in xrange(len(vectors)):
             for j in xrange(i, len(vectors)):
                 D[i, j] = D[j, i] = sp.sum(self(
                     (vectors[i] - sp.atleast_2d(vectors[j]).T).flatten()))
