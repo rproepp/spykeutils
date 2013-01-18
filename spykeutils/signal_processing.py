@@ -239,7 +239,7 @@ class LaplacianKernel(SymmetricKernel):
 class RectangularKernel(SymmetricKernel):
     @staticmethod
     def evaluate(t, half_width, normalization):
-        return (sp.absolute(t) < half_width) / (2.0 * half_width)
+        return (sp.absolute(t) < half_width) * normalization
 
     def __init__(self, half_width=1.0 * pq.s, normalize=True):
         Kernel.__init__(

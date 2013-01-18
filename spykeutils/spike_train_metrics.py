@@ -584,3 +584,26 @@ def hunter_milton_similarity(a, b, tau=1.0 * pq.s, kernel=None):
     diff_matrix = sp.absolute(a - sp.atleast_2d(b).T)
     return 0.5 * (sp.sum(kernel(sp.amin(diff_matrix, axis=0))) / a.size +
                   sp.sum(kernel(sp.amin(diff_matrix, axis=1))) / b.size)
+
+
+def event_synchronization(a, b, tau=None, kernel=None):
+    if kernel is None:
+        kernel = sigproc.RectangularKernel(1, normalize=False)
+    else:
+        tau = 1.0
+
+    a = a.view(type=pq.Quantity)
+    b = b.view(type=pq.Quantity)
+
+    if tau is None:
+        inf_time = sp.array([sp.inf]) * a.units
+        a_diff = sp.concatenate((inf_time, sp.diff(a), inf_time))
+        b_diff = sp.concatenate((inf_time, sp.diff(b), inf_time))
+        a_tau = sp.minimum(a_diff[:-1], a_diff[1:])
+        b_tau = sp.minimum(b_diff[:-1], b_diff[1:])
+        taus = sp.minimum(*sp.meshgrid(a_tau, b_tau)) / 2.0
+    else:
+        taus = sp.tile(tau, (b.size, a.size))
+    coincidence = sp.sum(kernel((a - sp.atleast_2d(b).T) / taus))
+    normalization = 1.0 / sp.sqrt(a.size * b.size)
+    return normalization * coincidence
