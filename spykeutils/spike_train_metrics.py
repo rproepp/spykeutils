@@ -1,9 +1,12 @@
 
+from monkeypatch import quantities_patch
 import heapq
 import quantities as pq
 import rate_estimation
 import scipy as sp
 import signal_processing as sigproc
+
+assert quantities_patch  # Suppress pyflakes warning, patch applied by loading
 
 
 def _dicts_to_lists(dicts, keys_to_extract):
@@ -121,7 +124,7 @@ def victor_purpura_multiunit_dist(
                     [sp.logical_not(invalid_origin_indices) != 0]) + 1
 
             cost[(a_idx,) + b_idx] = min(
-                cost_delete_in_b, cost_delete_in_a, cost_shift)
+                cost_delete_in_a, cost_delete_in_b, cost_shift)
 
     return cost.flat[-1]
 
@@ -572,3 +575,12 @@ def schreiber_similarity(trains, kernel):
             vr_dist[i, j] = sp.sqrt(
                 k_dist[i, j] * k_dist[j, i] / k_dist[i, i] / k_dist[j, j])
     return vr_dist
+
+
+def hunter_milton_similarity(a, b, tau=1.0 * pq.s, kernel=None):
+    if kernel is None:
+        kernel = sigproc.LaplacianKernel(tau, normalize=False)
+
+    diff_matrix = sp.absolute(a - sp.atleast_2d(b).T)
+    return 0.5 * (sp.sum(kernel(sp.amin(diff_matrix, axis=0))) / a.size +
+                  sp.sum(kernel(sp.amin(diff_matrix, axis=1))) / b.size)

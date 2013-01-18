@@ -448,5 +448,28 @@ class Test_schreiber_similarity(ut.TestCase, CommonSimilarityTestCases):
         assert_array_almost_equal(expected, actual)
 
 
+class Test_hunter_milton_similarity(ut.TestCase, CommonSimilarityTestCases):
+    def calc_similarity(self, a, b):
+        return stm.hunter_milton_similarity(a, b)
+
+    def test_returns_correct_hunter_milton_similarity(self):
+        a = neo.SpikeTrain(sp.array([1.0, 2.5, 6.5]) * pq.s, t_stop=7.0 * pq.s)
+        b = neo.SpikeTrain(
+            sp.array([1.2, 5.7, 8.0, 9.0]) * pq.s, t_stop=10.0 * pq.s)
+        tau = 2.0 * pq.s
+        expected = 0.64128747518120299
+        actual = stm.hunter_milton_similarity(a, b, tau)
+        self.assertEqual(expected, actual)
+
+    def test_allows_use_of_different_kernel(self):
+        a = neo.SpikeTrain(sp.array([1.0, 2.5, 6.5]) * pq.s, t_stop=7.0 * pq.s)
+        b = neo.SpikeTrain(
+            sp.array([1.2, 5.7, 8.0, 9.0]) * pq.s, t_stop=10.0 * pq.s)
+        kernel = sigproc.TriangularKernel(1.0 * pq.s, normalize=False)
+        expected = 0.29166666666666663
+        actual = stm.hunter_milton_similarity(a, b, kernel=kernel)
+        assert_array_almost_equal(expected, actual)
+
+
 if __name__ == '__main__':
     ut.main()

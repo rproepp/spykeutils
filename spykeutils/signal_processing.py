@@ -254,7 +254,9 @@ class RectangularKernel(SymmetricKernel):
 class TriangularKernel(SymmetricKernel):
     @staticmethod
     def evaluate(t, half_width, normalization):
-        return max(0.0, (1.0 - sp.absolute(t) / half_width)) * normalization
+        return sp.maximum(
+            0.0,
+            (1.0 - sp.absolute(t) / half_width).magnitude) * normalization
 
     def __init__(self, half_width=1.0 * pq.s, normalize=True):
         Kernel.__init__(
