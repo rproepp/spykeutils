@@ -122,3 +122,5 @@ def psth(trains, events=None, start=0*pq.ms, stop=None, bin_size=100*pq.ms,
         plot.set_antialiasing(False)
     else:
         plot.set_antialiasing(True)
+
+    return win

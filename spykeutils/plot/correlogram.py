@@ -94,4 +94,4 @@ def cross_correlogram(trains, bin_size, max_lag=500*pq.ms, border_correction=Tru
     win.add_x_synchronization_option(True, range(len(crlgs)))
     win.add_y_synchronization_option(False, range(len(crlgs)))
 
-    return True
+    return win

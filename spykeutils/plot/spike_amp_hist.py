@@ -64,3 +64,5 @@ def spike_amplitude_histogram(trains, num_bins, uniform_y_scale=True,
     win.add_y_synchronization_option(uniform_y_scale,
         range(num_channels))
     win.show()
+
+    return win

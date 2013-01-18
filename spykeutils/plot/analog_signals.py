@@ -181,6 +181,8 @@ def signals(signals, events=None, epochs=None, spike_trains=None,
         win.add_x_synchronization_option(True, channels)
         win.add_y_synchronization_option(False, channels)
 
+    return win
+
 
 def _add_spike_waveforms(plot, spikes, x_units, channel, offset, progress):
     for spike in spikes:

@@ -138,3 +138,5 @@ def sde(trains, events=None, start=0*pq.ms, stop=None,
     win.add_custom_curve_tools()
     win.add_legend_option([l], True)
     win.show()
+
+    return win

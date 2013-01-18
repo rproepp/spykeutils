@@ -27,9 +27,10 @@ def _needs_qt(function):
         app = None
         if not QApplication.instance():
             app = QApplication([])
-        function(*args, **kwargs)
+        ret = function(*args, **kwargs)
         if app:
             app.exec_()
+        return ret
     return inner
 
 # Make need_qt decorator preserve signature if decorator package is available
