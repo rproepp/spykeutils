@@ -114,10 +114,15 @@ class Test_cs_dist(ut.TestCase):
             sp.array([1.0]) * pq.s, t_start=0.6 * pq.s, t_stop=1.4 * pq.s)
         b = neo.SpikeTrain(
             sp.array([0.5, 1.5]) * pq.s, t_stop=2.0 * pq.s)
+        c = neo.SpikeTrain(
+            sp.array([1.5]) * pq.s, t_start=0.6 * pq.s, t_stop=1.6 * pq.s)
         smoothing_filter = sigproc.GaussianKernel(1.0 * pq.s)
-        expected = sp.array([[0.0, 0.124677], [0.124677, 0.0]])
+        expected = sp.array(
+            [[0.0, 0.12467574, 0.48965132],
+            [0.12467574, 0.0, 0.47476452],
+            [0.48965132, 0.47476452, 0.0]])
         actual = stm.cs_dist(
-            [a, b], smoothing_filter, sampling_rate=200 * pq.Hz)
+            [a, b, c], smoothing_filter, sampling_rate=200 * pq.Hz)
         assert_array_almost_equal(expected, actual, decimal=3)
 
     def test_is_symmetric(self):

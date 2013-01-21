@@ -48,7 +48,7 @@ def cs_dist(
     b)^2}{V(a, a) V(b, b)}`.
 
     The Cauchy-Schwarz distance is closely related to the Schreiber et al.
-    similarity measure :math:`S_S` by :math:`\\arccos S_S^2`
+    similarity measure :math:`S_S` by :math:`d_{CS} = \\arccos S_S^2`
 
     This function numerically convolves the spike trains with the smoothing
     filter which can be quite slow and inaccurate. If the analytical result of
