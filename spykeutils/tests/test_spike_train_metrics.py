@@ -12,6 +12,7 @@ import quantities as pq
 import scipy as sp
 import spykeutils.signal_processing as sigproc
 import spykeutils.spike_train_metrics as stm
+import warnings
 
 
 class CommonMetricTestCases(object):
@@ -94,22 +95,19 @@ class Test_cs_dist(ut.TestCase):
             5.63178278,  6.70500182,  7.99562401,  9.21135176
         ]) * pq.s, t_stop=10.0 * pq.s, sampling_rate=100 * pq.Hz)
         f = sigproc.GaussianKernel()
-        self.assertAlmostEqual(0.0, stm.cs_dist(a, a.copy(), f))
+        expected = sp.array([[0.0, 0.0], [0.0, 0.0]])
+        assert_array_almost_equal(expected, stm.cs_dist([a, a.copy()], f))
 
     def test_returns_nan_if_one_spike_train_is_empty(self):
         empty = create_empty_spike_train()
         non_empty = neo.SpikeTrain(sp.array([1.0]) * pq.s, t_stop=2.0 * pq.s)
         sampling_rate = 100 * pq.Hz
         smoothing_filter = sigproc.GaussianKernel()
-        self.assertTrue(sp.isnan(stm.cs_dist(
-            empty, empty, smoothing_filter,
-            sampling_rate=sampling_rate)))
-        self.assertTrue(sp.isnan(stm.cs_dist(
-            empty, non_empty, smoothing_filter,
-            sampling_rate=sampling_rate)))
-        self.assertTrue(sp.isnan(stm.cs_dist(
-            non_empty, empty, smoothing_filter,
-            sampling_rate=sampling_rate)))
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            self.assertTrue(sp.all(sp.isnan(stm.cs_dist(
+                [empty, non_empty], smoothing_filter,
+                sampling_rate=sampling_rate))[(0, 0, 1), (0, 1, 0)]))
 
     def test_returns_correct_spike_train_cauchy_schwarz_distance(self):
         a = neo.SpikeTrain(
@@ -117,9 +115,10 @@ class Test_cs_dist(ut.TestCase):
         b = neo.SpikeTrain(
             sp.array([0.5, 1.5]) * pq.s, t_stop=2.0 * pq.s)
         smoothing_filter = sigproc.GaussianKernel(1.0 * pq.s)
-        expected = 0.124677
-        actual = stm.cs_dist(a, b, smoothing_filter, sampling_rate=200 * pq.Hz)
-        self.assertAlmostEqual(expected, actual, places=3)
+        expected = sp.array([[0.0, 0.124677], [0.124677, 0.0]])
+        actual = stm.cs_dist(
+            [a, b], smoothing_filter, sampling_rate=200 * pq.Hz)
+        assert_array_almost_equal(expected, actual, decimal=3)
 
     def test_is_symmetric(self):
         a = neo.SpikeTrain(sp.array([
@@ -133,9 +132,9 @@ class Test_cs_dist(ut.TestCase):
         ]) * pq.s, t_stop=10.0 * pq.s)
         f = sigproc.GaussianKernel()
         sampling_rate = 350 * pq.Hz
-        self.assertAlmostEqual(
-            stm.cs_dist(a, b, f, sampling_rate=sampling_rate),
-            stm.cs_dist(b, a, f, sampling_rate=sampling_rate), places=3)
+        assert_array_almost_equal(
+            stm.cs_dist([a, b], f, sampling_rate=sampling_rate),
+            stm.cs_dist([b, a], f, sampling_rate=sampling_rate), decimal=3)
 
 
 class Test_event_synchronization(ut.TestCase, CommonSimilarityTestCases):

@@ -35,7 +35,7 @@ def _merge_trains_and_label_spikes(trains):
 
 
 def cs_dist(
-        a, b, smoothing_filter,
+        trains, smoothing_filter,
         filter_area_fraction=sigproc.default_kernel_area_fraction,
         sampling_rate=sigproc.default_sampling_rate):
     """ Calculates the Cauchy-Schwarz distance between two spike trains given
@@ -60,8 +60,8 @@ def cs_dist(
     train domain. Statistical Signal Processing for Neuroscience and
     Neurotechnology, Academic Press, New York.*
 
-    :param SpikeTrain a: First spike train.
-    :param SpikeTrain b: Second spike train.
+    :param sequence trains: SpikeTrains of which the CS distance will be
+        calculated pairwise.
     :param smoothing_filter: Smoothing filter to be convolved with the spike
         trains.
     :type smoothing_filter: :class:`.signal_processing.Kernel`
@@ -76,18 +76,19 @@ def cs_dist(
         trains, that, :py:const:`signal_processing.default_sampling_rate`
         will be used.
     :type sampling_rate: Quantity scalar
-    :returns: The Cauchy-Schwarz distance of the spike trains given the
-        smoothing filter.
-    :rtype: float
+    :returns: Matrix containing the Cauchy-Schwarz distance of all pairs of
+        spike trains
+    :returns: Matrix containing the van Rossum distances for all pairs of spike
+        trains.
+    :rtype: 2-D array
     """
-    if a.size <= 0 or b.size <= 0:
-        return sp.nan
 
     convolved, sampling_rate = _prepare_for_inner_prod(
-        [a, b], smoothing_filter, filter_area_fraction, sampling_rate)
+        trains, smoothing_filter, filter_area_fraction, sampling_rate)
+    convolved = sp.vstack(convolved)
+    inner = sp.inner(convolved, convolved)
     return sp.arccos(
-        sp.inner(*convolved) ** 2 / sp.inner(convolved[0], convolved[0]) /
-        sp.inner(convolved[1], convolved[1]))
+        inner ** 2 / sp.diag(inner) / sp.atleast_2d(sp.diag(inner)).T)
 
 
 def event_synchronization(a, b, tau=None, kernel=None):
