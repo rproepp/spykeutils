@@ -4,6 +4,7 @@ import heapq
 import quantities as pq
 import rate_estimation
 import scipy as sp
+import _scipy_quantities as spq
 import signal_processing as sigproc
 
 assert quantities_patch  # Suppress pyflakes warning, patch applied by loading
@@ -597,11 +598,11 @@ def event_synchronization(a, b, tau=None, kernel=None):
 
     if tau is None:
         inf_time = sp.array([sp.inf]) * a.units
-        a_diff = sp.concatenate((inf_time, sp.diff(a), inf_time))
-        b_diff = sp.concatenate((inf_time, sp.diff(b), inf_time))
-        a_tau = sp.minimum(a_diff[:-1], a_diff[1:])
-        b_tau = sp.minimum(b_diff[:-1], b_diff[1:])
-        taus = sp.minimum(*sp.meshgrid(a_tau, b_tau)) / 2.0
+        a_diff = spq.concatenate((inf_time, sp.diff(a), inf_time))
+        b_diff = spq.concatenate((inf_time, sp.diff(b), inf_time))
+        a_tau = spq.minimum(a_diff[:-1], a_diff[1:])
+        b_tau = spq.minimum(b_diff[:-1], b_diff[1:])
+        taus = spq.minimum(*spq.meshgrid(a_tau, b_tau)) / 2.0
     else:
         taus = sp.tile(tau, (b.size, a.size))
     coincidence = sp.sum(kernel((a - sp.atleast_2d(b).T) / taus))
