@@ -7,7 +7,7 @@ except ImportError:
 
 from builders import create_empty_spike_train
 import neo
-from numpy.testing import assert_array_almost_equal
+from numpy.testing import assert_array_almost_equal, assert_array_equal
 import quantities as pq
 import scipy as sp
 import spykeutils.signal_processing as sigproc
@@ -156,21 +156,33 @@ class Test_victor_purpura_dist(ut.TestCase, CommonMetricTestCases):
 class Test_victor_purpura_multiunit_dist(ut.TestCase, CommonMetricTestCases):
     # With only one spike train each we should get the normal VP distance.
     def calc_metric(self, a, b):
-        return stm.victor_purpura_multiunit_dist({0: a}, {0: b}, 1)
+        return stm.victor_purpura_multiunit_dist({0: [a, b]}, 1)[0, 1]
 
     def test_returns_correct_distance_for_multiunits(self):
         a0 = neo.SpikeTrain(sp.array([1.0, 5.0, 7.0]) * pq.s, t_stop=8.0 * pq.s)
-        a1 = neo.SpikeTrain(sp.array([2.0, 4.0, 5.0]) * pq.s, t_stop=8.0 * pq.s)
-        b0 = neo.SpikeTrain(sp.array([1.0, 2.0, 5.0]) * pq.s, t_stop=8.0 * pq.s)
+        a1 = neo.SpikeTrain(sp.array([1.0, 2.0, 5.0]) * pq.s, t_stop=8.0 * pq.s)
+        b0 = neo.SpikeTrain(sp.array([2.0, 4.0, 5.0]) * pq.s, t_stop=8.0 * pq.s)
         b1 = neo.SpikeTrain(sp.array([3.0, 8.0]) * pq.s, t_stop=9.0 * pq.s)
-        a = {0: a0, 1: a1}
-        b = {1: b1, 0: b0}
+        units = {0: [a0, a1], 1: [b0, b1]}
         reassignment_cost = 0.7
-        expected = 4.4
-        actual = stm.victor_purpura_multiunit_dist(a, b, reassignment_cost)
-        self.assertAlmostEqual(expected, actual)
-        actual = stm.victor_purpura_multiunit_dist(b, a, reassignment_cost)
-        self.assertAlmostEqual(expected, actual)
+        expected = sp.array([[0.0, 4.4], [4.4, 0.0]])
+        actual = stm.victor_purpura_multiunit_dist(units, reassignment_cost)
+        assert_array_almost_equal(expected, actual)
+
+    def test_returns_empty_array_if_empty_dict_is_passed(self):
+        expected = sp.zeros((0, 0))
+        actual = stm.victor_purpura_multiunit_dist({}, 1.0)
+        assert_array_equal(expected, actual)
+
+    def test_returns_empty_array_if_trials_are_empty(self):
+        expected = sp.zeros((0, 0))
+        actual = stm.victor_purpura_multiunit_dist({0: [], 1: []}, 1.0)
+        assert_array_equal(expected, actual)
+
+    def test_raises_exception_if_number_of_trials_differs(self):
+        st = create_empty_spike_train()
+        with self.assertRaises(ValueError):
+            stm.victor_purpura_multiunit_dist({0: [st], 1: [st, st]}, 1.0)
 
 
 class Test_van_rossum_dist(ut.TestCase, CommonMetricTestCases):

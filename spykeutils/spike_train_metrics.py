@@ -21,7 +21,7 @@ def _merge_trains_and_label_spikes(trains):
 
 
 def victor_purpura_multiunit_dist(
-        a, b, reassignment_cost, q=1.0 * pq.Hz, kernel=None):
+        units, reassignment_cost, q=1.0 * pq.Hz, kernel=None):
     """ Calculates the Victor-Purpura's (VP) multi-unit distance.
 
     It is defined as the minimal cost of transforming the spike trains `a` into
@@ -38,14 +38,15 @@ def victor_purpura_multiunit_dist(
     Methods.*
 
     Given the average number of spikes :math:`N` in a spike train and :math:`L`
-    spike trains the run-time and memory complexity are :math:`O(LN^{L+1})`
+    units with :math:`n` spike trains each the run-time complexity is
+    :math:`O(n^2 LN^{L+1})`. The space complexity is :math:`O(n^2 + LN^{L+1}`.
 
-    For calculating the distance between only two spike trains one should use
+    For calculating the distance between only two units one should use
     :func:`victor_purpura_dist` which is more memory efficient.
 
-    :param dict a: Dictionary of spike trains.
-    :param dict b: Dictionary of spike trains. Must have the same set of keys as
-        `a`.
+    :param dict units: Dictionary of lists with each list containing the trials
+            of one unit. Each trial should be a `neo.SpikeTrain` and all units
+            should have the same number of trials.
     :param float reassignment_cost: Cost to reassign a spike from one train to
         another (sometimes denoted with :math:`k`). Should be between 0 and 2.
         For 0 spikes can be reassigned without any cost, for 2 and above it is
@@ -57,16 +58,33 @@ def victor_purpura_multiunit_dist(
         `kernel` is `None`, an unnormalized triangular kernel with a half width
         of `2.0/q` will be used.
     :type kernel: :class:`.signal_processing.Kernel`
-    :rtype: float
+    :returns: A 2D array with the multi-unit distance for each pair of trials.
+    :rtype: 2D arrary
     """
 
-    if len(a) != len(b):
-        raise ValueError("Number of spike trains in a and b differs.")
-    a, b = _dicts_to_lists((a, b), a.keys())
+    if len(units) <= 0:
+        return sp.zeros((0, 0))
+
+    num_trials = len(units.itervalues().next())
+    if not all((len(v) == num_trials for v in units.itervalues())):
+        raise ValueError("Number of trials differs among units.")
 
     if kernel is None:
         kernel = sigproc.TriangularKernel(2.0 / q, normalize=False)
 
+    D = sp.empty((num_trials, num_trials))
+    for i in xrange(num_trials):
+        D[i, i] = 0.0
+        a = [units[k][i] for k in units.iterkeys()]
+        for j in xrange(i + 1, num_trials):
+            b = [units[k][j] for k in units.iterkeys()]
+            D[i, j] = D[j, i] = _victor_purpura_multiunit_dist_for_single_trial(
+                a, b, reassignment_cost, kernel)
+    return D
+
+
+def _victor_purpura_multiunit_dist_for_single_trial(
+        a, b, reassignment_cost, kernel):
     # The algorithm used is based on the one given in
     #
     # Victor, J. D., & Purpura, K. P. (1996). Nature and precision of temporal
