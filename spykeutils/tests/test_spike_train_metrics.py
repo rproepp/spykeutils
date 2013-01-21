@@ -236,33 +236,30 @@ class Test_van_rossum_multiunit_dist(ut.TestCase, CommonMetricTestCases):
     # With only one spike train each we should get the normal van Rossum
     # distance.
     def calc_metric(self, a, b):
-        return stm.van_rossum_multiunit_dist({0: a}, {0: b}, 1)
+        return stm.van_rossum_multiunit_dist({0: [a, b]}, 1)[0, 1]
 
     def test_returns_correct_distance_for_multiunits(self):
         a0 = neo.SpikeTrain(sp.array([1.0, 5.0, 7.0]) * pq.s, t_stop=8.0 * pq.s)
-        a1 = neo.SpikeTrain(sp.array([2.0, 4.0, 5.0]) * pq.s, t_stop=8.0 * pq.s)
-        b0 = neo.SpikeTrain(sp.array([1.0, 2.0, 5.0]) * pq.s, t_stop=8.0 * pq.s)
+        a1 = neo.SpikeTrain(sp.array([1.0, 2.0, 5.0]) * pq.s, t_stop=8.0 * pq.s)
+        b0 = neo.SpikeTrain(sp.array([2.0, 4.0, 5.0]) * pq.s, t_stop=8.0 * pq.s)
         b1 = neo.SpikeTrain(sp.array([3.0, 8.0]) * pq.s, t_stop=9.0 * pq.s)
-        a = {0: a0, 1: a1}
-        b = {1: b1, 0: b0}
+        units = {0: [a0, a1], 1: [b0, b1]}
         weighting = 0.3
-        expected = 2.37006181
-        actual = stm.van_rossum_multiunit_dist(a, b, weighting)
-        self.assertAlmostEqual(expected, actual)
-        actual = stm.van_rossum_multiunit_dist(b, a, weighting)
-        self.assertAlmostEqual(expected, actual)
+        expected = sp.array([[0.0, 2.37006181], [2.37006181, 0.0]])
+        actual = stm.van_rossum_multiunit_dist(units, weighting)
+        assert_array_almost_equal(expected, actual)
 
     def test_allows_tau_equal_to_infinity_with_multiunits(self):
         a0 = neo.SpikeTrain(sp.array([1.0, 5.0, 7.0]) * pq.s, t_stop=8.0 * pq.s)
-        a1 = neo.SpikeTrain(sp.array([2.0, 4.0, 5.0]) * pq.s, t_stop=8.0 * pq.s)
-        b0 = neo.SpikeTrain(sp.array([5.0]) * pq.s, t_stop=8.0 * pq.s)
+        a1 = neo.SpikeTrain(sp.array([5.0]) * pq.s, t_stop=8.0 * pq.s)
+        b0 = neo.SpikeTrain(sp.array([2.0, 4.0, 5.0]) * pq.s, t_stop=8.0 * pq.s)
         b1 = neo.SpikeTrain(sp.array([3.0, 8.0]) * pq.s, t_stop=9.0 * pq.s)
-        a = {0: a0, 1: a1}
-        b = {1: b1, 0: b0}
+        units = {0: [a0, a1], 1: [b0, b1]}
         weighting = 0.3
         tau = sp.inf * pq.s
-        expected = sp.sqrt(5.0 + weighting * 4.0)
-        actual = stm.van_rossum_multiunit_dist(a, b, weighting, tau)
+        dist = sp.sqrt(5.0 + weighting * 4.0)
+        expected = sp.array([[0.0, dist], [dist, 0.0]])
+        actual = stm.van_rossum_multiunit_dist(units, weighting, tau)
         assert_array_almost_equal(expected, actual)
 
 

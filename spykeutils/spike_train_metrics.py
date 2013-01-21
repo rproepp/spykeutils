@@ -10,14 +10,28 @@ import signal_processing as sigproc
 assert quantities_patch  # Suppress pyflakes warning, patch applied by loading
 
 
-def _dicts_to_lists(dicts, keys_to_extract):
-    return ([d[k] for k in keys_to_extract] for d in dicts)
-
-
 def _merge_trains_and_label_spikes(trains):
     labeled_trains = (zip(st, len(st) * (label,)) for label, st
                       in enumerate(trains))
     return list(heapq.merge(*labeled_trains))
+
+
+def _calc_multiunit_dist_matrix_from_single_trials(units, dist_func, **params):
+    if len(units) <= 0:
+        return sp.zeros((0, 0))
+
+    num_trials = len(units.itervalues().next())
+    if not all((len(v) == num_trials for v in units.itervalues())):
+        raise ValueError("Number of trials differs among units.")
+
+    D = sp.empty((num_trials, num_trials))
+    for i in xrange(num_trials):
+        D[i, i] = 0.0
+        a = [units[k][i] for k in units.iterkeys()]
+        for j in xrange(i + 1, num_trials):
+            b = [units[k][j] for k in units.iterkeys()]
+            D[i, j] = D[j, i] = dist_func(a, b, **params)
+    return D
 
 
 def victor_purpura_multiunit_dist(
@@ -62,25 +76,11 @@ def victor_purpura_multiunit_dist(
     :rtype: 2D arrary
     """
 
-    if len(units) <= 0:
-        return sp.zeros((0, 0))
-
-    num_trials = len(units.itervalues().next())
-    if not all((len(v) == num_trials for v in units.itervalues())):
-        raise ValueError("Number of trials differs among units.")
-
     if kernel is None:
         kernel = sigproc.TriangularKernel(2.0 / q, normalize=False)
-
-    D = sp.empty((num_trials, num_trials))
-    for i in xrange(num_trials):
-        D[i, i] = 0.0
-        a = [units[k][i] for k in units.iterkeys()]
-        for j in xrange(i + 1, num_trials):
-            b = [units[k][j] for k in units.iterkeys()]
-            D[i, j] = D[j, i] = _victor_purpura_multiunit_dist_for_single_trial(
-                a, b, reassignment_cost, kernel)
-    return D
+    return _calc_multiunit_dist_matrix_from_single_trials(
+        units, _victor_purpura_multiunit_dist_for_single_trial,
+        reassignment_cost=reassignment_cost, kernel=kernel)
 
 
 def _victor_purpura_multiunit_dist_for_single_trial(
@@ -273,7 +273,7 @@ def van_rossum_dist(trains, tau=1.0 * pq.s, kernel=None):
     return sp.sqrt(vr_dist)
 
 
-def van_rossum_multiunit_dist(a, b, weighting, tau=1.0 * pq.s, kernel=None):
+def van_rossum_multiunit_dist(units, weighting, tau=1.0 * pq.s, kernel=None):
     """ Calculates the van Rossum multi-unit distance.
 
     The single-unit distance is defined as Euclidean distance of the spike
@@ -301,9 +301,9 @@ def van_rossum_multiunit_dist(a, b, weighting, tau=1.0 * pq.s, kernel=None):
     (which corresponds to the causal decaying exponential smoothing function).
     Other kernels have probably a worse performance.
 
-    :param dict a: Dictionary of spike trains.
-    :param dict b: Dictionary of spike trains. Must have the same set of keys as
-        `a`.
+    :param dict units: Dictionary of lists with each list containing the trials
+            of one unit. Each trial should be a `neo.SpikeTrain` and all units
+            should have the same number of trials.
     :param float weighting: Controls the interpolation between a labeled line
         and a summed population coding.
     :param tau: Decay rate of the exponential function. Controls for which time
@@ -315,18 +315,19 @@ def van_rossum_multiunit_dist(a, b, weighting, tau=1.0 * pq.s, kernel=None):
         the smoothing filter, but its autocorrelation. If `kernel` is `None`, an
         unnormalized Laplacian kernel with a size of `tau` will be used.
     :type kernel: :class:`.signal_processing.Kernel`
-    :returns: Matrix containing the van Rossum distances for all pairs of spike
-        trains.
-    :rtype: 2-D array
+    :returns: A 2D array with the multi-unit distance for each pair of trials.
+    :rtype: 2D arrary
     """
-
-    if len(a) != len(b):
-        raise ValueError("Number of spike trains in a and b differs.")
-    a, b = _dicts_to_lists((a, b), a.keys())
 
     if kernel is None and tau != sp.inf:
         kernel = sigproc.LaplacianKernel(tau, normalize=False)
 
+    return _calc_multiunit_dist_matrix_from_single_trials(
+        units, _van_rossum_multiunit_dist_for_single_trial, weighting=weighting,
+        tau=tau, kernel=kernel)
+
+
+def _van_rossum_multiunit_dist_for_single_trial(a, b, weighting, tau, kernel):
     if kernel is None:
         spike_counts = sp.atleast_2d([st.size for st in a + b])
         k_dist = spike_counts.T * (spike_counts - spike_counts.T)
