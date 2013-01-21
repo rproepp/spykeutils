@@ -87,6 +87,329 @@ class CommonSimilarityTestCases(object):
             self.calc_similarity(b, a))
 
 
+class Test_cs_dist(ut.TestCase):
+    def test_returns_zero_for_equal_spike_trains(self):
+        a = neo.SpikeTrain(sp.array([
+            1.1844519,  1.57346687,  2.52261998,  3.65824785,  5.38988771,
+            5.63178278,  6.70500182,  7.99562401,  9.21135176
+        ]) * pq.s, t_stop=10.0 * pq.s, sampling_rate=100 * pq.Hz)
+        f = sigproc.GaussianKernel()
+        self.assertAlmostEqual(0.0, stm.cs_dist(a, a.copy(), f))
+
+    def test_returns_nan_if_one_spike_train_is_empty(self):
+        empty = create_empty_spike_train()
+        non_empty = neo.SpikeTrain(sp.array([1.0]) * pq.s, t_stop=2.0 * pq.s)
+        sampling_rate = 100 * pq.Hz
+        smoothing_filter = sigproc.GaussianKernel()
+        self.assertTrue(sp.isnan(stm.cs_dist(
+            empty, empty, smoothing_filter,
+            sampling_rate=sampling_rate)))
+        self.assertTrue(sp.isnan(stm.cs_dist(
+            empty, non_empty, smoothing_filter,
+            sampling_rate=sampling_rate)))
+        self.assertTrue(sp.isnan(stm.cs_dist(
+            non_empty, empty, smoothing_filter,
+            sampling_rate=sampling_rate)))
+
+    def test_returns_correct_spike_train_cauchy_schwarz_distance(self):
+        a = neo.SpikeTrain(
+            sp.array([1.0]) * pq.s, t_start=0.6 * pq.s, t_stop=1.4 * pq.s)
+        b = neo.SpikeTrain(
+            sp.array([0.5, 1.5]) * pq.s, t_stop=2.0 * pq.s)
+        smoothing_filter = sigproc.GaussianKernel(1.0 * pq.s)
+        expected = 0.124677
+        actual = stm.cs_dist(a, b, smoothing_filter, sampling_rate=200 * pq.Hz)
+        self.assertAlmostEqual(expected, actual, places=3)
+
+    def test_is_symmetric(self):
+        a = neo.SpikeTrain(sp.array([
+            1.1844519,  1.57346687,  2.52261998,  3.65824785,  5.38988771,
+            5.63178278,  6.70500182,  7.99562401,  9.21135176
+        ]) * pq.s, t_stop=10.0 * pq.s)
+        b = neo.SpikeTrain(sp.array([
+            0.86096077,  3.54273148,  4.20476326,  6.02451599,  6.42851683,
+            6.5564268,  7.07864592,  7.2368936,  7.31784319,  8.15148958,
+            8.53540889
+        ]) * pq.s, t_stop=10.0 * pq.s)
+        f = sigproc.GaussianKernel()
+        sampling_rate = 350 * pq.Hz
+        self.assertAlmostEqual(
+            stm.cs_dist(a, b, f, sampling_rate=sampling_rate),
+            stm.cs_dist(b, a, f, sampling_rate=sampling_rate), places=3)
+
+
+class Test_event_synchronization(ut.TestCase, CommonSimilarityTestCases):
+    def calc_similarity(self, a, b):
+        return stm.event_synchronization(a, b)
+
+    def test_returns_correct_event_synchronization(self):
+        a = neo.SpikeTrain(sp.array([1.0, 2.5, 6.5]) * pq.s, t_stop=7.0 * pq.s)
+        b = neo.SpikeTrain(sp.array([1.0, 5.7]) * pq.s, t_stop=10.0 * pq.s)
+        expected = 0.81649658092772615
+        actual = stm.event_synchronization(a, b)
+        self.assertEqual(expected, actual)
+
+    def test_allows_to_set_constant_tau(self):
+        a = neo.SpikeTrain(sp.array([1.0, 2.5, 6.5]) * pq.s, t_stop=7.0 * pq.s)
+        b = neo.SpikeTrain(sp.array([1.0, 5.7]) * pq.s, t_stop=10.0 * pq.s)
+        tau = 0.5 * pq.s
+        expected = 0.40824829046386307
+        actual = stm.event_synchronization(a, b, tau)
+        self.assertEqual(expected, actual)
+
+    def test_allows_use_of_different_kernel(self):
+        a = neo.SpikeTrain(sp.array([1.0, 2.5, 6.5]) * pq.s, t_stop=7.0 * pq.s)
+        b = neo.SpikeTrain(sp.array([1.0, 5.7]) * pq.s, t_stop=10.0 * pq.s)
+        kernel = sigproc.LaplacianKernel(1.0 * pq.s, normalize=False)
+        expected = 0.70480122722318095
+        actual = stm.event_synchronization(a, b, kernel=kernel)
+        self.assertEqual(expected, actual)
+
+
+class Test_hunter_milton_similarity(ut.TestCase, CommonSimilarityTestCases):
+    def calc_similarity(self, a, b):
+        return stm.hunter_milton_similarity(a, b)
+
+    def test_returns_correct_hunter_milton_similarity(self):
+        a = neo.SpikeTrain(sp.array([1.0, 2.5, 6.5]) * pq.s, t_stop=7.0 * pq.s)
+        b = neo.SpikeTrain(
+            sp.array([1.2, 5.7, 8.0, 9.0]) * pq.s, t_stop=10.0 * pq.s)
+        tau = 2.0 * pq.s
+        expected = 0.64128747518120299
+        actual = stm.hunter_milton_similarity(a, b, tau)
+        self.assertEqual(expected, actual)
+
+    def test_allows_use_of_different_kernel(self):
+        a = neo.SpikeTrain(sp.array([1.0, 2.5, 6.5]) * pq.s, t_stop=7.0 * pq.s)
+        b = neo.SpikeTrain(
+            sp.array([1.2, 5.7, 8.0, 9.0]) * pq.s, t_stop=10.0 * pq.s)
+        kernel = sigproc.TriangularKernel(1.0 * pq.s, normalize=False)
+        expected = 0.29166666666666663
+        actual = stm.hunter_milton_similarity(a, b, kernel=kernel)
+        assert_array_almost_equal(expected, actual)
+
+
+class Test_norm_dist(ut.TestCase):
+    def test_returns_zero_for_equal_spike_trains(self):
+        a = neo.SpikeTrain(sp.array([
+            1.1844519,  1.57346687,  2.52261998,  3.65824785,  5.38988771,
+            5.63178278,  6.70500182,  7.99562401,  9.21135176
+        ]) * pq.s, t_stop=10.0 * pq.s, sampling_rate=100 * pq.Hz)
+        f = sigproc.GaussianKernel()
+        self.assertAlmostEqual(
+            0.0 * pq.Hz ** 0.5, stm.norm_dist(a, a.copy(), f))
+
+    def test_returns_norm_if_one_spike_train_is_empty(self):
+        empty = create_empty_spike_train()
+        non_empty = neo.SpikeTrain(sp.array([1.0]) * pq.s, t_stop=2.0 * pq.s)
+        sampling_rate = 100 * pq.Hz
+        smoothing_filter = sigproc.GaussianKernel()
+        expected = stm.st_norm(
+            non_empty, smoothing_filter, sampling_rate=sampling_rate)
+        self.assertAlmostEqual(
+            expected, stm.norm_dist(
+                empty, non_empty, smoothing_filter,
+                sampling_rate=sampling_rate),
+            places=3)
+        self.assertAlmostEqual(
+            expected, stm.norm_dist(
+                non_empty, empty, smoothing_filter,
+                sampling_rate=sampling_rate),
+            places=3)
+
+    def test_returns_correct_spike_train_norm_distance(self):
+        a = neo.SpikeTrain(
+            sp.array([1.0]) * pq.s, t_start=0.6 * pq.s, t_stop=1.4 * pq.s)
+        b = neo.SpikeTrain(
+            sp.array([0.5, 1.5]) * pq.s, t_stop=2.0 * pq.s)
+        smoothing_filter = sigproc.GaussianKernel(1.0 * pq.s)
+        expected = (0.225662 * pq.Hz) ** 0.5
+        actual = stm.norm_dist(
+            a, b, smoothing_filter, sampling_rate=200 * pq.Hz)
+        self.assertAlmostEqual(
+            expected, actual.rescale(expected.units), places=3)
+
+    def test_is_symmetric(self):
+        a = neo.SpikeTrain(sp.array([
+            1.1844519,  1.57346687,  2.52261998,  3.65824785,  5.38988771,
+            5.63178278,  6.70500182,  7.99562401,  9.21135176
+        ]) * pq.s, t_stop=10.0 * pq.s)
+        b = neo.SpikeTrain(sp.array([
+            0.86096077,  3.54273148,  4.20476326,  6.02451599,  6.42851683,
+            6.5564268,  7.07864592,  7.2368936,  7.31784319,  8.15148958,
+            8.53540889
+        ]) * pq.s, t_stop=10.0 * pq.s)
+        f = sigproc.GaussianKernel()
+        sampling_rate = 350 * pq.Hz
+        self.assertAlmostEqual(
+            stm.norm_dist(a, b, f, sampling_rate=sampling_rate),
+            stm.norm_dist(b, a, f, sampling_rate=sampling_rate), places=3)
+
+
+class Test_schreiber_similarity(ut.TestCase, CommonSimilarityTestCases):
+    def calc_similarity(self, a, b):
+        k = sigproc.GaussianKernel()
+        return stm.schreiber_similarity((a, b), k)[0, 1]
+
+    def test_returns_nan_if_one_spike_train_is_empty(self):
+        empty = create_empty_spike_train()
+        non_empty = neo.SpikeTrain(sp.array([1.0]) * pq.s, t_stop=2.0 * pq.s)
+        k = sigproc.GaussianKernel()
+        actual = stm.schreiber_similarity((empty, non_empty), k)
+        self.assertTrue(sp.isnan(actual[0, 0]))
+        self.assertTrue(sp.isnan(actual[0, 1]))
+        self.assertTrue(sp.isnan(actual[1, 0]))
+
+    def test_returns_correct_spike_train_schreiber_similarity(self):
+        a = neo.SpikeTrain(
+            sp.array([1.0]) * pq.s, t_start=0.6 * pq.s, t_stop=1.4 * pq.s)
+        b = neo.SpikeTrain(
+            sp.array([0.5, 1.5]) * pq.s, t_stop=2.0 * pq.s)
+        c = neo.SpikeTrain(
+            sp.array([1.0, 2.0]) * pq.s, t_start=0.6 * pq.s, t_stop=2.4 * pq.s)
+        k = sigproc.GaussianKernel(sp.sqrt(2.0) * pq.s)
+        expected = sp.array([
+            [1.0, 0.9961114, 0.9430803],
+            [0.9961114, 1.0, 0.9523332],
+            [0.9430803, 0.9523332, 1.0]])
+        actual = stm.schreiber_similarity((a, b, c), k)
+        assert_array_almost_equal(expected, actual)
+
+
+class Test_st_inner(ut.TestCase):
+    def test_returns_zero_if_any_spike_train_is_empty(self):
+        empty = create_empty_spike_train()
+        non_empty = neo.SpikeTrain(sp.array([1.0]) * pq.s, t_stop=2.0 * pq.s)
+        smoothing_filter = sigproc.GaussianKernel()
+        self.assertAlmostEqual(
+            0.0, stm.st_inner(empty, empty, smoothing_filter))
+        self.assertAlmostEqual(
+            0.0, stm.st_inner(empty, non_empty, smoothing_filter))
+        self.assertAlmostEqual(
+            0.0, stm.st_inner(non_empty, empty, smoothing_filter))
+
+    def test_returns_correct_inner_spike_train_product(self):
+        a = neo.SpikeTrain(
+            sp.array([1.0]) * pq.s, t_start=0.6 * pq.s, t_stop=1.4 * pq.s)
+        b = neo.SpikeTrain(
+            sp.array([0.5, 1.5]) * pq.s, t_stop=2.0 * pq.s)
+        smoothing_filter = sigproc.GaussianKernel(1.0 * pq.s)
+        expected = 0.530007 * pq.Hz
+        actual = stm.st_inner(a, b, smoothing_filter, sampling_rate=100 * pq.Hz)
+        self.assertAlmostEqual(
+            expected, actual.rescale(expected.units), places=3)
+
+    def test_is_symmetric(self):
+        a = neo.SpikeTrain(sp.array([
+            1.1844519,  1.57346687,  2.52261998,  3.65824785,  5.38988771,
+            5.63178278,  6.70500182,  7.99562401,  9.21135176
+        ]) * pq.s, t_stop=10.0 * pq.s)
+        b = neo.SpikeTrain(sp.array([
+            0.86096077,  3.54273148,  4.20476326,  6.02451599,  6.42851683,
+            6.5564268,  7.07864592,  7.2368936,  7.31784319,  8.15148958,
+            8.53540889
+        ]) * pq.s, t_stop=10.0 * pq.s)
+        f = sigproc.GaussianKernel()
+        sampling_rate = 100 * pq.Hz
+        self.assertAlmostEqual(
+            stm.st_inner(a, b, f, sampling_rate=sampling_rate),
+            stm.st_inner(b, a, f, sampling_rate=sampling_rate))
+
+
+class Test_st_norm(ut.TestCase):
+    def test_returns_zero_if_spike_train_is_empty(self):
+        empty = create_empty_spike_train()
+        smoothing_filter = sigproc.GaussianKernel()
+        self.assertAlmostEqual(0.0, stm.st_norm(empty, smoothing_filter))
+
+    def test_returns_correct_spike_train_norm(self):
+        st = neo.SpikeTrain(
+            sp.array([0.5, 1.0, 1.5]) * pq.s, t_stop=2.0 * pq.s)
+        smoothing_filter = sigproc.GaussianKernel(1.0 * pq.s)
+        expected = (2.34569 * pq.Hz) ** 0.5
+        actual = stm.st_norm(st, smoothing_filter, sampling_rate=200 * pq.Hz)
+        self.assertAlmostEqual(
+            expected, actual.rescale(expected.units), places=3)
+
+
+class Test_van_rossum_dist(ut.TestCase, CommonMetricTestCases):
+    def calc_metric(self, a, b):
+        return stm.van_rossum_dist((a, b))[0, 1]
+
+    def test_return_correct_distance(self):
+        a = neo.SpikeTrain(
+            sp.array([1.0, 4.0, 5.0, 6.0, 9.0, 11.0]) * pq.s,
+            t_stop=12.0 * pq.s)
+        b = neo.SpikeTrain(
+            sp.array([2.0, 4.0, 7.0, 10.0]) * pq.s,  t_stop=12.0 * pq.s)
+        c = neo.SpikeTrain(sp.array([3.0, 4.0]) * pq.s, t_stop=12.0 * pq.s)
+        tau = 3.0 * pq.s
+        expected = sp.array([
+            [0.0, 1.895846644204, 2.878796160479],
+            [1.895846644204, 0.0, 1.760192079676],
+            [2.878796160479, 1.760192079676, 0.0]])
+        actual = stm.van_rossum_dist((a, b, c), tau)
+        assert_array_almost_equal(expected, actual)
+
+    def test_distance_of_empty_spiketrain_and_single_spike_equals_one(self):
+        a = neo.SpikeTrain(sp.array([]) * pq.s, t_stop=2.0 * pq.s)
+        b = neo.SpikeTrain(sp.array([1.0]) * pq.s, t_stop=2.0 * pq.s)
+        expected = sp.array([[0.0, 1.0], [1.0, 0.0]])
+        actual = stm.van_rossum_dist((a, b), 3.0 * pq.s)
+        assert_array_almost_equal(expected, actual)
+
+    def test_allows_use_of_different_kernel(self):
+        a = neo.SpikeTrain(sp.array([1.0, 2.0]) * pq.s, t_stop=3.0 * pq.s)
+        b = neo.SpikeTrain(sp.array([1.5]) * pq.s, t_stop=2.0 * pq.s)
+        k = sigproc.GaussianKernel(1.0 * pq.s, normalize=False)
+        expected = sp.array([
+            [0.0, 0.8264827],
+            [0.8264827, 0.0]])
+        actual = stm.van_rossum_dist((a, b), kernel=k)
+        assert_array_almost_equal(expected, actual)
+
+    def test_allows_tau_equal_to_infinity(self):
+        a = neo.SpikeTrain(sp.array([1.0, 1.9, 2.0]) * pq.s, t_stop=3.0 * pq.s)
+        b = neo.SpikeTrain(sp.array([1.5]) * pq.s, t_stop=2.0 * pq.s)
+        tau = sp.inf * pq.s
+        expected = sp.array([
+            [0.0, 2.0],
+            [2.0, 0.0]])
+        actual = stm.van_rossum_dist((a, b), tau)
+        assert_array_almost_equal(expected, actual)
+
+
+class Test_van_rossum_multiunit_dist(ut.TestCase, CommonMetricTestCases):
+    # With only one spike train each we should get the normal van Rossum
+    # distance.
+    def calc_metric(self, a, b):
+        return stm.van_rossum_multiunit_dist({0: [a, b]}, 1)[0, 1]
+
+    def test_returns_correct_distance_for_multiunits(self):
+        a0 = neo.SpikeTrain(sp.array([1.0, 5.0, 7.0]) * pq.s, t_stop=8.0 * pq.s)
+        a1 = neo.SpikeTrain(sp.array([1.0, 2.0, 5.0]) * pq.s, t_stop=8.0 * pq.s)
+        b0 = neo.SpikeTrain(sp.array([2.0, 4.0, 5.0]) * pq.s, t_stop=8.0 * pq.s)
+        b1 = neo.SpikeTrain(sp.array([3.0, 8.0]) * pq.s, t_stop=9.0 * pq.s)
+        units = {0: [a0, a1], 1: [b0, b1]}
+        weighting = 0.3
+        expected = sp.array([[0.0, 2.37006181], [2.37006181, 0.0]])
+        actual = stm.van_rossum_multiunit_dist(units, weighting)
+        assert_array_almost_equal(expected, actual)
+
+    def test_allows_tau_equal_to_infinity_with_multiunits(self):
+        a0 = neo.SpikeTrain(sp.array([1.0, 5.0, 7.0]) * pq.s, t_stop=8.0 * pq.s)
+        a1 = neo.SpikeTrain(sp.array([5.0]) * pq.s, t_stop=8.0 * pq.s)
+        b0 = neo.SpikeTrain(sp.array([2.0, 4.0, 5.0]) * pq.s, t_stop=8.0 * pq.s)
+        b1 = neo.SpikeTrain(sp.array([3.0, 8.0]) * pq.s, t_stop=9.0 * pq.s)
+        units = {0: [a0, a1], 1: [b0, b1]}
+        weighting = 0.3
+        tau = sp.inf * pq.s
+        dist = sp.sqrt(5.0 + weighting * 4.0)
+        expected = sp.array([[0.0, dist], [dist, 0.0]])
+        actual = stm.van_rossum_multiunit_dist(units, weighting, tau)
+        assert_array_almost_equal(expected, actual)
+
+
 class Test_victor_purpura_dist(ut.TestCase, CommonMetricTestCases):
     def calc_metric(self, a, b):
         return stm.victor_purpura_dist(a, b)
@@ -183,329 +506,6 @@ class Test_victor_purpura_multiunit_dist(ut.TestCase, CommonMetricTestCases):
         st = create_empty_spike_train()
         with self.assertRaises(ValueError):
             stm.victor_purpura_multiunit_dist({0: [st], 1: [st, st]}, 1.0)
-
-
-class Test_van_rossum_dist(ut.TestCase, CommonMetricTestCases):
-    def calc_metric(self, a, b):
-        return stm.van_rossum_dist((a, b))[0, 1]
-
-    def test_return_correct_distance(self):
-        a = neo.SpikeTrain(
-            sp.array([1.0, 4.0, 5.0, 6.0, 9.0, 11.0]) * pq.s,
-            t_stop=12.0 * pq.s)
-        b = neo.SpikeTrain(
-            sp.array([2.0, 4.0, 7.0, 10.0]) * pq.s,  t_stop=12.0 * pq.s)
-        c = neo.SpikeTrain(sp.array([3.0, 4.0]) * pq.s, t_stop=12.0 * pq.s)
-        tau = 3.0 * pq.s
-        expected = sp.array([
-            [0.0, 1.895846644204, 2.878796160479],
-            [1.895846644204, 0.0, 1.760192079676],
-            [2.878796160479, 1.760192079676, 0.0]])
-        actual = stm.van_rossum_dist((a, b, c), tau)
-        assert_array_almost_equal(expected, actual)
-
-    def test_distance_of_empty_spiketrain_and_single_spike_equals_one(self):
-        a = neo.SpikeTrain(sp.array([]) * pq.s, t_stop=2.0 * pq.s)
-        b = neo.SpikeTrain(sp.array([1.0]) * pq.s, t_stop=2.0 * pq.s)
-        expected = sp.array([[0.0, 1.0], [1.0, 0.0]])
-        actual = stm.van_rossum_dist((a, b), 3.0 * pq.s)
-        assert_array_almost_equal(expected, actual)
-
-    def test_allows_use_of_different_kernel(self):
-        a = neo.SpikeTrain(sp.array([1.0, 2.0]) * pq.s, t_stop=3.0 * pq.s)
-        b = neo.SpikeTrain(sp.array([1.5]) * pq.s, t_stop=2.0 * pq.s)
-        k = sigproc.GaussianKernel(1.0 * pq.s, normalize=False)
-        expected = sp.array([
-            [0.0, 0.8264827],
-            [0.8264827, 0.0]])
-        actual = stm.van_rossum_dist((a, b), kernel=k)
-        assert_array_almost_equal(expected, actual)
-
-    def test_allows_tau_equal_to_infinity(self):
-        a = neo.SpikeTrain(sp.array([1.0, 1.9, 2.0]) * pq.s, t_stop=3.0 * pq.s)
-        b = neo.SpikeTrain(sp.array([1.5]) * pq.s, t_stop=2.0 * pq.s)
-        tau = sp.inf * pq.s
-        expected = sp.array([
-            [0.0, 2.0],
-            [2.0, 0.0]])
-        actual = stm.van_rossum_dist((a, b), tau)
-        assert_array_almost_equal(expected, actual)
-
-
-class Test_van_rossum_multiunit_dist(ut.TestCase, CommonMetricTestCases):
-    # With only one spike train each we should get the normal van Rossum
-    # distance.
-    def calc_metric(self, a, b):
-        return stm.van_rossum_multiunit_dist({0: [a, b]}, 1)[0, 1]
-
-    def test_returns_correct_distance_for_multiunits(self):
-        a0 = neo.SpikeTrain(sp.array([1.0, 5.0, 7.0]) * pq.s, t_stop=8.0 * pq.s)
-        a1 = neo.SpikeTrain(sp.array([1.0, 2.0, 5.0]) * pq.s, t_stop=8.0 * pq.s)
-        b0 = neo.SpikeTrain(sp.array([2.0, 4.0, 5.0]) * pq.s, t_stop=8.0 * pq.s)
-        b1 = neo.SpikeTrain(sp.array([3.0, 8.0]) * pq.s, t_stop=9.0 * pq.s)
-        units = {0: [a0, a1], 1: [b0, b1]}
-        weighting = 0.3
-        expected = sp.array([[0.0, 2.37006181], [2.37006181, 0.0]])
-        actual = stm.van_rossum_multiunit_dist(units, weighting)
-        assert_array_almost_equal(expected, actual)
-
-    def test_allows_tau_equal_to_infinity_with_multiunits(self):
-        a0 = neo.SpikeTrain(sp.array([1.0, 5.0, 7.0]) * pq.s, t_stop=8.0 * pq.s)
-        a1 = neo.SpikeTrain(sp.array([5.0]) * pq.s, t_stop=8.0 * pq.s)
-        b0 = neo.SpikeTrain(sp.array([2.0, 4.0, 5.0]) * pq.s, t_stop=8.0 * pq.s)
-        b1 = neo.SpikeTrain(sp.array([3.0, 8.0]) * pq.s, t_stop=9.0 * pq.s)
-        units = {0: [a0, a1], 1: [b0, b1]}
-        weighting = 0.3
-        tau = sp.inf * pq.s
-        dist = sp.sqrt(5.0 + weighting * 4.0)
-        expected = sp.array([[0.0, dist], [dist, 0.0]])
-        actual = stm.van_rossum_multiunit_dist(units, weighting, tau)
-        assert_array_almost_equal(expected, actual)
-
-
-class Test_st_inner(ut.TestCase):
-    def test_returns_zero_if_any_spike_train_is_empty(self):
-        empty = create_empty_spike_train()
-        non_empty = neo.SpikeTrain(sp.array([1.0]) * pq.s, t_stop=2.0 * pq.s)
-        smoothing_filter = sigproc.GaussianKernel()
-        self.assertAlmostEqual(
-            0.0, stm.st_inner(empty, empty, smoothing_filter))
-        self.assertAlmostEqual(
-            0.0, stm.st_inner(empty, non_empty, smoothing_filter))
-        self.assertAlmostEqual(
-            0.0, stm.st_inner(non_empty, empty, smoothing_filter))
-
-    def test_returns_correct_inner_spike_train_product(self):
-        a = neo.SpikeTrain(
-            sp.array([1.0]) * pq.s, t_start=0.6 * pq.s, t_stop=1.4 * pq.s)
-        b = neo.SpikeTrain(
-            sp.array([0.5, 1.5]) * pq.s, t_stop=2.0 * pq.s)
-        smoothing_filter = sigproc.GaussianKernel(1.0 * pq.s)
-        expected = 0.530007 * pq.Hz
-        actual = stm.st_inner(a, b, smoothing_filter, sampling_rate=100 * pq.Hz)
-        self.assertAlmostEqual(
-            expected, actual.rescale(expected.units), places=3)
-
-    def test_is_symmetric(self):
-        a = neo.SpikeTrain(sp.array([
-            1.1844519,  1.57346687,  2.52261998,  3.65824785,  5.38988771,
-            5.63178278,  6.70500182,  7.99562401,  9.21135176
-        ]) * pq.s, t_stop=10.0 * pq.s)
-        b = neo.SpikeTrain(sp.array([
-            0.86096077,  3.54273148,  4.20476326,  6.02451599,  6.42851683,
-            6.5564268,  7.07864592,  7.2368936,  7.31784319,  8.15148958,
-            8.53540889
-        ]) * pq.s, t_stop=10.0 * pq.s)
-        f = sigproc.GaussianKernel()
-        sampling_rate = 100 * pq.Hz
-        self.assertAlmostEqual(
-            stm.st_inner(a, b, f, sampling_rate=sampling_rate),
-            stm.st_inner(b, a, f, sampling_rate=sampling_rate))
-
-
-class Test_st_norm(ut.TestCase):
-    def test_returns_zero_if_spike_train_is_empty(self):
-        empty = create_empty_spike_train()
-        smoothing_filter = sigproc.GaussianKernel()
-        self.assertAlmostEqual(0.0, stm.st_norm(empty, smoothing_filter))
-
-    def test_returns_correct_spike_train_norm(self):
-        st = neo.SpikeTrain(
-            sp.array([0.5, 1.0, 1.5]) * pq.s, t_stop=2.0 * pq.s)
-        smoothing_filter = sigproc.GaussianKernel(1.0 * pq.s)
-        expected = (2.34569 * pq.Hz) ** 0.5
-        actual = stm.st_norm(st, smoothing_filter, sampling_rate=200 * pq.Hz)
-        self.assertAlmostEqual(
-            expected, actual.rescale(expected.units), places=3)
-
-
-class Test_norm_dist(ut.TestCase):
-    def test_returns_zero_for_equal_spike_trains(self):
-        a = neo.SpikeTrain(sp.array([
-            1.1844519,  1.57346687,  2.52261998,  3.65824785,  5.38988771,
-            5.63178278,  6.70500182,  7.99562401,  9.21135176
-        ]) * pq.s, t_stop=10.0 * pq.s, sampling_rate=100 * pq.Hz)
-        f = sigproc.GaussianKernel()
-        self.assertAlmostEqual(
-            0.0 * pq.Hz ** 0.5, stm.norm_dist(a, a.copy(), f))
-
-    def test_returns_norm_if_one_spike_train_is_empty(self):
-        empty = create_empty_spike_train()
-        non_empty = neo.SpikeTrain(sp.array([1.0]) * pq.s, t_stop=2.0 * pq.s)
-        sampling_rate = 100 * pq.Hz
-        smoothing_filter = sigproc.GaussianKernel()
-        expected = stm.st_norm(
-            non_empty, smoothing_filter, sampling_rate=sampling_rate)
-        self.assertAlmostEqual(
-            expected, stm.norm_dist(
-                empty, non_empty, smoothing_filter,
-                sampling_rate=sampling_rate),
-            places=3)
-        self.assertAlmostEqual(
-            expected, stm.norm_dist(
-                non_empty, empty, smoothing_filter,
-                sampling_rate=sampling_rate),
-            places=3)
-
-    def test_returns_correct_spike_train_norm_distance(self):
-        a = neo.SpikeTrain(
-            sp.array([1.0]) * pq.s, t_start=0.6 * pq.s, t_stop=1.4 * pq.s)
-        b = neo.SpikeTrain(
-            sp.array([0.5, 1.5]) * pq.s, t_stop=2.0 * pq.s)
-        smoothing_filter = sigproc.GaussianKernel(1.0 * pq.s)
-        expected = (0.225662 * pq.Hz) ** 0.5
-        actual = stm.norm_dist(
-            a, b, smoothing_filter, sampling_rate=200 * pq.Hz)
-        self.assertAlmostEqual(
-            expected, actual.rescale(expected.units), places=3)
-
-    def test_is_symmetric(self):
-        a = neo.SpikeTrain(sp.array([
-            1.1844519,  1.57346687,  2.52261998,  3.65824785,  5.38988771,
-            5.63178278,  6.70500182,  7.99562401,  9.21135176
-        ]) * pq.s, t_stop=10.0 * pq.s)
-        b = neo.SpikeTrain(sp.array([
-            0.86096077,  3.54273148,  4.20476326,  6.02451599,  6.42851683,
-            6.5564268,  7.07864592,  7.2368936,  7.31784319,  8.15148958,
-            8.53540889
-        ]) * pq.s, t_stop=10.0 * pq.s)
-        f = sigproc.GaussianKernel()
-        sampling_rate = 350 * pq.Hz
-        self.assertAlmostEqual(
-            stm.norm_dist(a, b, f, sampling_rate=sampling_rate),
-            stm.norm_dist(b, a, f, sampling_rate=sampling_rate), places=3)
-
-
-class Test_cs_dist(ut.TestCase):
-    def test_returns_zero_for_equal_spike_trains(self):
-        a = neo.SpikeTrain(sp.array([
-            1.1844519,  1.57346687,  2.52261998,  3.65824785,  5.38988771,
-            5.63178278,  6.70500182,  7.99562401,  9.21135176
-        ]) * pq.s, t_stop=10.0 * pq.s, sampling_rate=100 * pq.Hz)
-        f = sigproc.GaussianKernel()
-        self.assertAlmostEqual(0.0, stm.cs_dist(a, a.copy(), f))
-
-    def test_returns_nan_if_one_spike_train_is_empty(self):
-        empty = create_empty_spike_train()
-        non_empty = neo.SpikeTrain(sp.array([1.0]) * pq.s, t_stop=2.0 * pq.s)
-        sampling_rate = 100 * pq.Hz
-        smoothing_filter = sigproc.GaussianKernel()
-        self.assertTrue(sp.isnan(stm.cs_dist(
-            empty, empty, smoothing_filter,
-            sampling_rate=sampling_rate)))
-        self.assertTrue(sp.isnan(stm.cs_dist(
-            empty, non_empty, smoothing_filter,
-            sampling_rate=sampling_rate)))
-        self.assertTrue(sp.isnan(stm.cs_dist(
-            non_empty, empty, smoothing_filter,
-            sampling_rate=sampling_rate)))
-
-    def test_returns_correct_spike_train_cauchy_schwarz_distance(self):
-        a = neo.SpikeTrain(
-            sp.array([1.0]) * pq.s, t_start=0.6 * pq.s, t_stop=1.4 * pq.s)
-        b = neo.SpikeTrain(
-            sp.array([0.5, 1.5]) * pq.s, t_stop=2.0 * pq.s)
-        smoothing_filter = sigproc.GaussianKernel(1.0 * pq.s)
-        expected = 0.124677
-        actual = stm.cs_dist(a, b, smoothing_filter, sampling_rate=200 * pq.Hz)
-        self.assertAlmostEqual(expected, actual, places=3)
-
-    def test_is_symmetric(self):
-        a = neo.SpikeTrain(sp.array([
-            1.1844519,  1.57346687,  2.52261998,  3.65824785,  5.38988771,
-            5.63178278,  6.70500182,  7.99562401,  9.21135176
-        ]) * pq.s, t_stop=10.0 * pq.s)
-        b = neo.SpikeTrain(sp.array([
-            0.86096077,  3.54273148,  4.20476326,  6.02451599,  6.42851683,
-            6.5564268,  7.07864592,  7.2368936,  7.31784319,  8.15148958,
-            8.53540889
-        ]) * pq.s, t_stop=10.0 * pq.s)
-        f = sigproc.GaussianKernel()
-        sampling_rate = 350 * pq.Hz
-        self.assertAlmostEqual(
-            stm.cs_dist(a, b, f, sampling_rate=sampling_rate),
-            stm.cs_dist(b, a, f, sampling_rate=sampling_rate), places=3)
-
-
-class Test_schreiber_similarity(ut.TestCase, CommonSimilarityTestCases):
-    def calc_similarity(self, a, b):
-        k = sigproc.GaussianKernel()
-        return stm.schreiber_similarity((a, b), k)[0, 1]
-
-    def test_returns_nan_if_one_spike_train_is_empty(self):
-        empty = create_empty_spike_train()
-        non_empty = neo.SpikeTrain(sp.array([1.0]) * pq.s, t_stop=2.0 * pq.s)
-        k = sigproc.GaussianKernel()
-        actual = stm.schreiber_similarity((empty, non_empty), k)
-        self.assertTrue(sp.isnan(actual[0, 0]))
-        self.assertTrue(sp.isnan(actual[0, 1]))
-        self.assertTrue(sp.isnan(actual[1, 0]))
-
-    def test_returns_correct_spike_train_schreiber_similarity(self):
-        a = neo.SpikeTrain(
-            sp.array([1.0]) * pq.s, t_start=0.6 * pq.s, t_stop=1.4 * pq.s)
-        b = neo.SpikeTrain(
-            sp.array([0.5, 1.5]) * pq.s, t_stop=2.0 * pq.s)
-        c = neo.SpikeTrain(
-            sp.array([1.0, 2.0]) * pq.s, t_start=0.6 * pq.s, t_stop=2.4 * pq.s)
-        k = sigproc.GaussianKernel(sp.sqrt(2.0) * pq.s)
-        expected = sp.array([
-            [1.0, 0.9961114, 0.9430803],
-            [0.9961114, 1.0, 0.9523332],
-            [0.9430803, 0.9523332, 1.0]])
-        actual = stm.schreiber_similarity((a, b, c), k)
-        assert_array_almost_equal(expected, actual)
-
-
-class Test_hunter_milton_similarity(ut.TestCase, CommonSimilarityTestCases):
-    def calc_similarity(self, a, b):
-        return stm.hunter_milton_similarity(a, b)
-
-    def test_returns_correct_hunter_milton_similarity(self):
-        a = neo.SpikeTrain(sp.array([1.0, 2.5, 6.5]) * pq.s, t_stop=7.0 * pq.s)
-        b = neo.SpikeTrain(
-            sp.array([1.2, 5.7, 8.0, 9.0]) * pq.s, t_stop=10.0 * pq.s)
-        tau = 2.0 * pq.s
-        expected = 0.64128747518120299
-        actual = stm.hunter_milton_similarity(a, b, tau)
-        self.assertEqual(expected, actual)
-
-    def test_allows_use_of_different_kernel(self):
-        a = neo.SpikeTrain(sp.array([1.0, 2.5, 6.5]) * pq.s, t_stop=7.0 * pq.s)
-        b = neo.SpikeTrain(
-            sp.array([1.2, 5.7, 8.0, 9.0]) * pq.s, t_stop=10.0 * pq.s)
-        kernel = sigproc.TriangularKernel(1.0 * pq.s, normalize=False)
-        expected = 0.29166666666666663
-        actual = stm.hunter_milton_similarity(a, b, kernel=kernel)
-        assert_array_almost_equal(expected, actual)
-
-
-class Test_event_synchronization(ut.TestCase, CommonSimilarityTestCases):
-    def calc_similarity(self, a, b):
-        return stm.event_synchronization(a, b)
-
-    def test_returns_correct_event_synchronization(self):
-        a = neo.SpikeTrain(sp.array([1.0, 2.5, 6.5]) * pq.s, t_stop=7.0 * pq.s)
-        b = neo.SpikeTrain(sp.array([1.0, 5.7]) * pq.s, t_stop=10.0 * pq.s)
-        expected = 0.81649658092772615
-        actual = stm.event_synchronization(a, b)
-        self.assertEqual(expected, actual)
-
-    def test_allows_to_set_constant_tau(self):
-        a = neo.SpikeTrain(sp.array([1.0, 2.5, 6.5]) * pq.s, t_stop=7.0 * pq.s)
-        b = neo.SpikeTrain(sp.array([1.0, 5.7]) * pq.s, t_stop=10.0 * pq.s)
-        tau = 0.5 * pq.s
-        expected = 0.40824829046386307
-        actual = stm.event_synchronization(a, b, tau)
-        self.assertEqual(expected, actual)
-
-    def test_allows_use_of_different_kernel(self):
-        a = neo.SpikeTrain(sp.array([1.0, 2.5, 6.5]) * pq.s, t_stop=7.0 * pq.s)
-        b = neo.SpikeTrain(sp.array([1.0, 5.7]) * pq.s, t_stop=10.0 * pq.s)
-        kernel = sigproc.LaplacianKernel(1.0 * pq.s, normalize=False)
-        expected = 0.70480122722318095
-        actual = stm.event_synchronization(a, b, kernel=kernel)
-        self.assertEqual(expected, actual)
 
 
 if __name__ == '__main__':
