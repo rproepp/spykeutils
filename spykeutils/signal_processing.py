@@ -86,6 +86,10 @@ class Kernel(object):
         k = self(sp.arange(start, stop) * t_step)
         return k
 
+    def is_symmetric(self):
+        """ Should return `True` if the kernel is symmetric. """
+        return False
+
     def summed_dist_matrix(self, vectors, presorted=False):
         """ Calculates the sum of all element pair distances for each
         pair of vectors.
@@ -127,6 +131,9 @@ class SymmetricKernel(Kernel):
             function.
         """
         Kernel.__init__(self, kernel_func, **params)
+
+    def is_symmetric(self):
+        return True
 
     def summed_dist_matrix(self, vectors, presorted=False):
         D = sp.empty((len(vectors), len(vectors)))

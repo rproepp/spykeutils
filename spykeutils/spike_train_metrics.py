@@ -28,6 +28,20 @@ def _calc_multiunit_dist_matrix_from_single_trials(units, dist_func, **params):
     return D
 
 
+def _create_matrix_from_indexed_function(
+        shape, func, symmetric_2d=False, **func_params):
+    mat = sp.empty(shape)
+    if symmetric_2d:
+        for i in xrange(shape[0]):
+            mat[i, i] = func(i, i)
+            for j in xrange(shape[1]):
+                mat[i, j] = mat[j, i] = func(i, j, **func_params)
+    else:
+        for idx in sp.ndindex(*shape):
+            mat[idx] = func(*idx, **func_params)
+    return mat
+
+
 def _merge_trains_and_label_spikes(trains):
     labeled_trains = (zip(st, len(st) * (label,)) for label, st
                       in enumerate(trains))
@@ -105,10 +119,10 @@ def event_synchronization(trains, tau=None, kernel=None, sort=True):
                 for st in trains]
         auto_taus = [spq.minimum(t[:-1], t[1:]) for t in isis]
 
-    D = sp.empty((len(trains), len(trains)))
-    for i in xrange(D.shape[0]):
-        D[i, i] = 1.0
-        for j in xrange(i + 1, D.shape[1]):
+    def compute(i, j):
+        if i == j:
+            return 1.0
+        else:
             if tau is None:
                 tau_mat = spq.minimum(*spq.meshgrid(
                     auto_taus[i], auto_taus[j])) / 2.0
@@ -117,24 +131,27 @@ def event_synchronization(trains, tau=None, kernel=None, sort=True):
             coincidence = sp.sum(kernel(
                 (trains[i] - sp.atleast_2d(trains[j]).T) / tau_mat))
             normalization = 1.0 / sp.sqrt(trains[i].size * trains[j].size)
-            D[i, j] = D[j, i] = normalization * coincidence
+            return normalization * coincidence
 
-    return D
+    return _create_matrix_from_indexed_function(
+        (len(trains), len(trains)), compute, kernel.is_symmetric())
 
 
 def hunter_milton_similarity(trains, tau=1.0 * pq.s, kernel=None):
     if kernel is None:
         kernel = sigproc.LaplacianKernel(tau, normalize=False)
 
-    D = sp.empty((len(trains), len(trains)))
-    for i in xrange(D.shape[0]):
-        D[i, i] = 1.0
-        for j in xrange(i + 1, D.shape[1]):
+    def compute(i, j):
+        if i == j:
+            return 1.0
+        else:
             diff_matrix = sp.absolute(trains[i] - sp.atleast_2d(trains[j]).T)
-            D[i, j] = D[j, i] = 0.5 * (
+            return 0.5 * (
                 sp.sum(kernel(sp.amin(diff_matrix, axis=0))) / trains[i].size +
                 sp.sum(kernel(sp.amin(diff_matrix, axis=1))) / trains[j].size)
-    return D
+
+    return _create_matrix_from_indexed_function(
+        (len(trains), len(trains)), compute, kernel.is_symmetric())
 
 
 def norm_dist(
@@ -483,13 +500,15 @@ def victor_purpura_dist(trains, q=1.0 * pq.Hz, kernel=None, sort=True):
     if sort:
         trains = [sp.sort(st.view(type=pq.Quantity)) for st in trains]
 
-    D = sp.empty((len(trains), len(trains)))
-    for i in xrange(D.shape[0]):
-        D[i, i] = 0.0
-        for j in xrange(i + 1, D.shape[1]):
-            D[i, j] = D[j, i] = _victor_purpura_dist_for_trial_pair(
+    def compute(i, j):
+        if i == j:
+            return 0.0
+        else:
+            return _victor_purpura_dist_for_trial_pair(
                 trains[i], trains[j], kernel)
-    return D
+
+    return _create_matrix_from_indexed_function(
+        (len(trains), len(trains)), compute, kernel.is_symmetric())
 
 
 def _victor_purpura_dist_for_trial_pair(a, b, kernel):
