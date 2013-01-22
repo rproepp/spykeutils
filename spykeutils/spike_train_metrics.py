@@ -73,26 +73,21 @@ def cs_dist(
     train domain. Statistical Signal Processing for Neuroscience and
     Neurotechnology, Academic Press, New York.*
 
-    :param sequence trains: SpikeTrains of which the CS distance will be
-        calculated pairwise.
+    :param sequence trains: Sequence of `SpikeTrain` of which the distance
+        will be calculated pairwise.
     :param smoothing_filter: Smoothing filter to be convolved with the spike
         trains.
     :type smoothing_filter: :class:`.signal_processing.Kernel`
+    :param sampling_rate: The sampling rate which will be used to bin
+        the spike trains.
+    :type sampling_rate: Quantity scalar
     :param float filter_area_fraction: A value between 0 and 1 which controls
         the interval over which the smoothing filter will be discretized. At
         least the given fraction of the complete smoothing filter area will be
         covered. Higher values can lead to more accurate results (besides the
         sampling rate).
-    :param sampling_rate: The sampling rate which will be used to bin
-        the spike trains. If `None`, the maximum sampling rate stored in the
-        two spike trains will be used. If it is also `None` for both spike
-        trains, that, :py:const:`signal_processing.default_sampling_rate`
-        will be used.
-    :type sampling_rate: Quantity scalar
     :returns: Matrix containing the Cauchy-Schwarz distance of all pairs of
         spike trains
-    :returns: Matrix containing the van Rossum distances for all pairs of spike
-        trains.
     :rtype: 2-D array
     """
 
@@ -102,11 +97,43 @@ def cs_dist(
         inner ** 2 / sp.diag(inner) / sp.atleast_2d(sp.diag(inner)).T)
 
 
-def event_synchronization(trains, tau=None, kernel=None, sort=True):
-    if kernel is None:
-        kernel = sigproc.RectangularKernel(1, normalize=False)
-    else:
-        tau = 1.0
+def event_synchronization(
+        trains, tau=None, kernel=sigproc.RectangularKernel(1, normalize=False),
+        sort=True):
+    """ Calculates the event synchronization.
+
+    Let :math:`d(x|y)` be the count of spikes in :math:`y` which occur shortly
+    before an event in :math:`x` with a time difference of less then
+    :math:`\\tau`. Moreover, let :math:`n_x` and :math:`n_y` be the number of
+    total spikes in the spike trains :math:`x` and :math:`y`. The event
+    synchrony is then defined as :math:`Q_T = \\frac{d(x|y)
+    + d(y|x)}{\\sqrt{n_x n_y}}`.
+
+    The time maximum time lag :math:`\\tau` can be determined automatically for
+    each pair of spikes :math:`t^x_i` and :math:`t^y_j` by the formula
+    :math:`\\tau_{ij} = \\frac{1}{2} \\min\{t^x_{i+1} - t^x_i, t^x_i - t^x_{i-1},
+    t^y_{j+1} - t^y_j, t^y_j - t^y_{j-1}\}`
+
+    Further and more detailed information can be found in
+    *Quiroga, R. Q., Kreuz, T., & Grassberger, P. (2002). Event
+    synchronization: a simple and fast method to measure synchronicity and time
+    delay patterns. Physical Review E, 66(4), 041904.*
+
+    :param sequence trains: SpikeTrains of which the van Rossum distance will be
+        calculated pairwise.
+    :param tau: The maximum time lag for two spikes to be considered coincident
+        or synchronous. To have it determined automatically by above formula set
+        it to `None`.
+    :type tau: Quantity scalar
+    :param kernel: Kernel to use in the calculation of the distance.
+    :type kernel: :class:`.signal_processing.Kernel`
+    :param bool sort: Spike trains with sorted spike times are be needed for
+        the calculation. You can set `sort` to `False` if you know that your
+        spike trains are already sorted to decrease calculation time.
+    :returns: Matrix containing the event synchronization for all pairs of spike
+        trains.
+    :rtype: 2-D array
+    """
 
     trains = [st.view(type=pq.Quantity) for st in trains]
     if sort:
@@ -138,6 +165,36 @@ def event_synchronization(trains, tau=None, kernel=None, sort=True):
 
 
 def hunter_milton_similarity(trains, tau=1.0 * pq.s, kernel=None):
+    """ Calculates the Hunter-Milton similarity measure.
+
+    If the kernel function is denoted as :math:`K(t)`, a function :math:`d(x_k)
+    = K(x_k - y_{k'})` can be defined with :math:`y_{k'}` being the closest
+    spike in spike train :math:`y` to the spike :math:`x_k` in spike train
+    :math:`x`. With this the Hunter-Milton similarity measure is :math:`S_H =
+    \\frac{1}{2} \\left(\\frac{1}{n_x} \\sum_{k = 1}^{n_x} d(x_k)
+    + \\frac{1}{n_y} \\sum_{k' = 1}^{n_y} d(y_{k'})\\right)`.
+
+    Further information can be found in
+
+    - *Hunter, J. D., & Milton, J. G. (2003). Amplitude and Frequency
+      Dependence of Spike Timing: Implications for Dynamic Regulation. Journal
+      of Neurophysiology.*
+    - *Dauwels, J., Vialatte, F., Weber, T., & Cichocki, A. (2009). On
+      similarity measures for spike trains. Advances in Neuro-Information
+      Processing, 177-185.*
+
+    :param sequence trains: SpikeTrains of which the Hunter-Milton similarity
+        will be calculated pairwise.
+    :param tau: The time scale for determining the coincidence of two events.
+    :type tau: Quantity scalar
+    :param kernel: Kernel to use in the calculation of the distance. If `None`,
+        a unnormalized Laplacian kernel will be used.
+    :type kernel: :class:`.signal_processing.Kernel`
+    :returns: Matrix containing the Hunter-Milton similarity for all pairs of
+        spike trains.
+    :rtype: 2-D array
+    """
+
     if kernel is None:
         kernel = sigproc.LaplacianKernel(tau, normalize=False)
 
@@ -157,7 +214,7 @@ def hunter_milton_similarity(trains, tau=1.0 * pq.s, kernel=None):
 def norm_dist(
         trains, smoothing_filter, sampling_rate=sigproc.default_sampling_rate,
         filter_area_fraction=sigproc.default_kernel_area_fraction):
-    """ Calculates the norm distance between two spike trains given a smoothing
+    """ Calculates the norm distance between spike trains given a smoothing
     filter.
 
     Let :math:`v_a(t)` and :math:`v_b(t)` with :math:`t \\in \\mathcal{T}` be
@@ -170,24 +227,26 @@ def norm_dist(
     train domain. Statistical Signal Processing for Neuroscience and
     Neurotechnology, Academic Press, New York.*
 
-    :param SpikeTrain a: First spike train.
+    :param sequence trains: Sequence of `SpikeTrain` of which the distance
+        will be calculated pairwise.
     :param SpikeTrain b: Second spike train.
     :param smoothing_filter: Smoothing filter to be convolved with the spike
         trains.
     :type smoothing_filter: :class:`.signal_processing.Kernel`
-    :param float filter_area_fraction: A value between 0 and 1 which controls
-        the interval over which the smoothing filter will be discretized. At
-        least the given fraction of the complete smoothing filter area will be
-        covered. Higher values can lead to more accurate results (besides the
-        sampling rate).
     :param sampling_rate: The sampling rate which will be used to bin
         the spike trains. If `None`, the maximum sampling rate stored in the
         two spike trains will be used. If it is also `None` for both spike
         trains, that, :py:const:`signal_processing.default_sampling_rate`
         will be used.
     :type sampling_rate: Quantity scalar
-    :returns: The norm distance of the spike trains given the smoothing_filter.
-    :rtype: Quantity scalar
+    :param float filter_area_fraction: A value between 0 and 1 which controls
+        the interval over which the smoothing filter will be discretized. At
+        least the given fraction of the complete smoothing filter area will be
+        covered. Higher values can lead to more accurate results (besides the
+        sampling rate).
+    :returns: Matrix containing the norm distance of all pairs of spike trains
+        given the smoothing_filter.
+    :rtype: Quantity 2D
     """
 
     inner = st_inner(
@@ -198,7 +257,7 @@ def norm_dist(
 
 
 def schreiber_similarity(trains, kernel, sort=True):
-    """ Calculates the Schreiber et al. similarity measure between two spike
+    """ Calculates the Schreiber et al. similarity measure between spike
     trains given a kernel.
 
     Let :math:`v_a(t)` and :math:`v_b(t)` with :math:`t \\in \\mathcal{T}` be
@@ -224,14 +283,17 @@ def schreiber_similarity(trains, kernel, sort=True):
       binless spike train measures. Neural Computing and Applications, 19(3),
       405-419. doi:10.1007/s00521-009-0307-6*
 
-    :param SpikeTrain a: First spike train.
-    :param SpikeTrain b: Second spike train.
+    :param sequence trains: Sequence of `SpikeTrain` of which the distance
+        will be calculated pairwise.
     :param kernel: Kernel to use. It corresponds to a smoothing filter
         by being the autocorrelation of such a filter.
     :type kernel: :class:`.signal_processing.Kernel`
-    :returns: The Schreiber et al. similarity measure of the spike trains given
-        the kernel.
-    :rtype: float
+    :param bool sort: Spike trains with sorted spike times will be needed for
+        the calculation. You can set `sort` to `False` if you know that your
+        spike trains are already sorted to decrease calculation time.
+    :returns: Matrix containing the Schreiber et al. similarity measure of all
+        pairs of spike trains.
+    :rtype: 2-D array
     """
 
     k_dist = kernel.summed_dist_matrix(trains, not sort)
@@ -248,7 +310,7 @@ def schreiber_similarity(trains, kernel, sort=True):
 def st_inner(
         a, b, smoothing_filter, sampling_rate=sigproc.default_sampling_rate,
         filter_area_fraction=sigproc.default_kernel_area_fraction):
-    """ Calculates the inner product of two spike trains given a smoothing
+    """ Calculates the inner product of spike trains given a smoothing
     filter.
 
     Let :math:`v_a(t)` and :math:`v_b(t)` with :math:`t \\in \\mathcal{T}` be
@@ -261,24 +323,22 @@ def st_inner(
     train domain. Statistical Signal Processing for Neuroscience and
     Neurotechnology, Academic Press, New York.*
 
-    :param SpikeTrain a: First spike train.
-    :param SpikeTrain b: Second spike train.
+    :param sequence a: Sequence of `SpikeTrain`.
+    :param sequence b: Sequence of `SpikeTrain`.
     :param smoothing_filter: A smoothing filter to be convolved with the spike
         trains.
     :type smoothing_filter: :class:`.signal_processing.Kernel`
+    :param sampling_rate: The sampling rate which will be used to bin
+        the spike train.
+    :type sampling_rate: Quantity scalar
     :param float filter_area_fraction: A value between 0 and 1 which controls
         the interval over which the `smoothing_filter` will be discretized. At
         least the given fraction of the complete `smoothing_filter` area will be
         covered. Higher values can lead to more accurate results (besides the
         sampling rate).
-    :param sampling_rate: The sampling rate which will be used to bin
-        the spike trains. If `None`, the maximum sampling rate stored in the
-        two spike trains will be used. If it is also `None` for both spike
-        trains, that, :py:const:`signal_processing.default_sampling_rate`
-        will be used.
-    :type sampling_rate: Quantity scalar
-    :returns: The inner product of the two spike trains given the smoothing_filter.
-    :rtype: Quantity scalar
+    :returns: Matrix containing the inner product for each pair of spike trains
+        with one spike train from `a` and the other one from `b`.
+    :rtype: Quantity 2D
     """
 
     if all((x is y for x, y in zip(a, b))):
@@ -323,17 +383,14 @@ def st_norm(
     :param smoothing_filter: Smoothing filter to be convolved with the spike
         train.
     :type smoothing_filter: :class:`.signal_processing.Kernel`
+    :param sampling_rate: The sampling rate which will be used to bin
+        the spike train.
+    :type sampling_rate: Quantity scalar
     :param float filter_area_fraction: A value between 0 and 1 which controls
         the interval over which the smoothing filter will be discretized. At
         least the given fraction of the complete smoothing filter area will be
         covered. Higher values can lead to more accurate results (besides the
         sampling rate).
-    :param sampling_rate: The sampling rate which will be used to bin
-        the spike trains. If `None`, the maximum sampling rate stored in the
-        two spike trains will be used. If it is also `None` for both spike
-        trains, that, :py:const:`signal_processing.default_sampling_rate`
-        will be used.
-    :type sampling_rate: Quantity scalar
     :returns: The of norm the spike train given the smoothing_filter.
     :rtype: Quantity scalar
     """
@@ -358,7 +415,8 @@ def van_rossum_dist(trains, tau=1.0 * pq.s, kernel=None, sort=True):
     complexity of this function is :math:`O(N^2 n)` and :math:`O(N^2 + Nn^2)`
     memory will be needed, if the default Laplacian kernel is used (which
     corresponds to the causal decaying exponential smoothing function). Other
-    kernels have probably a worse performance.
+    kernels usually have run-time complexity of :math:`O(N^2 n^2)` depending on
+    the implementation of :meth:`.Kernel.summed_dist_matrix`.
 
     :param sequence trains: SpikeTrains of which the van Rossum distance will be
         calculated pairwise.
@@ -371,6 +429,9 @@ def van_rossum_dist(trains, tau=1.0 * pq.s, kernel=None, sort=True):
         the smoothing filter, but its autocorrelation. If `kernel` is `None`, an
         unnormalized Laplacian kernel with a size of `tau` will be used.
     :type kernel: :class:`.signal_processing.Kernel`
+    :param bool sort: Spike trains with sorted spike times might be needed for
+        the calculation. You can set `sort` to `False` if you know that your
+        spike trains are already sorted to decrease calculation time.
     :returns: Matrix containing the van Rossum distances for all pairs of spike
         trains.
     :rtype: 2-D array
@@ -419,7 +480,7 @@ def van_rossum_multiunit_dist(units, weighting, tau=1.0 * pq.s, kernel=None):
     Other kernels have probably a worse performance.
 
     :param dict units: Dictionary of lists with each list containing the trials
-            of one unit. Each trial should be a `neo.SpikeTrain` and all units
+            of one unit. Each trial should be a `SpikeTrain` and all units
             should have the same number of trials.
     :param float weighting: Controls the interpolation between a labeled line
         and a summed population coding.
@@ -478,12 +539,12 @@ def victor_purpura_dist(trains, q=1.0 * pq.Hz, kernel=None, sort=True):
     coding in visual cortex: a metric-space analysis. Journal of
     Neurophysiology.*
 
-    Given the number of spikes :math:`n_a` and :math:`n_b` in the spike trains
-    the run-time complexity of this function is :math:`O(n_a n_b)`
-    and :math:`O(n_a + n_b)` memory will be needed.
+    Given the average number of spikes :math:`n` in a spike train and :math:`N`
+    spike trains the run-time complexity of this function is
+    :math:`O(N^2 n^2)` and :math:`O(N^2 + 2n)` memory will be needed.
 
-    :param SpikeTrain a:
-    :param SpikeTrain b:
+    :param sequence trains: Sequence of `SpikeTrain` of which the distance
+        will be calculated pairwise.
     :param q: Cost factor for spike shifts. If `kernel` is not `None`, `q` will
         be ignored.
     :type q: Quantity scalar
@@ -491,7 +552,11 @@ def victor_purpura_dist(trains, q=1.0 * pq.Hz, kernel=None, sort=True):
         `kernel` is `None`, an unnormalized triangular kernel with a half width
         of `2.0/q` will be used.
     :type kernel: :class:`.signal_processing.Kernel`
-    :rtype: float
+    :param bool sort: Spike trains with sorted spike times will be needed for
+        the calculation. You can set `sort` to `False` if you know that your
+        spike trains are already sorted to decrease calculation time.
+    :returns: Matrix containing the VP distance of all pairs of spike trains.
+    :rtype: 2-D array
     """
 
     if kernel is None:
@@ -580,7 +645,7 @@ def victor_purpura_multiunit_dist(
     :func:`victor_purpura_dist` which is more memory efficient.
 
     :param dict units: Dictionary of lists with each list containing the trials
-            of one unit. Each trial should be a `neo.SpikeTrain` and all units
+            of one unit. Each trial should be a `SpikeTrain` and all units
             should have the same number of trials.
     :param float reassignment_cost: Cost to reassign a spike from one train to
         another (sometimes denoted with :math:`k`). Should be between 0 and 2.

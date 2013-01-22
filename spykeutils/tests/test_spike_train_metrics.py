@@ -174,11 +174,12 @@ class Test_event_synchronization(ut.TestCase, CommonSimilarityTestCases):
     def test_allows_use_of_different_kernel(self):
         a = neo.SpikeTrain(sp.array([1.0, 2.5, 6.5]) * pq.s, t_stop=7.0 * pq.s)
         b = neo.SpikeTrain(sp.array([1.0, 5.7]) * pq.s, t_stop=10.0 * pq.s)
-        kernel = sigproc.LaplacianKernel(1.0 * pq.s, normalize=False)
+        tau = 1.0 * pq.s
+        kernel = sigproc.LaplacianKernel(1.0, normalize=False)
         expected = sp.array(
             [[1.0, 0.70480122722318095],
              [0.70480122722318095, 1.0]])
-        actual = stm.event_synchronization([a, b], kernel=kernel)
+        actual = stm.event_synchronization([a, b], tau, kernel=kernel)
         assert_array_almost_equal(expected, actual)
 
 

@@ -290,8 +290,7 @@ def bin_spike_train(
 
     :param SpikeTrain train: Spike train to bin.
     :param sampling_rate: The sampling rate which will be used to bin
-        the spike train. If `None`, `train.sampling_rate` will be used. If that
-        is also `None`, :py:const:`default_sampling_rate` will be used.
+        the spike train.
     :type sampling_rate: Quantity scalar
     :param t_start: Time point of the left boundary of the first bin. If `None`,
         `train.t_start` will be used.
@@ -325,6 +324,9 @@ def st_convolve(
     :param SpikeTrain train: Spike train to convolve.
     :param kernel: The kernel instance to convolve with.
     :type kernel: :class:`Kernel`
+    :param sampling_rate: The sampling rate which will be used to bin
+        the spike train.
+    :type sampling_rate: Quantity scalar
     :param float kernel_area_fraction: A value between 0 and 1 which controls
         the interval over which the kernel will be discretized. At least the
         given fraction of the complete kernel area will be covered. Higher
