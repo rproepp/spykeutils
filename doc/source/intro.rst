@@ -6,7 +6,7 @@ on the following additional packages:
 * Python_ >= 2.7
 * neo_ >= 0.2.1
 * scipy_
-* guiqwt_ (Optional, for plotting)
+* guiqwt_ >= 2.1.4 (Optional, for plotting)
 * tables_ (Optional, for analysis results data management. Also known as
   PyTables.)
 

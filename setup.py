@@ -33,7 +33,7 @@ if __name__ == "__main__":
         packages=find_packages(),
         install_requires=['scipy', 'quantities', 'neo>=0.2.1,<0.3.0'],
         extras_require = {
-            'plot':  ['guiqwt'],
+            'plot':  ['guiqwt>=2.1.4'],
             'plugin': ['tables']
         },
         entry_points = {
