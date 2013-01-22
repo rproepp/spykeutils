@@ -297,14 +297,13 @@ def schreiber_similarity(trains, kernel, sort=True):
     """
 
     k_dist = kernel.summed_dist_matrix(trains, not sort)
-    vr_dist = sp.empty(k_dist.shape)
-    for i, j in sp.ndindex(*k_dist.shape):
-        if k_dist[i, i] == 0.0 or k_dist[j, j] == 0.0:
-            vr_dist[i, j] = sp.nan
-        else:
-            vr_dist[i, j] = sp.sqrt(
-                k_dist[i, j] * k_dist[j, i] / k_dist[i, i] / k_dist[j, j])
-    return vr_dist
+
+    def compute(i, j):
+        return sp.sqrt(
+            k_dist[i, j] * k_dist[j, i] / k_dist[i, i] / k_dist[j, j])
+
+    return _create_matrix_from_indexed_function(
+        (len(trains), len(trains)), compute, kernel.is_symmetric())
 
 
 def st_inner(

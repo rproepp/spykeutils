@@ -274,7 +274,9 @@ class Test_schreiber_similarity(ut.TestCase, CommonSimilarityTestCases):
         empty = create_empty_spike_train()
         non_empty = neo.SpikeTrain(sp.array([1.0]) * pq.s, t_stop=2.0 * pq.s)
         k = sigproc.GaussianKernel()
-        actual = stm.schreiber_similarity((empty, non_empty), k)
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            actual = stm.schreiber_similarity((empty, non_empty), k)
         self.assertTrue(sp.isnan(actual[0, 0]))
         self.assertTrue(sp.isnan(actual[0, 1]))
         self.assertTrue(sp.isnan(actual[1, 0]))
