@@ -35,9 +35,8 @@ def _merge_trains_and_label_spikes(trains):
 
 
 def cs_dist(
-        trains, smoothing_filter,
-        filter_area_fraction=sigproc.default_kernel_area_fraction,
-        sampling_rate=sigproc.default_sampling_rate):
+        trains, smoothing_filter, sampling_rate=sigproc.default_sampling_rate,
+        filter_area_fraction=sigproc.default_kernel_area_fraction):
     """ Calculates the Cauchy-Schwarz distance between two spike trains given
     a smoothing filter.
 
@@ -84,7 +83,7 @@ def cs_dist(
     """
 
     inner = st_inner(
-        trains, trains, smoothing_filter, filter_area_fraction, sampling_rate)
+        trains, trains, smoothing_filter, sampling_rate, filter_area_fraction)
     return sp.arccos(
         inner ** 2 / sp.diag(inner) / sp.atleast_2d(sp.diag(inner)).T)
 
@@ -139,9 +138,8 @@ def hunter_milton_similarity(trains, tau=1.0 * pq.s, kernel=None):
 
 
 def norm_dist(
-        trains, smoothing_filter,
-        filter_area_fraction=sigproc.default_kernel_area_fraction,
-        sampling_rate=sigproc.default_sampling_rate):
+        trains, smoothing_filter, sampling_rate=sigproc.default_sampling_rate,
+        filter_area_fraction=sigproc.default_kernel_area_fraction):
     """ Calculates the norm distance between two spike trains given a smoothing
     filter.
 
@@ -176,7 +174,7 @@ def norm_dist(
     """
 
     inner = st_inner(
-        trains, trains, smoothing_filter, filter_area_fraction, sampling_rate)
+        trains, trains, smoothing_filter, sampling_rate, filter_area_fraction)
     return spq.maximum(
         0.0 * pq.Hz,
         (spq.diag(inner) + sp.atleast_2d(spq.diag(inner)).T - 2 * inner)) ** 0.5
@@ -231,9 +229,8 @@ def schreiber_similarity(trains, kernel, sort=True):
 
 
 def st_inner(
-        a, b, smoothing_filter,
-        filter_area_fraction=sigproc.default_kernel_area_fraction,
-        sampling_rate=None):
+        a, b, smoothing_filter, sampling_rate=sigproc.default_sampling_rate,
+        filter_area_fraction=sigproc.default_kernel_area_fraction):
     """ Calculates the inner product of two spike trains given a smoothing
     filter.
 
@@ -269,37 +266,31 @@ def st_inner(
 
     if all((x is y for x, y in zip(a, b))):
         convolved, sampling_rate = _prepare_for_inner_prod(
-            a, smoothing_filter, filter_area_fraction, sampling_rate)
+            a, smoothing_filter, sampling_rate, filter_area_fraction)
         convolved = convolved + convolved
     else:
         convolved, sampling_rate = _prepare_for_inner_prod(
-            a + b, smoothing_filter, filter_area_fraction, sampling_rate)
+            a + b, smoothing_filter, sampling_rate, filter_area_fraction)
     return (sp.inner(convolved[:len(a)], convolved[len(a):]) *
             convolved[0].units * convolved[1].units / sampling_rate)
 
 
 def _prepare_for_inner_prod(
-        trains, smoothing_filter, filter_area_fraction, sampling_rate):
-    if sampling_rate is None:
-        sampling_rate = max([st.sampling_rate for st in trains])
-        if sampling_rate is None or sampling_rate <= 0 * pq.Hz:
-            sampling_rate = sigproc.default_sampling_rate
-
+        trains, smoothing_filter, sampling_rate, filter_area_fraction):
     t_start, t_stop = rate_estimation.maximum_spike_train_interval({0: trains})
     padding = smoothing_filter.boundary_enclosing_at_least(filter_area_fraction)
     t_start -= 2 * padding
     t_stop += 2 * padding
 
     return [sigproc.st_convolve(
-        st, smoothing_filter, filter_area_fraction, t_start=t_start,
-        t_stop=t_stop, mode='full', sampling_rate=sampling_rate)[0]
+        st, smoothing_filter, sampling_rate, filter_area_fraction,
+        t_start=t_start, t_stop=t_stop, mode='full')[0]
         for st in trains], sampling_rate
 
 
 def st_norm(
-        train, smoothing_filter,
-        filter_area_fraction=sigproc.default_kernel_area_fraction,
-        sampling_rate=None):
+        train, smoothing_filter, sampling_rate=sigproc.default_sampling_rate,
+        filter_area_fraction=sigproc.default_kernel_area_fraction):
     """ Calculates the spike train norm given a smoothing filter.
 
     Let :math:`v(t)` with :math:`t \\in \\mathcal{T}` be a spike train
@@ -331,8 +322,8 @@ def st_norm(
     """
 
     return st_inner(
-        [train], [train], smoothing_filter, filter_area_fraction,
-        sampling_rate) ** 0.5
+        [train], [train], smoothing_filter, sampling_rate,
+        filter_area_fraction) ** 0.5
 
 
 def van_rossum_dist(trains, tau=1.0 * pq.s, kernel=None, sort=True):

@@ -131,10 +131,10 @@ class Test_bin_spike_train(ut.TestCase):
     def test_bins_spike_train_using_its_properties(self):
         a = neo.SpikeTrain(
             sp.array([1.0]) * pq.s, t_start=0.5 * pq.s, t_stop=1.5 * pq.s)
-        a.sampling_rate = 4.0 * pq.Hz
+        sampling_rate = 4.0 * pq.Hz
         expected = sp.array([0, 0, 1, 0])
         expectedBins = sp.array([0.5, 0.75, 1.0, 1.25, 1.5]) * pq.s
-        actual, actualBins = sigproc.bin_spike_train(a)
+        actual, actualBins = sigproc.bin_spike_train(a, sampling_rate)
         assert_array_equal(expected, actual)
         assert_array_almost_equal(
             expectedBins, actualBins.rescale(expectedBins.units))
@@ -182,18 +182,6 @@ class Test_st_convolve(ut.TestCase):
              1.6666666, 1.6666666, 1.6666666, 0.0, 0.0]) * pq.Hz
         actual, _ = sigproc.st_convolve(st, kernel, sampling_rate=4 * pq.Hz)
         assert_array_almost_equal(expected, actual)
-
-    def test_uses_sampling_rate_of_spike_train_if_none_is_passed(self):
-        start = 2.0 * pq.s
-        stop = 5.0 * pq.s
-        duration = stop - start
-        sampling_rate = 12 * pq.Hz
-        expected_length = (sampling_rate * duration).simplified
-
-        st = create_empty_spike_train(start, stop)
-        st.sampling_rate = sampling_rate
-        result, _ = sigproc.st_convolve(st, sigproc.GaussianKernel())
-        self.assertEqual(expected_length, result.size)
 
     def test_returns_discretization_bins(self):
         start = 2.0 * pq.s

@@ -8,7 +8,7 @@ import scipy.signal
 import scipy.special
 
 default_kernel_area_fraction = 0.99999
-default_sampling_rate = 1000 * pq.Hz
+default_sampling_rate = 100 * pq.Hz
 
 
 def _searchsorted_pairwise(a, b):
@@ -277,7 +277,8 @@ class TriangularKernel(SymmetricKernel):
         return self.params['half_width']
 
 
-def bin_spike_train(train, sampling_rate=None, t_start=None, t_stop=None):
+def bin_spike_train(
+        train, sampling_rate=default_sampling_rate, t_start=None, t_stop=None):
     """ Creates a binned representation of a spike train.
 
     :param SpikeTrain train: Spike train to bin.
@@ -296,11 +297,6 @@ def bin_spike_train(train, sampling_rate=None, t_start=None, t_stop=None):
     :rtype: (1D array, Quantity 1D)
     """
 
-    if sampling_rate is None:
-        if train.sampling_rate is not None:
-            sampling_rate = train.sampling_rate
-        else:
-            sampling_rate = default_sampling_rate
     if t_start is None:
         t_start = train.t_start
     if t_stop is None:
@@ -314,8 +310,9 @@ def bin_spike_train(train, sampling_rate=None, t_start=None, t_stop=None):
 
 
 def st_convolve(
-        train, kernel, kernel_area_fraction=default_kernel_area_fraction,
-        mode='same', **discretizationParams):
+        train, kernel, sampling_rate=default_sampling_rate,
+        kernel_area_fraction=default_kernel_area_fraction,
+        mode='same', **discretization_params):
     """ Convolves a spike train with a kernel.
 
     :param SpikeTrain train: Spike train to convolve.
@@ -344,7 +341,8 @@ def st_convolve(
     :rtype: (Quantity 1D, Quantity 1D)
     """
 
-    binned, bins = bin_spike_train(train, **discretizationParams)
+    binned, bins = bin_spike_train(
+        train, sampling_rate, **discretization_params)
     sampling_rate = binned.size / (bins[-1] - bins[0])
     k = kernel.discretize(kernel_area_fraction, sampling_rate)
     result = scipy.signal.convolve(binned, k, mode) * k.units
