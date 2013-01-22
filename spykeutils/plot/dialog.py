@@ -21,12 +21,11 @@ from guiqwt.curve import CurveItem
 from guiqwt.tools import (SelectTool, RectZoomTool, BasePlotMenuTool,
                           DeleteItemTool, ItemListPanelTool,
                           AntiAliasingTool, AxisScaleTool, DisplayCoordsTool,
-                          ExportItemDataTool, EditItemDataTool,
-                          ItemCenterTool, SignalStatsTool, ColormapTool,
-                          ReverseYAxisTool, AspectRatioTool, ContrastPanelTool,
-                          XCSPanelTool, YCSPanelTool, CrossSectionTool,
-                          AverageCrossSectionTool, SaveAsTool, PrintTool,
-                          CopyToClipboardTool)
+                          ExportItemDataTool, ItemCenterTool, SignalStatsTool,
+                          ColormapTool, ReverseYAxisTool, AspectRatioTool,
+                          ContrastPanelTool, XCSPanelTool, YCSPanelTool,
+                          CrossSectionTool, AverageCrossSectionTool,
+                          SaveAsTool, PrintTool, CopyToClipboardTool)
 from guiqwt.signals import SIG_PLOT_AXIS_CHANGED
 from guidata.configtools import get_icon
 
@@ -142,8 +141,9 @@ class PlotDialog(QDialog, PlotManager):
             self.set_default_tool(t)
         self.add_tool(BasePlotMenuTool, "item")
         self.add_tool(ExportItemDataTool)
-        try:
+        try: # Old versions of guiqwt and spyderlib do not support this
             import spyderlib.widgets.objecteditor
+            from guiqwt.tools import EditItemDataTool
             self.add_tool(EditItemDataTool)
         except ImportError:
             pass
@@ -189,8 +189,9 @@ class PlotDialog(QDialog, PlotManager):
             self.set_default_tool(t)
         self.add_tool(BasePlotMenuTool, "item")
         self.add_tool(ExportItemDataTool)
-        try:
-            import spyderlib.widgets.objecteditor  # analysis:ignore
+        try: # Old versions of guiqwt and spyderlib do not support this
+            import spyderlib.widgets.objecteditor
+            from guiqwt.tools import EditItemDataTool
             self.add_tool(EditItemDataTool)
         except ImportError:
             pass
