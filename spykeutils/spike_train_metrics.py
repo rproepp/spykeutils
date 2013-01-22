@@ -83,48 +83,62 @@ def cs_dist(
     :rtype: 2-D array
     """
 
-    convolved, sampling_rate = _prepare_for_inner_prod(
-        trains, smoothing_filter, filter_area_fraction, sampling_rate)
-    convolved = sp.vstack(convolved)
-    inner = sp.inner(convolved, convolved)
+    inner = st_inner(
+        trains, trains, smoothing_filter, filter_area_fraction, sampling_rate)
     return sp.arccos(
         inner ** 2 / sp.diag(inner) / sp.atleast_2d(sp.diag(inner)).T)
 
 
-def event_synchronization(a, b, tau=None, kernel=None):
+def event_synchronization(trains, tau=None, kernel=None):
     if kernel is None:
         kernel = sigproc.RectangularKernel(1, normalize=False)
     else:
         tau = 1.0
 
-    a = a.view(type=pq.Quantity)
-    b = b.view(type=pq.Quantity)
+    trains = [st.view(type=pq.Quantity) for st in trains]
+    #FIXME Sorting spike trains
 
     if tau is None:
-        inf_time = sp.array([sp.inf]) * a.units
-        a_diff = spq.concatenate((inf_time, sp.diff(a), inf_time))
-        b_diff = spq.concatenate((inf_time, sp.diff(b), inf_time))
-        a_tau = spq.minimum(a_diff[:-1], a_diff[1:])
-        b_tau = spq.minimum(b_diff[:-1], b_diff[1:])
-        taus = spq.minimum(*spq.meshgrid(a_tau, b_tau)) / 2.0
-    else:
-        taus = sp.tile(tau, (b.size, a.size))
-    coincidence = sp.sum(kernel((a - sp.atleast_2d(b).T) / taus))
-    normalization = 1.0 / sp.sqrt(a.size * b.size)
-    return normalization * coincidence
+        inf_array = sp.array([sp.inf])
+        isis = [spq.concatenate(
+                (inf_array * st.units, sp.diff(st), inf_array * st.units))
+                for st in trains]
+        auto_taus = [spq.minimum(t[:-1], t[1:]) for t in isis]
+
+    D = sp.empty((len(trains), len(trains)))
+    for i in xrange(D.shape[0]):
+        D[i, i] = 1.0
+        for j in xrange(i + 1, D.shape[1]):
+            if tau is None:
+                tau_mat = spq.minimum(*spq.meshgrid(
+                    auto_taus[i], auto_taus[j])) / 2.0
+            else:
+                tau_mat = sp.tile(tau, (trains[j].size, trains[i].size))
+            coincidence = sp.sum(kernel(
+                (trains[i] - sp.atleast_2d(trains[j]).T) / tau_mat))
+            normalization = 1.0 / sp.sqrt(trains[i].size * trains[j].size)
+            D[i, j] = D[j, i] = normalization * coincidence
+
+    return D
 
 
-def hunter_milton_similarity(a, b, tau=1.0 * pq.s, kernel=None):
+def hunter_milton_similarity(trains, tau=1.0 * pq.s, kernel=None):
     if kernel is None:
         kernel = sigproc.LaplacianKernel(tau, normalize=False)
 
-    diff_matrix = sp.absolute(a - sp.atleast_2d(b).T)
-    return 0.5 * (sp.sum(kernel(sp.amin(diff_matrix, axis=0))) / a.size +
-                  sp.sum(kernel(sp.amin(diff_matrix, axis=1))) / b.size)
+    D = sp.empty((len(trains), len(trains)))
+    for i in xrange(D.shape[0]):
+        D[i, i] = 1.0
+        for j in xrange(i + 1, D.shape[1]):
+            diff_matrix = sp.absolute(trains[i] - sp.atleast_2d(trains[j]).T)
+            D[i, j] = D[j, i] = 0.5 * (
+                sp.sum(kernel(sp.amin(diff_matrix, axis=0))) / trains[i].size +
+                sp.sum(kernel(sp.amin(diff_matrix, axis=1))) / trains[j].size)
+    return D
 
 
 def norm_dist(
-        a, b, smoothing_filter,
+        trains, smoothing_filter,
         filter_area_fraction=sigproc.default_kernel_area_fraction,
         sampling_rate=sigproc.default_sampling_rate):
     """ Calculates the norm distance between two spike trains given a smoothing
@@ -160,14 +174,11 @@ def norm_dist(
     :rtype: Quantity scalar
     """
 
-    convolved, sampling_rate = _prepare_for_inner_prod(
-        [a, b], smoothing_filter, filter_area_fraction, sampling_rate)
-    return max(
+    inner = st_inner(
+        trains, trains, smoothing_filter, filter_area_fraction, sampling_rate)
+    return spq.maximum(
         0.0 * pq.Hz,
-        (sp.inner(convolved[0], convolved[0]) +
-            sp.inner(convolved[1], convolved[1]) -
-            2 * sp.inner(*convolved)) *
-        convolved[0].units * convolved[1].units / sampling_rate) ** 0.5
+        (spq.diag(inner) + sp.atleast_2d(spq.diag(inner)).T - 2 * inner)) ** 0.5
 
 
 def schreiber_similarity(trains, kernel):
@@ -255,10 +266,15 @@ def st_inner(
     :rtype: Quantity scalar
     """
 
-    convolved, sampling_rate = _prepare_for_inner_prod(
-        [a, b], smoothing_filter, filter_area_fraction, sampling_rate)
-    return (sp.inner(*convolved) * convolved[0].units * convolved[1].units
-            / sampling_rate)
+    if all((x is y for x, y in zip(a, b))):
+        convolved, sampling_rate = _prepare_for_inner_prod(
+            a, smoothing_filter, filter_area_fraction, sampling_rate)
+        convolved = convolved + convolved
+    else:
+        convolved, sampling_rate = _prepare_for_inner_prod(
+            a + b, smoothing_filter, filter_area_fraction, sampling_rate)
+    return (sp.inner(convolved[:len(a)], convolved[len(a):]) *
+            convolved[0].units * convolved[1].units / sampling_rate)
 
 
 def _prepare_for_inner_prod(
@@ -268,7 +284,7 @@ def _prepare_for_inner_prod(
         if sampling_rate is None or sampling_rate <= 0 * pq.Hz:
             sampling_rate = sigproc.default_sampling_rate
 
-    t_start, t_stop = rate_estimation.minimum_spike_train_interval({0: trains})
+    t_start, t_stop = rate_estimation.maximum_spike_train_interval({0: trains})
     padding = smoothing_filter.boundary_enclosing_at_least(filter_area_fraction)
     t_start -= 2 * padding
     t_stop += 2 * padding
@@ -313,10 +329,9 @@ def st_norm(
     :rtype: Quantity scalar
     """
 
-    convolved, sampling_rate = _prepare_for_inner_prod(
-        [train], smoothing_filter, filter_area_fraction, sampling_rate)
-    return ((sp.inner(convolved[0], convolved[0]) / sampling_rate) ** 0.5 *
-            convolved[0].units)
+    return st_inner(
+        [train], [train], smoothing_filter, filter_area_fraction,
+        sampling_rate) ** 0.5
 
 
 def van_rossum_dist(trains, tau=1.0 * pq.s, kernel=None):
@@ -438,7 +453,7 @@ def _van_rossum_multiunit_dist_for_single_trial(a, b, weighting, tau, kernel):
     return sp.sqrt(summed_population + weighting * labeled_line)
 
 
-def victor_purpura_dist(a, b, q=1.0 * pq.Hz, kernel=None):
+def victor_purpura_dist(trains, q=1.0 * pq.Hz, kernel=None):
     """ Calculates the Victor-Purpura's (VP) distance. It is often denoted as
     :math:`D^{\\text{spike}}[q]`.
 
@@ -470,14 +485,24 @@ def victor_purpura_dist(a, b, q=1.0 * pq.Hz, kernel=None):
     :rtype: float
     """
 
+    if kernel is None:
+        kernel = sigproc.TriangularKernel(2.0 / q, normalize=False)
+
+    D = sp.empty((len(trains), len(trains)))
+    for i in xrange(D.shape[0]):
+        D[i, i] = 0.0
+        for j in xrange(i + 1, D.shape[1]):
+            D[i, j] = D[j, i] = _victor_purpura_dist_for_trial_pair(
+                trains[i], trains[j], kernel)
+    return D
+
+
+def _victor_purpura_dist_for_trial_pair(a, b, kernel):
     if a.size <= 0 or b.size <= 0:
         return max(a.size, b.size)
 
     if a.size < b.size:
         a, b = b, a
-
-    if kernel is None:
-        kernel = sigproc.TriangularKernel(2.0 / q, normalize=False)
 
     # The algorithm used is based on the one given in
     #

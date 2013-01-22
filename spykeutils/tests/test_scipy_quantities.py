@@ -180,5 +180,86 @@ class TestScipyConcatenate(ut.TestCase):
                 spq.concatenate(p[::-1])
 
 
+class TestScipyInner(ut.TestCase):
+    def test_works_with_normal_arrays(self):
+        a = sp.array([0.0, 1.0, 2.0])
+        b = sp.array([2.0, 2.0, 3.0])
+        expected = sp.inner(a, b)
+        actual = spq.inner(a, b)
+        self.assertAlmostEqual(expected, actual)
+
+    def test_works_with_quantities_arrays(self):
+        a = sp.array([0.0, 1.0, 2.0]) * pq.s
+        b = sp.array([2000.0, 2000.0, 3000.0]) * pq.ms
+        expected = 8.0 * pq.s
+        actual = spq.inner(a, b)
+        self.assertAlmostEqual(expected, actual.rescale(expected.units))
+
+    def test_works_with_normal_and_quantity_arrays_mixed(self):
+        a = sp.array([0.0, 1.0, 2.0]) * pq.dimensionless
+        b = sp.array([2.0, 2.0, 3.0])
+        expected = sp.inner(a, b)
+        actual = spq.inner(a, b)
+        self.assertAlmostEqual(expected, actual)
+
+    def test_raises_exception_if_mixing_incompatible_units(self):
+        a = sp.array([1.0])
+        b = sp.array([2.0]) * pq.dimensionless
+        c = sp.array([3.0]) * pq.s
+        d = sp.array([4.0]) * pq.m
+        for p in combinations((a, c, d), 2):
+            with self.assertRaises(Exception):
+                spq.inner(p)
+            with self.assertRaises(Exception):
+                spq.inner(p[::-1])
+        for p in combinations((b, c, d), 2):
+            with self.assertRaises(Exception):
+                spq.inner(p)
+            with self.assertRaises(Exception):
+                spq.inner(p[::-1])
+
+    def test_works_with_multidimensional_arrays(self):
+        a = sp.array([[0.0, 1.0], [2.0, 3.0]]) * pq.s
+        b = sp.array([[2.0, 2.0], [3.0, 4.0]]) * pq.s
+        expected = sp.array([[2.0, 4.0], [10.0, 18.0]]) * pq.s
+        actual = spq.inner(a, b)
+        assert_array_almost_equal(expected, actual.rescale(expected.units))
+
+
+class TestScipyDiag(ut.TestCase):
+    def test_diag_of_unitless_1d_array(self):
+        a = sp.array([1, 2])
+        expected = sp.array([[1, 0], [0, 2]])
+        actual = spq.diag(a)
+        assert_array_equal(expected, actual)
+
+    def test_diag_of_unitless_2d_array(self):
+        a = sp.array([[1, 0], [0, 2]])
+        expected = sp.array([1, 2])
+        actual = spq.diag(a)
+        assert_array_equal(expected, actual)
+
+    def test_diag_of_1d_quantity(self):
+        a = sp.array([1, 2]) * pq.s
+        expected = sp.array([[1, 0], [0, 2]]) * pq.s
+        actual = spq.diag(a)
+        self.assertEqual(expected.units, actual.units)
+        assert_array_equal(expected, actual)
+
+    def test_diag_of_2d_quantity(self):
+        a = sp.array([[1, 0], [0, 2]]) * pq.s
+        expected = sp.array([1, 2]) * pq.s
+        actual = spq.diag(a)
+        self.assertEqual(expected.units, actual.units)
+        assert_array_equal(expected, actual)
+
+    def test_respects_k_argument(self):
+        a = sp.array([[1, 5], [0, 2]]) * pq.s
+        expected = sp.array([5]) * pq.s
+        actual = spq.diag(a, k=1)
+        self.assertEqual(expected.units, actual.units)
+        assert_array_equal(expected, actual)
+
+
 if __name__ == '__main__':
     ut.main()

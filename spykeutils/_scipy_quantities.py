@@ -62,3 +62,24 @@ def _fix_scipy_concatenate(f):
         return concatenated
     return _fixed
 concatenate = _fix_scipy_concatenate(sp.concatenate)
+
+
+# At least up to quantities 0.10.1 the scipy inner and diag functions did not
+# respect units.
+def _fix_binary_scipy_function(f):
+    def _fixed(x1, x2):
+        if isinstance(x1, pq.Quantity) or isinstance(x2, pq.Quantity):
+            x1 = x1 * pq.dimensionless
+            x2 = x2 * pq.dimensionless
+            x2 = x2.rescale(x1.units)
+            return f(x1.magnitude, x2.magnitude) * x1.units
+        else:
+            return f(x1, x2)
+    return _fixed
+inner = _fix_binary_scipy_function(sp.inner)
+
+def diag(v, k=0):
+    if isinstance(v, pq.Quantity):
+        return sp.diag(v, k) * v.units
+    else:
+        return sp.diag(v, k)

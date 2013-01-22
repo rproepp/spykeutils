@@ -149,8 +149,9 @@ def aligned_spike_trains(trains, events, copy=True):
 
 
 def minimum_spike_train_interval(trains):
-    """ Computes the minimum starting time and maximum end time that all
-    given spike trains share.
+    """ Computes the maximum starting time and minimum end time that all
+    given spike trains share. This yields the shortest interval shared by all
+    spike trains.
 
     :param dict trains: A dictionary of sequences of SpikeTrain
         objects.
@@ -165,6 +166,27 @@ def minimum_spike_train_interval(trains):
         # Minimum length of spike of all spike trains for this unit
         start = max(start, max((t.t_start for t in st)))
         stop = min(stop, min((t.t_stop for t in st)))
+
+    return start, stop
+
+
+def maximum_spike_train_interval(trains):
+    """ Computes the minimum starting time and maximum end time of all
+    given spike trains. This yields an interval containing the spikes of
+    all spike trains.
+
+    :param dict trains: A dictionary of sequences of SpikeTrain
+        objects.
+    :returns: Minimum start time and maximum stop time.
+    :rtype: Quantity scalar, Quantity scalar
+    """
+    start = sp.inf * pq.s
+    stop = -sp.inf * pq.s
+
+    for st in trains.itervalues():
+        if len(st) > 0:
+            start = min(start, min((t.t_start for t in st)))
+            stop = max(stop, max((t.t_stop for t in st)))
 
     return start, stop
 
