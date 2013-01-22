@@ -1,6 +1,3 @@
-Changelog
-=========
-
 Version 0.2.1
 -------------
 * Added "Home" and "Pan" tools for plots (useful when no middle mouse button
