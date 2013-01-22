@@ -9,6 +9,7 @@ import scipy as sp
 import quantities as pq
 import neo
 from progress_indicator import ProgressIndicator
+import signal_processing as sigproc
 from . import SpykeException
 
 
@@ -192,8 +193,14 @@ def maximum_spike_train_interval(trains):
 
 
 def gauss_kernel(x, kernel_size):
-    return 1.0 / (sp.sqrt(2*sp.pi) * kernel_size) * \
-           sp.exp(-1/2 *  (x / kernel_size)**2)
+    """
+    .. deprecated:: 0.3.0
+
+        Use :class:`.signal_processing.GaussianKernel` instead.
+    """
+
+    return sigproc.GaussianKernel.evaluate(
+        x, kernel_size, 1.0 / (sp.sqrt(2.0 * sp.pi) * kernel_size))
 
 
 def _hist_density(hist, kernel, ksize, start, stop):
