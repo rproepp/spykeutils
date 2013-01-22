@@ -152,7 +152,7 @@ class Test_event_synchronization(ut.TestCase, CommonSimilarityTestCases):
 
     def test_returns_correct_event_synchronization(self):
         a = neo.SpikeTrain(sp.array([1.0, 2.5, 6.5]) * pq.s, t_stop=7.0 * pq.s)
-        b = neo.SpikeTrain(sp.array([1.0, 5.7]) * pq.s, t_stop=10.0 * pq.s)
+        b = neo.SpikeTrain(sp.array([5.7, 1.0]) * pq.s, t_stop=10.0 * pq.s)
         c = neo.SpikeTrain(sp.array([2.0, 2.1, 5.0]) * pq.s, t_stop=10.0 * pq.s)
         expected = sp.array(
             [[1.0, 0.81649658092772615, 0.0],
@@ -190,7 +190,7 @@ class Test_hunter_milton_similarity(ut.TestCase, CommonSimilarityTestCases):
         a = neo.SpikeTrain(sp.array([1.0, 2.5, 6.5]) * pq.s, t_stop=7.0 * pq.s)
         b = neo.SpikeTrain(
             sp.array([1.2, 5.7, 8.0, 9.0]) * pq.s, t_stop=10.0 * pq.s)
-        c = neo.SpikeTrain(sp.array([2.0, 2.1, 5.0]) * pq.s, t_stop=10.0 * pq.s)
+        c = neo.SpikeTrain(sp.array([2.1, 2.0, 5.0]) * pq.s, t_stop=10.0 * pq.s)
         tau = 2.0 * pq.s
         expected = sp.array(
             [[1.0, 0.64128747518120299, 0.661254342403672],
@@ -284,7 +284,7 @@ class Test_schreiber_similarity(ut.TestCase, CommonSimilarityTestCases):
         b = neo.SpikeTrain(
             sp.array([0.5, 1.5]) * pq.s, t_stop=2.0 * pq.s)
         c = neo.SpikeTrain(
-            sp.array([1.0, 2.0]) * pq.s, t_start=0.6 * pq.s, t_stop=2.4 * pq.s)
+            sp.array([2.0, 1.0]) * pq.s, t_start=0.6 * pq.s, t_stop=2.4 * pq.s)
         k = sigproc.GaussianKernel(sp.sqrt(2.0) * pq.s)
         expected = sp.array([
             [1.0, 0.9961114, 0.9430803],
@@ -374,7 +374,7 @@ class Test_van_rossum_dist(ut.TestCase, CommonMetricTestCases):
             t_stop=12.0 * pq.s)
         b = neo.SpikeTrain(
             sp.array([2.0, 4.0, 7.0, 10.0]) * pq.s,  t_stop=12.0 * pq.s)
-        c = neo.SpikeTrain(sp.array([3.0, 4.0]) * pq.s, t_stop=12.0 * pq.s)
+        c = neo.SpikeTrain(sp.array([4.0, 3.0]) * pq.s, t_stop=12.0 * pq.s)
         tau = 3.0 * pq.s
         expected = sp.array([
             [0.0, 1.895846644204, 2.878796160479],
@@ -489,7 +489,7 @@ class Test_victor_purpura_dist(ut.TestCase, CommonMetricTestCases):
         a = neo.SpikeTrain(
             sp.array([1.0, 2.0, 4.1, 7.0, 7.1]) * pq.s, t_stop=8.0 * pq.s)
         b = neo.SpikeTrain(
-            sp.array([1.2, 4.0, 4.3]) * pq.s, t_stop=8.0 * pq.s)
+            sp.array([4.0, 4.3, 1.2]) * pq.s, t_stop=8.0 * pq.s)
         # From a to b:
         #   - shift 1.0 to 1.2 (cost 0.3625385)
         #   - delete 2.0 (cost 1.0)

@@ -86,8 +86,8 @@ class Kernel(object):
         k = self(sp.arange(start, stop) * t_step)
         return k
 
-    def summed_dist_matrix(self, vectors):
-        """ Calculates the sum of all distances element pair distances for each
+    def summed_dist_matrix(self, vectors, presorted=False):
+        """ Calculates the sum of all element pair distances for each
         pair of vectors.
 
         If :math:`(a_1, \\dots, a_n)` and :math:`(b_1, \\dots, b_m)` is a pair
@@ -97,6 +97,10 @@ class Kernel(object):
 
         :param sequence vectors: A sequence of 1D arrays to calculate the summed
             distances for each pair.
+        :param bool presorted: Some optimized specializations of this function
+            may need sorted vectors. Set `presorted` to `True` if you know that
+            the passed vectors are already sorted to skip the sorting and thus
+            increase performance.
         :rtype: 2D array
         """
 
@@ -124,7 +128,7 @@ class SymmetricKernel(Kernel):
         """
         Kernel.__init__(self, kernel_func, **params)
 
-    def summed_dist_matrix(self, vectors):
+    def summed_dist_matrix(self, vectors, presorted=False):
         D = sp.empty((len(vectors), len(vectors)))
         if len(vectors) > 0:
             might_have_units = self(vectors[0])
@@ -188,7 +192,7 @@ class LaplacianKernel(SymmetricKernel):
     def boundary_enclosing_at_least(self, fraction):
         return -self.params['kernel_size'] * sp.log(1.0 - fraction)
 
-    def summed_dist_matrix(self, vectors):
+    def summed_dist_matrix(self, vectors, presorted=False):
         # This implementation is based on
         #
         # Houghton, C., & Kreuz, T. (2012). On the efficient calculation of van
@@ -199,6 +203,11 @@ class LaplacianKernel(SymmetricKernel):
         #
         # Given N vectors with n entries on average the run-time complexity is
         # O(N^2 * n). O(N^2 + N * n^2) memory will be needed.
+
+        if not presorted:
+            vectors = [v.copy() for v in vectors]
+            for v in vectors:
+                v.sort()
 
         kernel_size = self.params['kernel_size']
         exp_vecs = [sp.exp(v / kernel_size) for v in vectors]

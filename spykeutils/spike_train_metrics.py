@@ -89,14 +89,15 @@ def cs_dist(
         inner ** 2 / sp.diag(inner) / sp.atleast_2d(sp.diag(inner)).T)
 
 
-def event_synchronization(trains, tau=None, kernel=None):
+def event_synchronization(trains, tau=None, kernel=None, sort=True):
     if kernel is None:
         kernel = sigproc.RectangularKernel(1, normalize=False)
     else:
         tau = 1.0
 
     trains = [st.view(type=pq.Quantity) for st in trains]
-    #FIXME Sorting spike trains
+    if sort:
+        trains = [sp.sort(st) for st in trains]
 
     if tau is None:
         inf_array = sp.array([sp.inf])
@@ -181,7 +182,7 @@ def norm_dist(
         (spq.diag(inner) + sp.atleast_2d(spq.diag(inner)).T - 2 * inner)) ** 0.5
 
 
-def schreiber_similarity(trains, kernel):
+def schreiber_similarity(trains, kernel, sort=True):
     """ Calculates the Schreiber et al. similarity measure between two spike
     trains given a kernel.
 
@@ -218,7 +219,7 @@ def schreiber_similarity(trains, kernel):
     :rtype: float
     """
 
-    k_dist = kernel.summed_dist_matrix(trains)
+    k_dist = kernel.summed_dist_matrix(trains, not sort)
     vr_dist = sp.empty(k_dist.shape)
     for i, j in sp.ndindex(*k_dist.shape):
         if k_dist[i, i] == 0.0 or k_dist[j, j] == 0.0:
@@ -334,7 +335,7 @@ def st_norm(
         sampling_rate) ** 0.5
 
 
-def van_rossum_dist(trains, tau=1.0 * pq.s, kernel=None):
+def van_rossum_dist(trains, tau=1.0 * pq.s, kernel=None, sort=True):
     """ Calculates the van Rossum distance.
 
     It is defined as Euclidean distance of the spike trains convolved with a
@@ -373,7 +374,7 @@ def van_rossum_dist(trains, tau=1.0 * pq.s, kernel=None):
             return sp.absolute(spike_counts - sp.atleast_2d(spike_counts).T)
         kernel = sigproc.LaplacianKernel(tau, normalize=False)
 
-    k_dist = kernel.summed_dist_matrix(trains)
+    k_dist = kernel.summed_dist_matrix(trains, not sort)
     vr_dist = sp.empty_like(k_dist)
     for i, j in sp.ndindex(*k_dist.shape):
         vr_dist[i, j] = (
@@ -453,7 +454,7 @@ def _van_rossum_multiunit_dist_for_single_trial(a, b, weighting, tau, kernel):
     return sp.sqrt(summed_population + weighting * labeled_line)
 
 
-def victor_purpura_dist(trains, q=1.0 * pq.Hz, kernel=None):
+def victor_purpura_dist(trains, q=1.0 * pq.Hz, kernel=None, sort=True):
     """ Calculates the Victor-Purpura's (VP) distance. It is often denoted as
     :math:`D^{\\text{spike}}[q]`.
 
@@ -487,6 +488,9 @@ def victor_purpura_dist(trains, q=1.0 * pq.Hz, kernel=None):
 
     if kernel is None:
         kernel = sigproc.TriangularKernel(2.0 / q, normalize=False)
+
+    if sort:
+        trains = [sp.sort(st.view(type=pq.Quantity)) for st in trains]
 
     D = sp.empty((len(trains), len(trains)))
     for i in xrange(D.shape[0]):

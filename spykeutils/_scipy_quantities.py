@@ -78,6 +78,7 @@ def _fix_binary_scipy_function(f):
     return _fixed
 inner = _fix_binary_scipy_function(sp.inner)
 
+
 def diag(v, k=0):
     if isinstance(v, pq.Quantity):
         return sp.diag(v, k) * v.units
