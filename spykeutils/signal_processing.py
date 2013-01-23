@@ -55,8 +55,22 @@ class Kernel(object):
         self.kernel_size = kernel_size
         self.params = params
 
-    def __call__(self, t):
-        return self.kernel_func(t, self.kernel_size, **self.params)
+    def __call__(self, t, kernel_size=None):
+        """ Evaluates the kernel at all time points in the array `t`.
+
+        :param t: Time points to evaluate the kernel at.
+        :type t: Quantity 1D
+        :param kernel_size: If not `None` this overwrites the kernel size of
+            the `Kernel` instance.
+        :type kernel_size: Quantity scalar
+        :returns: The result of the kernel evaluations.
+        :rtype: Quantity 1D
+        """
+
+        if kernel_size is None:
+            return self.kernel_func(t, self.kernel_size, **self.params)
+        else:
+            return self.kernel_func(t, kernel_size, **self.params)
 
     def boundary_enclosing_at_least(self, fraction):
         """ Calculates the boundary :math:`b` that the integral from :math:`-b`
