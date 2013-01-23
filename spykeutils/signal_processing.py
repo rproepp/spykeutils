@@ -43,18 +43,20 @@ def _searchsorted_pairwise(a, b):
 class Kernel(object):
     """ Base class for kernels. """
 
-    def __init__(self, kernel_func, **params):
+    def __init__(self, kernel_func, kernel_size, **params):
         """
         :param function kernel_func: Kernel function which takes an array
             of time points as first argument.
+        :param kernel_size: Parameter controlling the kernel size.
         :param dict params: Additional parameters to be passed to the kernel
             function.
         """
         self.kernel_func = kernel_func
+        self.kernel_size = kernel_size
         self.params = params
 
     def __call__(self, t):
-        return self.kernel_func(t, **self.params)
+        return self.kernel_func(t, self.kernel_size, **self.params)
 
     def boundary_enclosing_at_least(self, fraction):
         """ Calculates the boundary :math:`b` that the integral from :math:`-b`
@@ -165,7 +167,7 @@ class CausalDecayingExpKernel(Kernel):
             if normalize else 1.0 * pq.dimensionless)
 
     def boundary_enclosing_at_least(self, fraction):
-        return -self.params['kernel_size'] * sp.log(1.0 - fraction)
+        return -self.kernel_size * sp.log(1.0 - fraction)
 
 
 class GaussianKernel(SymmetricKernel):
@@ -180,7 +182,7 @@ class GaussianKernel(SymmetricKernel):
             if normalize else 1.0 * pq.dimensionless)
 
     def boundary_enclosing_at_least(self, fraction):
-        return self.params['kernel_size'] * sp.sqrt(2.0) * \
+        return self.kernel_size * sp.sqrt(2.0) * \
             scipy.special.erfinv(fraction + scipy.special.erf(0.0))
 
 
@@ -197,7 +199,7 @@ class LaplacianKernel(SymmetricKernel):
             if normalize else 1.0 * pq.dimensionless)
 
     def boundary_enclosing_at_least(self, fraction):
-        return -self.params['kernel_size'] * sp.log(1.0 - fraction)
+        return -self.kernel_size * sp.log(1.0 - fraction)
 
     def summed_dist_matrix(self, vectors, presorted=False):
         # This implementation is based on
@@ -216,8 +218,7 @@ class LaplacianKernel(SymmetricKernel):
             for v in vectors:
                 v.sort()
 
-        kernel_size = self.params['kernel_size']
-        exp_vecs = [sp.exp(v / kernel_size) for v in vectors]
+        exp_vecs = [sp.exp(v / self.kernel_size) for v in vectors]
         inv_exp_vecs = [1.0 / v for v in exp_vecs]
         exp_diffs = [sp.outer(v, iv) for v, iv in zip(exp_vecs, inv_exp_vecs)]
 
@@ -259,12 +260,12 @@ class RectangularKernel(SymmetricKernel):
 
     def __init__(self, half_width=1.0 * pq.s, normalize=True):
         Kernel.__init__(
-            self, self.evaluate, half_width=half_width,
+            self, self.evaluate, half_width,
             normalization=0.5 / half_width
             if normalize else 1.0 * pq.dimensionless)
 
     def boundary_enclosing_at_least(self, fraction):
-        return self.params['half_width']
+        return self.kernel_size
 
 
 class TriangularKernel(SymmetricKernel):
@@ -276,12 +277,12 @@ class TriangularKernel(SymmetricKernel):
 
     def __init__(self, half_width=1.0 * pq.s, normalize=True):
         Kernel.__init__(
-            self, self.evaluate, half_width=half_width,
+            self, self.evaluate, half_width,
             normalization=1.0 / half_width
             if normalize else 1.0 * pq.dimensionless)
 
     def boundary_enclosing_at_least(self, fraction):
-        return self.params['half_width']
+        return self.kernel_size
 
 
 def bin_spike_train(
