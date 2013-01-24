@@ -149,48 +149,48 @@ def aligned_spike_trains(trains, events, copy=True):
     return ret
 
 
-def minimum_spike_train_interval(trains):
+def minimum_spike_train_interval(
+        trains, t_start=-sp.inf * pq.s, t_stop=sp.inf * pq.s):
     """ Computes the maximum starting time and minimum end time that all
     given spike trains share. This yields the shortest interval shared by all
     spike trains.
 
     :param dict trains: A dictionary of sequences of SpikeTrain
         objects.
-    :returns: Maximum shared start time and minimum shared stop time.
+    :param t_start: Minimal starting time to return.
+    :param t_stop: Maximum end time to return.
+    :returns: Maximum shared t_start time and minimum shared t_stop time.
     :rtype: Quantity scalar, Quantity scalar
     """
-    start = -sp.inf * pq.s
-    stop = sp.inf * pq.s
-
     # Load data and find shortest spike train
     for st in trains.itervalues():
         if len(st) > 0:
             # Minimum length of spike of all spike trains for this unit
-            start = max(start, max((t.t_start for t in st)))
-            stop = min(stop, min((t.t_stop for t in st)))
+            t_start = max(t_start, max((t.t_start for t in st)))
+            t_stop = min(t_stop, min((t.t_stop for t in st)))
 
-    return start, stop
+    return t_start, t_stop
 
 
-def maximum_spike_train_interval(trains):
+def maximum_spike_train_interval(
+        trains, t_start=sp.inf * pq.s, t_stop=-sp.inf * pq.s):
     """ Computes the minimum starting time and maximum end time of all
     given spike trains. This yields an interval containing the spikes of
     all spike trains.
 
     :param dict trains: A dictionary of sequences of SpikeTrain
         objects.
-    :returns: Minimum start time and maximum stop time.
+    :param t_start: Maximum starting time to return.
+    :param t_stop: Minimum end time to return.
+    :returns: Minimum t_start time and maximum t_stop time.
     :rtype: Quantity scalar, Quantity scalar
     """
-    start = sp.inf * pq.s
-    stop = -sp.inf * pq.s
-
     for st in trains.itervalues():
         if len(st) > 0:
-            start = min(start, min((t.t_start for t in st)))
-            stop = max(stop, max((t.t_stop for t in st)))
+            t_start = min(t_start, min((t.t_start for t in st)))
+            t_stop = max(t_stop, max((t.t_stop for t in st)))
 
-    return start, stop
+    return t_start, t_stop
 
 
 def gauss_kernel(x, kernel_size):
