@@ -14,6 +14,11 @@
 
 .. automodule:: spykeutils.correlations
 
+:mod:`functional` Module
+------------------------
+
+.. automodule:: spykeutils.functional
+
 :mod:`progress_indicator` Module
 --------------------------------
 
