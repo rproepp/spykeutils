@@ -501,11 +501,11 @@ def van_rossum_multiunit_dist(units, weighting, tau=1.0 * pq.s, kernel=None):
         kernel = sigproc.LaplacianKernel(tau, normalize=False)
 
     return _calc_multiunit_dist_matrix_from_single_trials(
-        units, _van_rossum_multiunit_dist_for_single_trial, weighting=weighting,
+        units, _van_rossum_multiunit_dist_for_trial_pair, weighting=weighting,
         tau=tau, kernel=kernel)
 
 
-def _van_rossum_multiunit_dist_for_single_trial(a, b, weighting, tau, kernel):
+def _van_rossum_multiunit_dist_for_trial_pair(a, b, weighting, tau, kernel):
     if kernel is None:
         spike_counts = sp.atleast_2d([st.size for st in a + b])
         k_dist = spike_counts.T * (spike_counts - spike_counts.T)
@@ -665,11 +665,11 @@ def victor_purpura_multiunit_dist(
     if kernel is None:
         kernel = sigproc.TriangularKernel(2.0 / q, normalize=False)
     return _calc_multiunit_dist_matrix_from_single_trials(
-        units, _victor_purpura_multiunit_dist_for_single_trial,
+        units, _victor_purpura_multiunit_dist_for_trial_pair,
         reassignment_cost=reassignment_cost, kernel=kernel)
 
 
-def _victor_purpura_multiunit_dist_for_single_trial(
+def _victor_purpura_multiunit_dist_for_trial_pair(
         a, b, reassignment_cost, kernel):
     # The algorithm used is based on the one given in
     #
