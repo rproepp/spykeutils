@@ -540,7 +540,7 @@ def victor_purpura_dist(trains, q=1.0 * pq.Hz, kernel=None, sort=True):
 
     Given the average number of spikes :math:`n` in a spike train and :math:`N`
     spike trains the run-time complexity of this function is
-    :math:`O(N^2 n^2)` and :math:`O(N^2 + 2n)` memory will be needed.
+    :math:`O(N^2 n^2)` and :math:`O(N^2 + n^2)` memory will be needed.
 
     :param sequence trains: Sequence of `SpikeTrain` of which the distance
         will be calculated pairwise.
@@ -599,22 +599,23 @@ def _victor_purpura_dist_for_trial_pair(a, b, kernel):
     cost_a = sp.arange(float(max(1, a.size)) + 1)
     cost_b = sp.arange(float(max(1, b.size)) + 1)
 
+    k = kernel((sp.atleast_2d(a).T - b).flatten()).simplified \
+        .reshape((a.size, b.size))
+
     for num_spikes_processed in xrange(b.size):
         cost_a[0] = cost_b[0] = min(
-            cost_b[1] + 1, cost_a[1] + 1, cost_a[0] + 2 - 2 * kernel(
-                a[num_spikes_processed] - b[num_spikes_processed]).simplified)
+            cost_b[1] + 1, cost_a[1] + 1,
+            cost_a[0] + 2 - 2 * k[num_spikes_processed, num_spikes_processed])
         for i in xrange(1, cost_a.size - num_spikes_processed - 1):
             cost_a[i] = min(
                 cost_a[i - 1] + 1, cost_a[i + 1] + 1,
-                cost_a[i] + 2 - 2 * kernel(
-                    a[num_spikes_processed + i] -
-                    b[num_spikes_processed]).simplified)
+                cost_a[i] + 2 - 2 * k[
+                    num_spikes_processed + i, num_spikes_processed])
         for j in xrange(1, cost_b.size - num_spikes_processed - 1):
             cost_b[j] = min(
                 cost_b[j - 1] + 1, cost_b[j + 1] + 1,
-                cost_b[j] + 2 - kernel(
-                    a[num_spikes_processed] -
-                    b[num_spikes_processed + j]).simplified)
+                cost_b[j] + 2 - k[
+                    num_spikes_processed, num_spikes_processed + j])
 
     return cost_a[-cost_b.size]
 
