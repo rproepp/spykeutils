@@ -410,7 +410,7 @@ def bin_spike_train(
     :param t_start: Time point of the left boundary of the first bin. If `None`,
         `train.t_start` will be used.
     :type t_start: Quantity scalar
-    :param t_stop: Timp point of the right boundary of the last bin. If `None`,
+    :param t_stop: Time point of the right boundary of the last bin. If `None`,
         `train.t_stop` will be used.
     :type t_stop: Quantity scalar
     :returns: The binned representation of the spike train, the boundaries of
