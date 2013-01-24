@@ -2,6 +2,7 @@
 .. data:: default_sampling_rate
 """
 
+import copy
 import quantities as pq
 import scipy as sp
 import scipy.signal
@@ -43,17 +44,14 @@ def _searchsorted_pairwise(a, b):
 class Kernel(object):
     """ Base class for kernels. """
 
-    def __init__(self, kernel_func, kernel_size, **params):
+    def __init__(self, kernel_size, normalize):
         """
-        :param function kernel_func: Kernel function which takes an array
-            of time points as first argument.
         :param kernel_size: Parameter controlling the kernel size.
-        :param dict params: Additional parameters to be passed to the kernel
-            function.
+        :type kernel_size: Quantity 1D
+        :param bool normalize: Whether to normalize the kernel to unit area.
         """
-        self.kernel_func = kernel_func
         self.kernel_size = kernel_size
-        self.params = params
+        self.normalize = normalize
 
     def __call__(self, t, kernel_size=None):
         """ Evaluates the kernel at all time points in the array `t`.
@@ -68,9 +66,36 @@ class Kernel(object):
         """
 
         if kernel_size is None:
-            return self.kernel_func(t, self.kernel_size, **self.params)
+            kernel_size = self.kernel_size
+
+        if self.normalize:
+            normalization = self.normalization_factor(kernel_size)
         else:
-            return self.kernel_func(t, kernel_size, **self.params)
+            normalization = 1.0 * pq.dimensionless
+
+        return self._evaluate(t, kernel_size) * normalization
+
+    def _evaluate(self, t, kernel_size):
+        """ Evaluates the kernel.
+
+        :param t: Time points to evaluate the kernel at.
+        :type t: Quantity 1D
+        :param kernel_size: Controls the width of the kernel.
+        :type kernel_size: Quantity scalar
+        :returns: The result of the kernel evaluations.
+        :rtype: Quantity 1D
+        """
+        raise NotImplementedError()
+
+    def normalization_factor(self, kernel_size):
+        """ Returns the factor needed to normalize the kernel to unit area.
+
+        :param kernel_size: Controls the width of the kernel.
+        :type kernel_size: Quantity scalar
+        :returns: Factor to normalize the kernel to unit width.
+        :rtype: Quantity scalar
+        """
+        raise NotImplementedError()
 
     def boundary_enclosing_at_least(self, fraction):
         """ Calculates the boundary :math:`b` that the integral from :math:`-b`
@@ -84,22 +109,39 @@ class Kernel(object):
         """
         raise NotImplementedError()
 
-    def discretize(self, area_fraction, sampling_rate=default_sampling_rate):
+    def discretize(
+            self, area_fraction=default_kernel_area_fraction,
+            sampling_rate=default_sampling_rate, num_bins=None,
+            ensure_unit_area=False):
         """ Discretizes the kernel.
 
         :param float area_fraction: Fraction between 0 and 1 (exclusive)
             of the integral of the kernel which will be at least covered by the
-            discretization.
+            discretization. Will be ignored if `num_bins` is not `None`.
         :param sampling_rate: Sampling rate for the discretization.
         :type sampling_rate: Quantity scalar
+        :param int num_bins: Number of bins to use for the discretization.
+        :param bool ensure_unit_area: If `True`, the area of the discretized
+            kernel will be normalized to 1.0.
         :rtype: Quantity 1D
         """
 
         t_step = 1.0 / sampling_rate
-        boundary = self.boundary_enclosing_at_least(area_fraction)
-        start = sp.ceil(-boundary / t_step)
-        stop = sp.floor(boundary / t_step) + 1
+
+        if num_bins is not None:
+            start = -num_bins // 2
+            stop = num_bins // 2
+        elif area_fraction is not None:
+            boundary = self.boundary_enclosing_at_least(area_fraction)
+            start = sp.ceil(-boundary / t_step)
+            stop = sp.floor(boundary / t_step) + 1
+        else:
+            raise ValueError(
+                "One of area_fraction and num_bins must not be None.")
+
         k = self(sp.arange(start, stop) * t_step)
+        if ensure_unit_area:
+            k /= sp.sum(k) * t_step
         return k
 
     def is_symmetric(self):
@@ -136,17 +178,55 @@ class Kernel(object):
         return D
 
 
+class KernelFromFunction(Kernel):
+    """ Creates a kernel form a function. Please note, that not all function for
+    such a kernel are implemented.
+    """
+
+    def __init__(self, kernel_func, kernel_size):
+        Kernel.__init__(self, kernel_size, normalize=False)
+        self._evaluate = kernel_func
+
+    def is_symmetric(self):
+        return False
+
+
+def as_kernel_of_size(obj, kernel_size):
+    """ Returns a kernel of desired size.
+
+    :param obj: Either an existing kernel or a kernel function. A kernel
+        function takes two arguments. First a `Quantity 1D` of evaluation time
+        points and second a kernel size.
+    :type obj: Kernel or func
+    :param kernel_size: Desired size of the kernel.
+    :type kernel_size: Quantity 1D
+    :returns: A :class:`Kernel` with the desired kernel size. If `obj` is
+        already a :class:`Kernel` instance, a shallow copy of this instance with
+        changed kernel size will be returned. If `obj` is a function it will be
+        wrapped in a :class:`Kernel` instance.
+    :rtype: :class:`Kernel`
+    """
+
+    if isinstance(obj, Kernel):
+        obj = copy.copy(obj)
+        obj.kernel_size = kernel_size
+    else:
+        obj = KernelFromFunction(obj, kernel_size)
+    return obj
+
+
 class SymmetricKernel(Kernel):
     """ Base class for kernels. """
 
-    def __init__(self, kernel_func, **params):
+    def __init__(self, kernel_size, normalize):
         """
         :param function kernel_func: Kernel function which takes an array
             of time points as first argument.
+        :param kernel_size: Parameter controlling the kernel size.
         :param dict params: Additional parameters to be passed to the kernel
             function.
         """
-        Kernel.__init__(self, kernel_func, **params)
+        Kernel.__init__(self, kernel_size, normalize)
 
     def is_symmetric(self):
         return True
@@ -167,18 +247,21 @@ class SymmetricKernel(Kernel):
 
 class CausalDecayingExpKernel(Kernel):
     @staticmethod
-    def evaluate(t, kernel_size, normalization):
-        result = sp.piecewise(
+    def evaluate(t, kernel_size):
+        return sp.piecewise(
             t, [t < 0, t >= 0], [
                 lambda t: 0,
-                lambda t: sp.exp((-t / kernel_size).simplified)])
-        return result * normalization
+                lambda t: sp.exp(
+                    (-t * pq.dimensionless / kernel_size).simplified)])
+
+    def _evaluate(self, t, kernel_size):
+        return self.evaluate(t, kernel_size)
+
+    def normalization_factor(self, kernel_size):
+        return 1.0 / kernel_size
 
     def __init__(self, kernel_size=1.0 * pq.s, normalize=True):
-        Kernel.__init__(
-            self, self.evaluate, kernel_size=kernel_size,
-            normalization=1.0 / kernel_size
-            if normalize else 1.0 * pq.dimensionless)
+        Kernel.__init__(self, kernel_size, normalize)
 
     def boundary_enclosing_at_least(self, fraction):
         return -self.kernel_size * sp.log(1.0 - fraction)
@@ -186,14 +269,18 @@ class CausalDecayingExpKernel(Kernel):
 
 class GaussianKernel(SymmetricKernel):
     @staticmethod
-    def evaluate(t, kernel_size, normalization):
-        return normalization * sp.exp(-0.5 * (t / kernel_size).simplified ** 2)
+    def evaluate(t, kernel_size):
+        return sp.exp(
+            -0.5 * (t * pq.dimensionless / kernel_size).simplified ** 2)
+
+    def _evaluate(self, t, kernel_size):
+        return self.evaluate(t, kernel_size)
+
+    def normalization_factor(self, kernel_size):
+        return 1.0 / (sp.sqrt(2.0 * sp.pi) * kernel_size)
 
     def __init__(self, kernel_size=1.0 * pq.s, normalize=True):
-        Kernel.__init__(
-            self, self.evaluate, kernel_size=kernel_size,
-            normalization=1.0 / (sp.sqrt(2.0 * sp.pi) * kernel_size)
-            if normalize else 1.0 * pq.dimensionless)
+        Kernel.__init__(self, kernel_size, normalize)
 
     def boundary_enclosing_at_least(self, fraction):
         return self.kernel_size * sp.sqrt(2.0) * \
@@ -202,15 +289,18 @@ class GaussianKernel(SymmetricKernel):
 
 class LaplacianKernel(SymmetricKernel):
     @staticmethod
-    def evaluate(t, kernel_size, normalization):
-        return normalization * \
-            sp.exp(-(sp.absolute(t) / kernel_size).simplified)
+    def evaluate(t, kernel_size):
+        return sp.exp(
+            -(sp.absolute(t) * pq.dimensionless / kernel_size).simplified)
+
+    def _evaluate(self, t, kernel_size):
+        return self.evaluate(t, kernel_size)
+
+    def normalization_factor(self, kernel_size):
+        return 0.5 / kernel_size
 
     def __init__(self, kernel_size=1.0 * pq.s, normalize=True):
-        Kernel.__init__(
-            self, self.evaluate, kernel_size=kernel_size,
-            normalization=0.5 / kernel_size
-            if normalize else 1.0 * pq.dimensionless)
+        Kernel.__init__(self, kernel_size, normalize)
 
     def boundary_enclosing_at_least(self, fraction):
         return -self.kernel_size * sp.log(1.0 - fraction)
@@ -264,19 +354,26 @@ class LaplacianKernel(SymmetricKernel):
                                 (1.0 + markage[u][k]))
                 D[v, u] = D[u, v]
 
-        return self.params['normalization'] * D
+        if self.normalize:
+            normalization = self.normalization_factor(self.kernel_size)
+        else:
+            normalization = 1.0
+        return normalization * D
 
 
 class RectangularKernel(SymmetricKernel):
     @staticmethod
-    def evaluate(t, half_width, normalization):
-        return (sp.absolute(t) < half_width) * normalization
+    def evaluate(t, half_width):
+        return (sp.absolute(t) < half_width)
+
+    def _evaluate(self, t, kernel_size):
+        return self.evaluate(t, kernel_size)
+
+    def normalization_factor(self, half_width):
+        return 0.5 / half_width
 
     def __init__(self, half_width=1.0 * pq.s, normalize=True):
-        Kernel.__init__(
-            self, self.evaluate, half_width,
-            normalization=0.5 / half_width
-            if normalize else 1.0 * pq.dimensionless)
+        Kernel.__init__(self, half_width, normalize)
 
     def boundary_enclosing_at_least(self, fraction):
         return self.kernel_size
@@ -284,16 +381,19 @@ class RectangularKernel(SymmetricKernel):
 
 class TriangularKernel(SymmetricKernel):
     @staticmethod
-    def evaluate(t, half_width, normalization):
+    def evaluate(t, half_width):
         return sp.maximum(
             0.0,
-            (1.0 - sp.absolute(t) / half_width).magnitude) * normalization
+            (1.0 - sp.absolute(t) * pq.dimensionless / half_width).magnitude)
+
+    def _evaluate(self, t, kernel_size):
+        return self.evaluate(t, kernel_size)
+
+    def normalization_factor(self, half_width):
+        return 1.0 / half_width
 
     def __init__(self, half_width=1.0 * pq.s, normalize=True):
-        Kernel.__init__(
-            self, self.evaluate, half_width,
-            normalization=1.0 / half_width
-            if normalize else 1.0 * pq.dimensionless)
+        Kernel.__init__(self, half_width, normalize)
 
     def boundary_enclosing_at_least(self, fraction):
         return self.kernel_size
@@ -330,10 +430,17 @@ def bin_spike_train(
     return binned, bins
 
 
+def smooth(
+        binned, kernel, sampling_rate, mode='same',
+        **kernel_discretization_params):
+    k = kernel.discretize(
+        sampling_rate=sampling_rate, **kernel_discretization_params)
+    return scipy.signal.convolve(binned, k, mode) * k.units
+
+
 def st_convolve(
         train, kernel, sampling_rate=default_sampling_rate,
-        kernel_area_fraction=default_kernel_area_fraction,
-        mode='same', **discretization_params):
+        mode='same', binning_params={}, kernel_discretization_params={}):
     """ Convolves a spike train with a kernel.
 
     :param SpikeTrain train: Spike train to convolve.
@@ -342,10 +449,6 @@ def st_convolve(
     :param sampling_rate: The sampling rate which will be used to bin
         the spike train.
     :type sampling_rate: Quantity scalar
-    :param float kernel_area_fraction: A value between 0 and 1 which controls
-        the interval over which the kernel will be discretized. At least the
-        given fraction of the complete kernel area will be covered. Higher
-        values can lead to more accurate results (besides the sampling rate).
     :param mode:
         * 'same': The default which returns an array covering the whole
           the duration of the spike train `train`.
@@ -358,18 +461,19 @@ def st_convolve(
         See also `numpy.convolve
         <http://docs.scipy.org/doc/numpy/reference/generated/numpy.convolve.html>`_.
     :type mode: {'same', 'full', 'valid'}
-    :param discretizationParams: Additional discretization arguments which will
+    :param dict binning_params: Additional discretization arguments which will
         be passed to :func:`bin_spike_train`.
+    :param dict kernel_discretization_params: Additional discretization
+        arguments which will be passed to :meth:`.Kernel.discretize`.
     :returns: The convolved spike train, the boundaries of the discretization
         bins
     :rtype: (Quantity 1D, Quantity 1D)
     """
 
-    binned, bins = bin_spike_train(
-        train, sampling_rate, **discretization_params)
+    binned, bins = bin_spike_train(train, sampling_rate, **binning_params)
     sampling_rate = binned.size / (bins[-1] - bins[0])
-    k = kernel.discretize(kernel_area_fraction, sampling_rate)
-    result = scipy.signal.convolve(binned, k, mode) * k.units
+    result = smooth(
+        binned, kernel, sampling_rate, mode, **kernel_discretization_params)
 
     assert (result.size - binned.size) % 2 == 0
     num_additional_bins = (result.size - binned.size) // 2

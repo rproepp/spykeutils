@@ -359,8 +359,9 @@ def _prepare_for_inner_prod(
     t_stop += 2 * padding
 
     return [sigproc.st_convolve(
-        st, smoothing_filter, sampling_rate, filter_area_fraction,
-        t_start=t_start, t_stop=t_stop, mode='full')[0]
+        st, smoothing_filter, sampling_rate, mode='full',
+        binning_params={'t_start': t_start, 't_stop': t_stop},
+        kernel_discretization_params={'area_fraction': filter_area_fraction})[0]
         for st in trains], sampling_rate
 
 

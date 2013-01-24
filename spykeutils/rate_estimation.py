@@ -199,27 +199,14 @@ def gauss_kernel(x, kernel_size):
         Use :class:`.signal_processing.GaussianKernel` instead.
     """
 
-    return sigproc.GaussianKernel.evaluate(
-        x, kernel_size, 1.0 / (sp.sqrt(2.0 * sp.pi) * kernel_size))
-
-
-def _hist_density(hist, kernel, ksize, start, stop):
-    time_factor = (2048.0 * start.units / (stop - start)).simplified
-    kern = kernel(sp.arange(-1024,1024), ksize * time_factor)
-    kern *= time_factor / sp.sum(kern)
-    kde = sp.signal.convolve(hist, kern, 'same')
-    return kde
-
-
-def _train_density(train, kernel, ksize):
-    bins = sp.linspace(train.t_start, train.t_stop, 1025)
-    hist = sp.histogram(train, bins)[0]
-    return _hist_density(hist, kernel, ksize, train.t_start, train.t_stop)
+    return 1.0 / (sp.sqrt(2.0 * sp.pi) * kernel_size) * \
+        sigproc.GaussianKernel.evaluate(x, kernel_size)
 
 
 def spike_density_estimation(trains, start=0*pq.ms, stop=None,
-                             kernel=gauss_kernel, kernel_size=100*pq.ms,
-                             optimize_steps=None, progress=None):
+                             kernel=sigproc.GaussianKernel(100 * pq.ms),
+                             kernel_size=100*pq.ms, optimize_steps=None,
+                             progress=None):
     """ Create a spike density estimation from a dictionary of
     lists of SpikeTrain objects.
 
@@ -239,10 +226,11 @@ def spike_density_estimation(trains, start=0*pq.ms, stop=None,
         be recalculated if there are spike trains which end earlier
         than this time.
     :type stop: Quantity scalar
-    :param func kernel: The kernel function to use, should accept
+    :param kernel: The kernel function or instance to use, should accept
         two parameters: A ndarray of distances and a kernel size.
         The total area under the kernel function should be 1.
         Default: Gaussian kernel
+    :type kernel: func or :class:`.signal_processing.Kernel`
     :param kernel_size: A uniform kernel size for all spike trains.
             Only used if optimization of kernel sizes is not used.
     :type kernel_size: Quantity scalar
@@ -305,11 +293,15 @@ def spike_density_estimation(trains, start=0*pq.ms, stop=None,
     for u,t in trains.iteritems():
         # Collapse spike trains
         collapsed = collapsed_spike_trains(t).rescale(units)
-        ksize = float(kernel_size[u])
+        scaled_kernel = sigproc.as_kernel_of_size(kernel, kernel_size[u])
 
         # Create density estimation using convolution
-        kde[u] = _train_density(collapsed.time_slice(start, stop),
-            kernel, ksize) / len(trains[u]) / units
+        sliced = collapsed.time_slice(start, stop)
+        sampling_rate = 1024.0 / (sliced.t_stop - sliced.t_start)
+        kde[u] = sigproc.st_convolve(
+            sliced, scaled_kernel, sampling_rate,
+            kernel_discretization_params={
+                'num_bins': 2048, 'ensure_unit_area': True})[0] / len(trains[u])
         kde[u].units = pq.Hz
     return kde, kernel_size, eval_points
 
@@ -364,13 +356,15 @@ def optimal_gauss_kernel_size(train, optimize_steps, progress=None):
     N = len(train)
     C = {}
 
-    bins = sp.linspace(x.t_start, x.t_stop, 1025)
-    dt = float(bins[1] - bins[0])
-    y_hist = sp.histogram(x, bins)[0] / N / dt
-    for step in steps:
+    sampling_rate = 1024 / (x.t_stop - x.t_start)
+    dt = float(1.0 / sampling_rate)
+    y_hist, _ = sigproc.bin_spike_train(x, sampling_rate)
+    y_hist =  sp.asfarray(y_hist) / N / dt
+    for step in optimize_steps:
         s = float(step)
-        yh = _hist_density(y_hist, gauss_kernel, step,
-            train.t_start, train.t_stop)
+        yh = sigproc.smooth(
+            y_hist, sigproc.GaussianKernel(step), sampling_rate, num_bins=2048,
+            ensure_unit_area=True) * optimize_steps.units
 
         # Equation from Matlab code, 7/2012
         c = (sp.sum(yh**2) * dt -
