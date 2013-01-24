@@ -164,9 +164,10 @@ def minimum_spike_train_interval(trains):
 
     # Load data and find shortest spike train
     for st in trains.itervalues():
-        # Minimum length of spike of all spike trains for this unit
-        start = max(start, max((t.t_start for t in st)))
-        stop = min(stop, min((t.t_stop for t in st)))
+        if len(st) > 0:
+            # Minimum length of spike of all spike trains for this unit
+            start = max(start, max((t.t_start for t in st)))
+            stop = min(stop, min((t.t_stop for t in st)))
 
     return start, stop
 
