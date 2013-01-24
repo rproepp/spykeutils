@@ -169,6 +169,50 @@ class Test_bin_spike_trains(ut.TestCase):
             expectedBins, actualBins.rescale(expectedBins.units))
 
 
+class Test_smooth(ut.TestCase):
+    def test_convolution_with_empty_binned_array_returns_array_of_zeros(self):
+        binned = sp.zeros(10)
+        sampling_rate = 10 * pq.Hz
+        result = sigproc.smooth(binned, sigproc.GaussianKernel(), sampling_rate)
+        self.assertTrue(sp.all(result == 0.0))
+
+    def test_length_of_returned_array_equals_length_of_binned(self):
+        binned = sp.ones(10)
+        sampling_rate = 10 * pq.Hz
+        result = sigproc.smooth(binned, sigproc.GaussianKernel(), sampling_rate)
+        self.assertEqual(binned.size, result.size)
+
+    def test_returns_smoothed_representation(self):
+        binned = sp.array([0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0])
+        sampling_rate = 4 * pq.Hz
+        kernel = sigproc.RectangularKernel(0.3 * pq.s)
+        # Because of the low sampling rate the expected result is a bit off
+        # from the analytical result.
+        expected = sp.array(
+            [0.0, 0.0, 0.0, 1.6666666, 1.6666666, 1.6666666, 0.0,
+             1.6666666, 1.6666666, 1.6666666, 0.0, 0.0]) * pq.Hz
+        actual = sigproc.smooth(binned, kernel, sampling_rate=sampling_rate)
+        assert_array_almost_equal(expected, actual)
+
+    def test_mode_allows_full_convolution(self):
+        binned = sp.ones(10)
+        sampling_rate = 2.0 * pq.Hz
+        kernel = sigproc.RectangularKernel(0.6 * pq.s)
+        expected_length = 12
+        actual = sigproc.smooth(
+            binned, kernel, sampling_rate=sampling_rate, mode='full')
+        self.assertEqual(actual.size, expected_length)
+
+    def test_mode_allows_valid_convolution(self):
+        binned = sp.ones(10)
+        sampling_rate = 2.0 * pq.Hz
+        kernel = sigproc.RectangularKernel(0.6 * pq.s)
+        expected_length = 8
+        actual = sigproc.smooth(
+            binned, kernel, sampling_rate=sampling_rate, mode='valid')
+        self.assertEqual(actual.size, expected_length)
+
+
 class Test_st_convolve(ut.TestCase):
     def test_convolution_with_empty_spike_train_returns_array_of_zeros(self):
         st = create_empty_spike_train()
