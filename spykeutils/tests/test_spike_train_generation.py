@@ -4,9 +4,9 @@ try:
 except ImportError:
     import unittest as ut
 
-import scipy as sp
-import quantities as pq
 import neo
+import quantities as pq
+import scipy as sp
 import spykeutils.spike_train_generation as stg
 
 
