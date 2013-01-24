@@ -433,6 +433,32 @@ def bin_spike_train(
 def smooth(
         binned, kernel, sampling_rate, mode='same',
         **kernel_discretization_params):
+    """ Smoothes a binned representation (e.g. of a spike train) by convolving
+    with a kernel.
+
+    :param binned: Bin array to smooth.
+    :type binned: 1-D array
+    :param kernel: The kernel instance to convolve with.
+    :type kernel: :class:`Kernel`
+    :param sampling_rate: The sampling rate which will be used to discretize the
+        kernel. It should be equal to the sampling rate used to obtain `binned`.
+    :type sampling_rate: Quantity scalar
+    :param mode:
+        * 'same': The default which returns an array of the same size as
+          `binned`
+        * 'full': Returns an array with a bin for each shift where `binned` and
+          the discretized kernel overlap by at least one bin.
+        * 'valid': Returns only the discretization bins where the discretized
+          kernel and `binned` completely overlap.
+
+        See also `numpy.convolve
+        <http://docs.scipy.org/doc/numpy/reference/generated/numpy.convolve.html>`_.
+    :type mode: {'same', 'full', 'valid'}
+    :param dict kernel_discretization_params: Additional discretization
+        arguments which will be passed to :meth:`.Kernel.discretize`.
+    :returns: The smoothed representation of `binned`.
+    :rtype: Quantity 1D
+    """
     k = kernel.discretize(
         sampling_rate=sampling_rate, **kernel_discretization_params)
     return scipy.signal.convolve(binned, k, mode) * k.units
@@ -451,7 +477,7 @@ def st_convolve(
     :type sampling_rate: Quantity scalar
     :param mode:
         * 'same': The default which returns an array covering the whole
-          the duration of the spike train `train`.
+          duration of the spike train `train`.
         * 'full': Returns an array with additional discretization bins in the
           beginning and end so that for each spike the whole discretized
           kernel is included.
