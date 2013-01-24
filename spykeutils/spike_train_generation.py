@@ -3,6 +3,7 @@ import neo
 import numpy.random
 import quantities as pq
 import scipy as sp
+import _scipy_quantities as spq
 
 
 def gen_homogeneous_poisson(
@@ -39,11 +40,22 @@ def gen_homogeneous_poisson(
             spike_times = spike_times[spike_times <= t_stop]
     else:
         scale = (rate ** -1).rescale(t_stop.units)
-        spike_times = [t_start]
-        while spike_times[-1] <= t_stop:
-            spike_times.append(
-                spike_times[-1] + numpy.random.exponential(scale) * scale.units)
-        spike_times = spike_times[1:-1] * scale.units
+        trains = []
+        last_spike = t_start.rescale(t_stop.units)
+        while last_spike < t_stop:
+            # Generate a bit more than the average number of expected spike to
+            # be finished in most cases in one loop. The factor was determined
+            # empirically.
+            num_spikes = int(1.7 * (
+                (t_stop - last_spike) * rate).simplified) + 1
+            train = sp.cumsum(numpy.random.exponential(scale, num_spikes)) * \
+                scale.units + last_spike
+            if train.size > 0:
+                last_spike = train[-1]
+                if last_spike >= t_stop:
+                    train = train[train < t_stop]
+                trains.append(train)
+        spike_times = spq.concatenate(trains)
 
     if t_stop is None:
         t_stop = spike_times[-1]
