@@ -2,7 +2,6 @@
 from monkeypatch import quantities_patch
 import heapq
 import quantities as pq
-import rate_estimation
 import scipy as sp
 import _scipy_quantities as spq
 import signal_processing as sigproc
@@ -353,14 +352,15 @@ def st_inner(
 
 def _prepare_for_inner_prod(
         trains, smoothing_filter, sampling_rate, filter_area_fraction):
-    t_start, t_stop = rate_estimation.maximum_spike_train_interval({0: trains})
+    t_start, t_stop = sigproc.maximum_spike_train_interval({0: trains})
     padding = smoothing_filter.boundary_enclosing_at_least(filter_area_fraction)
     t_start -= 2 * padding
     t_stop += 2 * padding
 
     return [sigproc.st_convolve(
-        st, smoothing_filter, sampling_rate, filter_area_fraction,
-        t_start=t_start, t_stop=t_stop, mode='full')[0]
+        st, smoothing_filter, sampling_rate, mode='full',
+        binning_params={'t_start': t_start, 't_stop': t_stop},
+        kernel_discretization_params={'area_fraction': filter_area_fraction})[0]
         for st in trains], sampling_rate
 
 
@@ -500,11 +500,11 @@ def van_rossum_multiunit_dist(units, weighting, tau=1.0 * pq.s, kernel=None):
         kernel = sigproc.LaplacianKernel(tau, normalize=False)
 
     return _calc_multiunit_dist_matrix_from_single_trials(
-        units, _van_rossum_multiunit_dist_for_single_trial, weighting=weighting,
+        units, _van_rossum_multiunit_dist_for_trial_pair, weighting=weighting,
         tau=tau, kernel=kernel)
 
 
-def _van_rossum_multiunit_dist_for_single_trial(a, b, weighting, tau, kernel):
+def _van_rossum_multiunit_dist_for_trial_pair(a, b, weighting, tau, kernel):
     if kernel is None:
         spike_counts = sp.atleast_2d([st.size for st in a + b])
         k_dist = spike_counts.T * (spike_counts - spike_counts.T)
@@ -664,11 +664,11 @@ def victor_purpura_multiunit_dist(
     if kernel is None:
         kernel = sigproc.TriangularKernel(2.0 / q, normalize=False)
     return _calc_multiunit_dist_matrix_from_single_trials(
-        units, _victor_purpura_multiunit_dist_for_single_trial,
+        units, _victor_purpura_multiunit_dist_for_trial_pair,
         reassignment_cost=reassignment_cost, kernel=kernel)
 
 
-def _victor_purpura_multiunit_dist_for_single_trial(
+def _victor_purpura_multiunit_dist_for_trial_pair(
         a, b, reassignment_cost, kernel):
     # The algorithm used is based on the one given in
     #
