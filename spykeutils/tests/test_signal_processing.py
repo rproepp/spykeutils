@@ -61,6 +61,24 @@ class TestKernel(ut.TestCase):
             kernel.normalization_factor.return_value *
             kernel._evaluate.return_value, actual)
 
+    def test_summed_dist_matrix(self):
+        kernel = sigproc.Kernel(1.0, normalize=False)
+        kernel._evaluate = lambda t, _: t
+        vectors = [sp.array([2.0, 1.0, 3.0]), sp.array([1.5, 4.0])]
+        expected = sp.array([[0.0, -4.5], [4.5, 0.0]])
+        actual = kernel.summed_dist_matrix(vectors)
+        assert_array_almost_equal(expected, actual)
+
+
+class TestSymmetricKernel(ut.TestCase):
+    def test_summed_dist_matrix(self):
+        kernel = sigproc.Kernel(1.0, normalize=False)
+        kernel._evaluate = lambda t, _: sp.absolute(t)
+        vectors = [sp.array([2.0, 1.0, 3.0]), sp.array([1.5, 4.0])]
+        expected = sp.array([[8.0, 8.5], [8.5, 5.0]])
+        actual = kernel.summed_dist_matrix(vectors)
+        assert_array_almost_equal(expected, actual)
+
 
 class Test_discretize_kernel(ut.TestCase):
     def test_discretizes_requested_area(self):
@@ -198,6 +216,15 @@ class TestLaplacianKernel(ut.TestCase):
     def test_boundary_enclosing_at_least_is_correct(self):
         actual = self.kernel.boundary_enclosing_at_least(0.99)
         self.assertAlmostEqual(actual.rescale(pq.s), 2.30258509 * pq.s)
+
+    def test_summed_dist_matrix(self):
+        kernel = sigproc.LaplacianKernel(1.0, normalize=False)
+        vectors = [sp.array([2.0, 1.0, 3.0]), sp.array([1.5, 4.0])]
+        expected = sp.array(
+            [[4.7421883311589941, 1.9891932723496157],
+             [1.9891932723496157, 2.1641699972477975]])
+        actual = kernel.summed_dist_matrix(vectors)
+        assert_array_almost_equal(expected, actual)
 
 
 class TestRectangularKernel(ut.TestCase):
