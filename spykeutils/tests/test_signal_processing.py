@@ -14,6 +14,54 @@ import scipy as sp
 import spykeutils.signal_processing as sigproc
 
 
+class TestKernel(ut.TestCase):
+    def test_call_returns_result_of_evaluate(self):
+        kernel_size = 1.3
+        kernel = sigproc.Kernel(kernel_size, normalize=False)
+        kernel._evaluate = MagicMock(name='_evaluate')
+        kernel._evaluate.return_value = 42
+
+        t = 3.3
+        actual = kernel(t)
+
+        kernel._evaluate.assert_called_with(t, kernel_size)
+        self.assertEqual(kernel._evaluate.return_value, actual)
+
+    def test_call_can_normalize_evaluate(self):
+        kernel_size = 1.3
+        kernel = sigproc.Kernel(kernel_size, normalize=True)
+        kernel._evaluate = MagicMock(name='_evaluate')
+        kernel._evaluate.return_value = 42
+        kernel.normalization_factor = MagicMock(name='normalization_factor')
+        kernel.normalization_factor.return_value = 0.5
+
+        t = 3.3
+        actual = kernel(t)
+
+        kernel._evaluate.assert_called_with(t, kernel_size)
+        kernel.normalization_factor.assert_called_with(kernel_size)
+        self.assertEqual(
+            kernel.normalization_factor.return_value *
+            kernel._evaluate.return_value, actual)
+
+    def test_call_can_overwrite_kernel_size(self):
+        kernel_size = 1.3
+        kernel = sigproc.Kernel(5.6, normalize=True)
+        kernel._evaluate = MagicMock(name='_evaluate')
+        kernel._evaluate.return_value = 42
+        kernel.normalization_factor = MagicMock(name='normalization_factor')
+        kernel.normalization_factor.return_value = 0.5
+
+        t = 3.3
+        actual = kernel(t, kernel_size)
+
+        kernel._evaluate.assert_called_with(t, kernel_size)
+        kernel.normalization_factor.assert_called_with(kernel_size)
+        self.assertEqual(
+            kernel.normalization_factor.return_value *
+            kernel._evaluate.return_value, actual)
+
+
 class Test_discretize_kernel(ut.TestCase):
     def test_discretizes_requested_area(self):
         kernel = sigproc.Kernel(1.0, normalize=False)
