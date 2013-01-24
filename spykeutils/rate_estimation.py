@@ -13,25 +13,13 @@ import signal_processing as sigproc
 from . import SpykeException
 
 
-def _binned_spike_trains(trains, bins):
-    """ Return a binned representation of SpikeTrain objects.
-
-    :param sequencs trains: A sequence of SpikeTrain objects.
-    :param bins: The bin edges, including the rightmost edge.
-    :type bins: Quantity 1D
-    :returns: List of one-dimensional arrays of spike counts.
-    :rtype: list
-    """
-    counts = []
-    for t in trains:
-        counts.append(sp.histogram(t.rescale(bins.units), bins)[0])
-
-    return counts
-
-
-def binned_spike_trains(trains, bin_size, start=0*pq.ms, stop=None):
+def binned_spike_trains(trains, bin_size, start=0*pq.ms, stop=sp.inf * pq.s):
     """ Return dictionary of binned rates for a dictionary of
     SpikeTrain lists.
+
+    .. deprecated:: 0.3.0
+
+    Use :func:`.signal_processing.bin_spike_trains` instead.
 
     :param dict trains: A sequence of `SpikeTrain` lists.
     :param bin_size: The desired bin size (as a time quantity).
@@ -48,28 +36,9 @@ def binned_spike_trains(trains, bin_size, start=0*pq.ms, stop=None):
         of spike train counts and the bin borders.
     :rtype: dict, Quantity 1D
     """
-    # Do not create bins that do not include all spike trains
-    max_start, max_stop = minimum_spike_train_interval(trains)
 
-    start = max(start, max_start)
-    start.units = bin_size.units
-    if stop is not None:
-        stop = min(stop, max_stop)
-    else:
-        stop = max_stop
-    stop.units = bin_size.units
-
-    # Calculate bin size
-    bins = sp.arange(start, stop, bin_size)*bin_size.units
-
-    # Create dictionary for all SpikeTrain lists
-    binned = {}
-    for s in trains:
-        b = _binned_spike_trains(trains[s], bins)
-        if b:
-            binned[s] = b
-
-    return binned, bins
+    start, stop = sigproc.minimum_spike_train_interval(trains, start, stop)
+    return sigproc.bin_spike_trains(trains, 1.0 / bin_size, start, stop)
 
 
 def psth(trains, bin_size, rate_correction=True, start=0*pq.ms, stop=None):
@@ -97,7 +66,7 @@ def psth(trains, bin_size, rate_correction=True, start=0*pq.ms, stop=None):
     if not trains:
         raise SpykeException('No spike trains for PSTH!')
 
-    binned, bins = binned_spike_trains(trains, bin_size, start, stop)
+    binned, bins = sigproc.bin_spike_trains(trains, 1.0 / bin_size, start, stop)
 
     cumulative = {}
     time_multiplier = 1.0 / float(bin_size.rescale(pq.s))
@@ -352,14 +321,13 @@ def optimal_gauss_kernel_size(train, optimize_steps, progress=None):
         progress = ProgressIndicator()
 
     x = train.rescale(optimize_steps.units)
-    steps = sp.asarray(optimize_steps)
 
     N = len(train)
     C = {}
 
     sampling_rate = 1024 / (x.t_stop - x.t_start)
     dt = float(1.0 / sampling_rate)
-    y_hist, _ = sigproc.bin_spike_train(x, sampling_rate)
+    y_hist, _ = sigproc.bin_spike_trains(x, sampling_rate)
     y_hist =  sp.asfarray(y_hist) / N / dt
     for step in optimize_steps:
         s = float(step)

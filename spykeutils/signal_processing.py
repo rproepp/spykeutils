@@ -3,6 +3,7 @@
 """
 
 import copy
+import functional
 import quantities as pq
 import scipy as sp
 import scipy.signal
@@ -399,35 +400,94 @@ class TriangularKernel(SymmetricKernel):
         return self.kernel_size
 
 
-def bin_spike_train(
-        train, sampling_rate=default_sampling_rate, t_start=None, t_stop=None):
+def minimum_spike_train_interval(
+        trains, t_start=-sp.inf * pq.s, t_stop=sp.inf * pq.s):
+    """ Computes the maximum starting time and minimum end time that all
+    given spike trains share. This yields the shortest interval shared by all
+    spike trains.
+
+    :param dict trains: A dictionary of sequences of SpikeTrain
+        objects.
+    :param t_start: Minimal starting time to return.
+    :param t_stop: Maximum end time to return.
+    :returns: Maximum shared t_start time and minimum shared t_stop time.
+    :rtype: Quantity scalar, Quantity scalar
+    """
+    # Load data and find shortest spike train
+    for st in trains.itervalues():
+        if len(st) > 0:
+            # Minimum length of spike of all spike trains for this unit
+            t_start = max(t_start, max((t.t_start for t in st)))
+            t_stop = min(t_stop, min((t.t_stop for t in st)))
+
+    return t_start, t_stop
+
+
+def maximum_spike_train_interval(
+        trains, t_start=sp.inf * pq.s, t_stop=-sp.inf * pq.s):
+    """ Computes the minimum starting time and maximum end time of all
+    given spike trains. This yields an interval containing the spikes of
+    all spike trains.
+
+    :param dict trains: A dictionary of sequences of SpikeTrain
+        objects.
+    :param t_start: Maximum starting time to return.
+    :param t_stop: Minimum end time to return.
+    :returns: Minimum t_start time and maximum t_stop time.
+    :rtype: Quantity scalar, Quantity scalar
+    """
+    for st in trains.itervalues():
+        if len(st) > 0:
+            t_start = min(t_start, min((t.t_start for t in st)))
+            t_stop = max(t_stop, max((t.t_stop for t in st)))
+
+    return t_start, t_stop
+
+
+def bin_spike_trains(
+        trains, sampling_rate=default_sampling_rate, t_start=None,
+        t_stop=None):
     """ Creates a binned representation of a spike train.
 
-    :param SpikeTrain train: Spike train to bin.
+    :param dict trains: A dictionary of lists of SpikeTrain objects.
     :param sampling_rate: The sampling rate which will be used to bin
-        the spike train.
+        the spike trains.
     :type sampling_rate: Quantity scalar
-    :param t_start: Time point of the left boundary of the first bin. If `None`,
-        `train.t_start` will be used.
+    :type t_start: The desired time for the start of the first bin.
+        It will be the minimum start time shared by all spike trains if `None`
+        is passed.
     :type t_start: Quantity scalar
-    :param t_stop: Time point of the right boundary of the last bin. If `None`,
-        `train.t_stop` will be used.
+    :param t_stop: The desired time for the end of the last bin. It will be the
+        maximum stop time shared by all spike trains if `None` is passed.
     :type t_stop: Quantity scalar
-    :returns: The binned representation of the spike train, the boundaries of
-        the discretization bins
-    :rtype: (1D array, Quantity 1D)
+    :returns: A dictionary (with the same indices as ``trains``) of lists
+        of spike train counts and the bin borders.
+    :rtype: dict, Quantity 1D
     """
 
-    if t_start is None:
-        t_start = train.t_start
-    if t_stop is None:
-        t_stop = train.t_stop
+    if t_start is None or t_stop is None:
+        shared_start, shared_stop = minimum_spike_train_interval(trains)
+        if t_start is None:
+            t_start = shared_start
+        if t_stop is None:
+            t_stop = shared_stop
 
     duration = t_stop - t_start
     num_bins = sampling_rate * duration + 1
     bins = sp.linspace(t_start, t_stop, num_bins)
-    binned, dummy = sp.histogram(train.rescale(bins.units), bins)
-    return binned, bins
+    return functional.apply_to_dict(_bin_single_spike_train, trains, bins), bins
+
+
+def _bin_single_spike_train(train, bins):
+    """ Return a binned representation of SpikeTrain object.
+
+    :param SpikeTrain train: A SpikeTrain object.
+    :param bins: The bin edges, including the rightmost edge.
+    :type bins: Quantity 1D
+    :returns: The binned spike train.
+    :rtype: 1-D array
+    """
+    return sp.histogram(train.rescale(bins.units), bins)[0]
 
 
 def smooth(
@@ -488,7 +548,7 @@ def st_convolve(
         <http://docs.scipy.org/doc/numpy/reference/generated/numpy.convolve.html>`_.
     :type mode: {'same', 'full', 'valid'}
     :param dict binning_params: Additional discretization arguments which will
-        be passed to :func:`bin_spike_train`.
+        be passed to :func:`bin_spike_trains`.
     :param dict kernel_discretization_params: Additional discretization
         arguments which will be passed to :meth:`.Kernel.discretize`.
     :returns: The convolved spike train, the boundaries of the discretization
@@ -496,7 +556,9 @@ def st_convolve(
     :rtype: (Quantity 1D, Quantity 1D)
     """
 
-    binned, bins = bin_spike_train(train, sampling_rate, **binning_params)
+    binned, bins = bin_spike_trains(
+        {0: [train]}, sampling_rate, **binning_params)
+    binned = binned[0][0]
     sampling_rate = binned.size / (bins[-1] - bins[0])
     result = smooth(
         binned, kernel, sampling_rate, mode, **kernel_discretization_params)
