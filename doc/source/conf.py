@@ -267,4 +267,5 @@ intersphinx_mapping = {'python': ('http://docs.python.org/', None),
                        'scipy': ('http://docs.scipy.org/doc/scipy/reference/', None),
                        'quantities': ('http://packages.python.org/quantities/', None),
                        'guiqwt': ('http://packages.python.org/guiqwt/', None),
-                       'guidata': ('http://packages.python.org/guidata/', None)}
+                       'guidata': ('http://packages.python.org/guidata/', None),
+                       'sklearn': ('http://scikit-learn.org/stable/', None)}

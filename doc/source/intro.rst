@@ -9,6 +9,8 @@ on the following additional packages:
 * guiqwt_ >= 2.1.4 (Optional, for plotting)
 * tables_ (Optional, for analysis results data management. Also known as
   PyTables.)
+* scikit-learn_ (Optional, for spike sorting quality analysis using Gaussian
+  cluster overlap.)
 
 Please see the respective websites for instructions on how to install them if
 they are not present on your computer. If you use Linux, you might not
@@ -58,6 +60,7 @@ spykeutils.
 .. _`guiqwt`: http://packages.python.org/guiqwt
 .. _`tables`: http://www.pytables.org
 .. _`quantities`: http://pypi.python.org/pypi/quantities
+.. _`scikit-learn`: http://scikit-learn.org
 .. _`pip`: http://pypi.python.org/pypi/pip
 .. _`scipy`: http://scipy.org
 .. _`setuptools`: http://pypi.python.org/pypi/setuptools

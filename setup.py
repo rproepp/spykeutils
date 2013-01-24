@@ -34,7 +34,8 @@ if __name__ == "__main__":
         install_requires=['scipy', 'quantities', 'neo>=0.2.1,<0.3.0'],
         extras_require = {
             'plot':  ['guiqwt>=2.1.4'],
-            'plugin': ['tables']
+            'plugin': ['tables'],
+            'quality_estimation': ['scikit-learn>=0.11']
         },
         entry_points = {
             'console_scripts':
