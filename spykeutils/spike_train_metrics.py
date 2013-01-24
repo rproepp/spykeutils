@@ -2,7 +2,6 @@
 from monkeypatch import quantities_patch
 import heapq
 import quantities as pq
-import rate_estimation
 import scipy as sp
 import _scipy_quantities as spq
 import signal_processing as sigproc
@@ -353,7 +352,7 @@ def st_inner(
 
 def _prepare_for_inner_prod(
         trains, smoothing_filter, sampling_rate, filter_area_fraction):
-    t_start, t_stop = rate_estimation.maximum_spike_train_interval({0: trains})
+    t_start, t_stop = sigproc.maximum_spike_train_interval({0: trains})
     padding = smoothing_filter.boundary_enclosing_at_least(filter_area_fraction)
     t_start -= 2 * padding
     t_stop += 2 * padding

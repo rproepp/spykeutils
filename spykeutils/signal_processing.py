@@ -454,11 +454,11 @@ def bin_spike_trains(
         the spike trains.
     :type sampling_rate: Quantity scalar
     :type t_start: The desired time for the start of the first bin.
-        It will be the minimum start time shared by all spike trains if `None`
-        is passed.
+        It will be the minimum start time of all spike trains if `None` is
+        passed.
     :type t_start: Quantity scalar
     :param t_stop: The desired time for the end of the last bin. It will be the
-        maximum stop time shared by all spike trains if `None` is passed.
+        maximum stop time of all spike trains if `None` is passed.
     :type t_stop: Quantity scalar
     :returns: A dictionary (with the same indices as ``trains``) of lists
         of spike train counts and the bin borders.
@@ -466,11 +466,11 @@ def bin_spike_trains(
     """
 
     if t_start is None or t_stop is None:
-        shared_start, shared_stop = minimum_spike_train_interval(trains)
+        max_start, max_stop = maximum_spike_train_interval(trains)
         if t_start is None:
-            t_start = shared_start
+            t_start = max_start
         if t_stop is None:
-            t_stop = shared_stop
+            t_stop = max_stop
 
     duration = t_stop - t_start
     num_bins = sampling_rate * duration + 1

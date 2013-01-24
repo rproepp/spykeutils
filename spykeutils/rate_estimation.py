@@ -41,7 +41,9 @@ def binned_spike_trains(trains, bin_size, start=0*pq.ms, stop=sp.inf * pq.s):
     return sigproc.bin_spike_trains(trains, 1.0 / bin_size, start, stop)
 
 
-def psth(trains, bin_size, rate_correction=True, start=0*pq.ms, stop=None):
+def psth(
+        trains, bin_size, rate_correction=True, start=0*pq.ms,
+        stop=sp.inf * pq.s):
     """ Return dictionary of peri stimulus time histograms for a dictionary
     of SpikeTrain lists.
 
@@ -66,6 +68,7 @@ def psth(trains, bin_size, rate_correction=True, start=0*pq.ms, stop=None):
     if not trains:
         raise SpykeException('No spike trains for PSTH!')
 
+    start, stop = sigproc.minimum_spike_train_interval(trains, start, stop)
     binned, bins = sigproc.bin_spike_trains(trains, 1.0 / bin_size, start, stop)
 
     cumulative = {}
