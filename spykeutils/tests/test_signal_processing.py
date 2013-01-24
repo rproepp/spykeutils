@@ -6,11 +6,53 @@ except ImportError:
     import unittest as ut
 
 from builders import create_empty_spike_train, arange_spikes
+from mock import MagicMock
 from numpy.testing import assert_array_almost_equal, assert_array_equal
 import neo
 import quantities as pq
 import scipy as sp
 import spykeutils.signal_processing as sigproc
+
+
+class Test_discretize_kernel(ut.TestCase):
+    def test_discretizes_requested_area(self):
+        kernel = sigproc.Kernel(1.0, normalize=False)
+        kernel.boundary_enclosing_at_least = MagicMock(
+            name='boundary_enclosing_at_least')
+        kernel.boundary_enclosing_at_least.return_value = 2.0
+        kernel._evaluate = lambda x, _: sp.ones(len(x))
+        sampling_rate = 1.0
+        mock_discretization = sp.ones(5)
+
+        kernel_area_fraction = 0.5
+        actual = sigproc.discretize_kernel(
+            kernel, sampling_rate, kernel_area_fraction)
+
+        kernel.boundary_enclosing_at_least.assert_called_with(
+            kernel_area_fraction)
+        assert_array_equal(actual, mock_discretization)
+
+    def test_discretizes_requested_number_of_bins(self):
+        kernel = sigproc.Kernel(1.0, normalize=False)
+        kernel._evaluate = lambda x, _: sp.ones(len(x))
+        sampling_rate = 1.0
+        num_bins = 23
+        mock_discretization = sp.ones(num_bins)
+
+        actual = sigproc.discretize_kernel(
+            kernel, sampling_rate, num_bins=num_bins)
+        assert_array_equal(actual, mock_discretization)
+
+    def test_can_normalize_to_unit_area(self):
+        kernel = sigproc.Kernel(1.0, normalize=False)
+        kernel._evaluate = lambda x, _: sp.ones(len(x))
+        sampling_rate = 2.0
+        num_bins = 20
+        mock_discretization = sp.ones(num_bins) / num_bins * sampling_rate
+
+        actual = sigproc.discretize_kernel(
+            kernel, sampling_rate, num_bins=num_bins, ensure_unit_area=True)
+        assert_array_equal(actual, mock_discretization)
 
 
 class Test_searchsorted_pairwise(ut.TestCase):

@@ -110,41 +110,6 @@ class Kernel(object):
         """
         raise NotImplementedError()
 
-    def discretize(
-            self, area_fraction=default_kernel_area_fraction,
-            sampling_rate=default_sampling_rate, num_bins=None,
-            ensure_unit_area=False):
-        """ Discretizes the kernel.
-
-        :param float area_fraction: Fraction between 0 and 1 (exclusive)
-            of the integral of the kernel which will be at least covered by the
-            discretization. Will be ignored if `num_bins` is not `None`.
-        :param sampling_rate: Sampling rate for the discretization.
-        :type sampling_rate: Quantity scalar
-        :param int num_bins: Number of bins to use for the discretization.
-        :param bool ensure_unit_area: If `True`, the area of the discretized
-            kernel will be normalized to 1.0.
-        :rtype: Quantity 1D
-        """
-
-        t_step = 1.0 / sampling_rate
-
-        if num_bins is not None:
-            start = -num_bins // 2
-            stop = num_bins // 2
-        elif area_fraction is not None:
-            boundary = self.boundary_enclosing_at_least(area_fraction)
-            start = sp.ceil(-boundary / t_step)
-            stop = sp.floor(boundary / t_step) + 1
-        else:
-            raise ValueError(
-                "One of area_fraction and num_bins must not be None.")
-
-        k = self(sp.arange(start, stop) * t_step)
-        if ensure_unit_area:
-            k /= sp.sum(k) * t_step
-        return k
-
     def is_symmetric(self):
         """ Should return `True` if the kernel is symmetric. """
         return False
@@ -400,6 +365,48 @@ class TriangularKernel(SymmetricKernel):
         return self.kernel_size
 
 
+def discretize_kernel(
+        kernel, sampling_rate=default_sampling_rate,
+        area_fraction=default_kernel_area_fraction, num_bins=None,
+        ensure_unit_area=False):
+    """ Discretizes a kernel.
+
+    :param kernel: The kernel or kernel function. If a kernel function is used
+        it should take exactly one 1-D array as argument.
+    :type kernel: :class:`Kernel` or func
+    :param float area_fraction: Fraction between 0 and 1 (exclusive)
+        of the integral of the kernel which will be at least covered by the
+        discretization. Will be ignored if `num_bins` is not `None`. If it is
+        not `None`, the kernel has to provide a method
+        :meth:`boundary_enclosing_at_least`
+        (see :meth:`.Kernel.boundary_enclosing_at_least`).
+    :param sampling_rate: Sampling rate for the discretization.
+    :type sampling_rate: Quantity scalar
+    :param int num_bins: Number of bins to use for the discretization.
+    :param bool ensure_unit_area: If `True`, the area of the discretized
+        kernel will be normalized to 1.0.
+    :rtype: Quantity 1D
+    """
+
+    t_step = 1.0 / sampling_rate
+
+    if num_bins is not None:
+        start = -num_bins // 2
+        stop = num_bins // 2
+    elif area_fraction is not None:
+        boundary = kernel.boundary_enclosing_at_least(area_fraction)
+        start = sp.ceil(-boundary / t_step)
+        stop = sp.floor(boundary / t_step) + 1
+    else:
+        raise ValueError(
+            "One of area_fraction and num_bins must not be None.")
+
+    k = kernel(sp.arange(start, stop) * t_step)
+    if ensure_unit_area:
+        k /= sp.sum(k) * t_step
+    return k
+
+
 def minimum_spike_train_interval(
         trains, t_start=-sp.inf * pq.s, t_stop=sp.inf * pq.s):
     """ Computes the maximum starting time and minimum end time that all
@@ -515,12 +522,12 @@ def smooth(
         <http://docs.scipy.org/doc/numpy/reference/generated/numpy.convolve.html>`_.
     :type mode: {'same', 'full', 'valid'}
     :param dict kernel_discretization_params: Additional discretization
-        arguments which will be passed to :meth:`.Kernel.discretize`.
+        arguments which will be passed to :func:`.discretize_kernel`.
     :returns: The smoothed representation of `binned`.
     :rtype: Quantity 1D
     """
-    k = kernel.discretize(
-        sampling_rate=sampling_rate, **kernel_discretization_params)
+    k = discretize_kernel(
+        kernel, sampling_rate=sampling_rate, **kernel_discretization_params)
     return scipy.signal.convolve(binned, k, mode) * k.units
 
 
@@ -550,7 +557,7 @@ def st_convolve(
     :param dict binning_params: Additional discretization arguments which will
         be passed to :func:`bin_spike_trains`.
     :param dict kernel_discretization_params: Additional discretization
-        arguments which will be passed to :meth:`.Kernel.discretize`.
+        arguments which will be passed to :meth:`.discretize_kernel`.
     :returns: The convolved spike train, the boundaries of the discretization
         bins
     :rtype: (Quantity 1D, Quantity 1D)
