@@ -26,7 +26,7 @@ def sde(trains, events=None, start=0*pq.ms, stop=None,
     The spike density estimations give an estimate of the instantaneous
     rate. Optionally finds optimal kernel size for given data.
 
-    :param dict trains: A dictionary of SpikeTrain lists.
+    :param dict trains: A dictionary of :class:`neo.core.SpikeTrain` lists.
     :param dict events: A dictionary (with the same indices as ``trains``)
         of Event objects or lists of Event objects. In case of lists,
         the first event in the list will be used for alignment. The events

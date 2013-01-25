@@ -17,7 +17,8 @@ def get_refperiod_violations(spike_trains, refperiod, progress=None):
     """ Return the refractory period violations in the given spike trains
     for the specified refractory period.
 
-    :param dict spike_trains: Dictionary of lists of SpikeTrain objects.
+    :param dict spike_trains: Dictionary of lists of
+        :class:`neo.core.SpikeTrain` objects.
     :param refperiod: The refractory period (time).
     :type refperiod: Quantity scalar
     :param progress: Set this parameter to report progress.
@@ -199,10 +200,11 @@ def calculate_overlap_fp_fn(means, spikes):
     total error probabilities are estimated using all clusters at once.
 
     :param dict means: Dictionary of prewhitened cluster means
-        (e.g. unit templates) indexed by unit as Spike objects or
-        numpy arrays for all units.
+        (e.g. unit templates) indexed by unit as :class:`neo.core.Spike`
+        objects or numpy arrays for all units.
     :param dict spikes: Dictionary, indexed by unit, of lists of prewhitened
-        spike waveforms as Spike objects or numpy arrays for all units.
+        spike waveforms as :class:`neo.core.Spike` objects or numpy arrays
+        for all units.
     :returns: Two values:
 
         * A dictionary (indexed by unit) of total
@@ -288,15 +290,15 @@ def overlap_fp_fn(spikes, means=None, covariances=None):
     using all clusters at once.
 
     :param dict spikes: Dictionary, indexed by unit, of lists of
-        spike waveforms as Spike objects or numpy arrays. If the waveforms
-        have multiple channels, they will be reshaped automatically. All
-        waveforms need to have the same number of samples.
+        spike waveforms as :class:`neo.core.Spike` objects or numpy arrays.
+        If the waveforms have multiple channels, they will be reshaped
+        automatically. All waveforms need to have the same number of samples.
     :param dict means: Dictionary, indexed by unit, of lists of
-        spike waveforms as Spike objects or numpy arrays. Means for units
-        that are not in this dictionary will be estimated using the spikes.
-        Note that if you pass ``'white'`` for ``covariances`` and you want
-        to provide means, they have to be whitened in the same way as the
-        spikes.
+        spike waveforms as :class:`neo.core.Spike` objects or numpy arrays.
+        Means for units that are not in this dictionary will be estimated
+        using the spikes. Note that if you pass ``'white'`` for
+        ``covariances`` and you want to provide means, they have to be
+        whitened in the same way as the spikes.
         Default: None, means will be estimated from data.
     :param covariances: Dictionary, indexed by unit, of lists of
         covariance matrices. Covariances  for units that are not in this

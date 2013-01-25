@@ -24,7 +24,7 @@ def psth(trains, events=None, start=0*pq.ms, stop=None, bin_size=100*pq.ms,
     The peri stimulus time histogram gives an estimate of the instantaneous
     rate.
 
-    :param dict trains: A dictionary of SpikeTrain lists.
+    :param dict trains: A dictionary of :class:`neo.core.SpikeTrain` lists.
     :param dict events: A dictionary of Event objects, indexed by segment.
         The events will be at time 0 on the plot. If None, spike trains
         are used unmodified.
