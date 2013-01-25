@@ -614,7 +614,7 @@ def _victor_purpura_dist_for_trial_pair(a, b, kernel):
         for j in xrange(1, cost_b.size - num_spikes_processed - 1):
             cost_b[j] = min(
                 cost_b[j - 1] + 1, cost_b[j + 1] + 1,
-                cost_b[j] + 2 - k[
+                cost_b[j] + 2 - 2 * k[
                     num_spikes_processed, num_spikes_processed + j])
 
     return cost_a[-cost_b.size]
