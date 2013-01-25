@@ -37,7 +37,7 @@ def binned_spike_trains(trains, bin_size, start=0*pq.ms, stop=sp.inf * pq.s):
     :rtype: dict, Quantity 1D
     """
 
-    start, stop = sigproc.minimum_spike_train_interval(trains, start, stop)
+    start, stop = tools.minimum_spike_train_interval(trains, start, stop)
     return sigproc.bin_spike_trains(trains, 1.0 / bin_size, start, stop)
 
 
@@ -68,7 +68,7 @@ def psth(
     if not trains:
         raise SpykeException('No spike trains for PSTH!')
 
-    start, stop = sigproc.minimum_spike_train_interval(trains, start, stop)
+    start, stop = tools.minimum_spike_train_interval(trains, start, stop)
     binned, bins = sigproc.bin_spike_trains(trains, 1.0 / bin_size, start, stop)
 
     cumulative = {}
@@ -216,7 +216,7 @@ def spike_density_estimation(trains, start=0*pq.ms, stop=None,
         units = optimize_steps.units
 
     # Prepare evaluation points
-    max_start, max_stop = sigproc.minimum_spike_train_interval(trains)
+    max_start, max_stop = tools.minimum_spike_train_interval(trains)
 
     start = max(start, max_start)
     start.units = units
