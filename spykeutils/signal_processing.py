@@ -1,5 +1,5 @@
 """
-.. data:: default_sampling_rate
+.. data:: default_kernel_area_fraction
 """
 
 import copy
@@ -10,7 +10,6 @@ import scipy.signal
 import scipy.special
 
 default_kernel_area_fraction = 0.99999
-default_sampling_rate = 100 * pq.Hz
 
 
 def _searchsorted_pairwise(a, b):
@@ -402,9 +401,8 @@ class TriangularKernel(SymmetricKernel):
 
 
 def discretize_kernel(
-        kernel, sampling_rate=default_sampling_rate,
-        area_fraction=default_kernel_area_fraction, num_bins=None,
-        ensure_unit_area=False):
+        kernel, sampling_rate, area_fraction=default_kernel_area_fraction,
+        num_bins=None, ensure_unit_area=False):
     """ Discretizes a kernel.
 
     :param kernel: The kernel or kernel function. If a kernel function is used
@@ -487,9 +485,7 @@ def maximum_spike_train_interval(
     return t_start, t_stop
 
 
-def bin_spike_trains(
-        trains, sampling_rate=default_sampling_rate, t_start=None,
-        t_stop=None):
+def bin_spike_trains(trains, sampling_rate, t_start=None, t_stop=None):
     """ Creates a binned representation of a spike train.
 
     :param dict trains: A dictionary of lists of SpikeTrain objects.
@@ -568,8 +564,8 @@ def smooth(
 
 
 def st_convolve(
-        train, kernel, sampling_rate=default_sampling_rate,
-        mode='same', binning_params={}, kernel_discretization_params={}):
+        train, kernel, sampling_rate, mode='same', binning_params={},
+        kernel_discretization_params={}):
     """ Convolves a spike train with a kernel.
 
     :param SpikeTrain train: Spike train to convolve.

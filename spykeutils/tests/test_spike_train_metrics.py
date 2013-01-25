@@ -100,7 +100,8 @@ class Test_cs_dist(ut.TestCase):
         ]) * pq.s, t_stop=10.0 * pq.s, sampling_rate=100 * pq.Hz)
         f = sigproc.GaussianKernel()
         expected = sp.array([[0.0, 0.0], [0.0, 0.0]])
-        assert_array_almost_equal(expected, stm.cs_dist([a, a.copy()], f))
+        assert_array_almost_equal(expected, stm.cs_dist(
+            [a, a.copy()], f, 1 * pq.Hz))
 
     def test_returns_nan_if_one_spike_train_is_empty(self):
         empty = create_empty_spike_train()
@@ -219,7 +220,8 @@ class Test_norm_dist(ut.TestCase):
         ]) * pq.s, t_stop=10.0 * pq.s, sampling_rate=100 * pq.Hz)
         f = sigproc.GaussianKernel()
         expected = sp.zeros((2, 2)) * pq.Hz ** 0.5
-        assert_array_almost_equal(expected, stm.norm_dist([st, st.copy()], f))
+        assert_array_almost_equal(expected, stm.norm_dist(
+            [st, st.copy()], f, 1 * pq.Hz))
 
     def test_returns_norm_if_one_spike_train_is_empty(self):
         empty = create_empty_spike_train()
@@ -302,13 +304,17 @@ class Test_st_inner(ut.TestCase):
         empty = create_empty_spike_train()
         non_empty = neo.SpikeTrain(sp.array([1.0]) * pq.s, t_stop=2.0 * pq.s)
         smoothing_filter = sigproc.GaussianKernel()
+        sampling_rate = 1 * pq.Hz
         expected = sp.array([0.0]) * pq.Hz
         self.assertAlmostEqual(
-            expected, stm.st_inner([empty], [empty], smoothing_filter))
+            expected, stm.st_inner(
+                [empty], [empty], smoothing_filter, sampling_rate))
         self.assertAlmostEqual(
-            expected, stm.st_inner([empty], [non_empty], smoothing_filter))
+            expected, stm.st_inner(
+                [empty], [non_empty], smoothing_filter, sampling_rate))
         self.assertAlmostEqual(
-            expected, stm.st_inner([non_empty], [empty], smoothing_filter))
+            expected, stm.st_inner(
+                [non_empty], [empty], smoothing_filter, sampling_rate))
 
     def test_returns_correct_inner_spike_train_product(self):
         a = neo.SpikeTrain(
@@ -355,7 +361,8 @@ class Test_st_norm(ut.TestCase):
     def test_returns_zero_if_spike_train_is_empty(self):
         empty = create_empty_spike_train()
         smoothing_filter = sigproc.GaussianKernel()
-        self.assertAlmostEqual(0.0, stm.st_norm(empty, smoothing_filter))
+        self.assertAlmostEqual(0.0, stm.st_norm(
+            empty, smoothing_filter, 1 * pq.Hz))
 
     def test_returns_correct_spike_train_norm(self):
         st = neo.SpikeTrain(

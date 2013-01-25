@@ -48,7 +48,7 @@ def _merge_trains_and_label_spikes(trains):
 
 
 def cs_dist(
-        trains, smoothing_filter, sampling_rate=sigproc.default_sampling_rate,
+        trains, smoothing_filter, sampling_rate,
         filter_area_fraction=sigproc.default_kernel_area_fraction):
     """ Calculates the Cauchy-Schwarz distance between two spike trains given
     a smoothing filter.
@@ -211,7 +211,7 @@ def hunter_milton_similarity(trains, tau=1.0 * pq.s, kernel=None):
 
 
 def norm_dist(
-        trains, smoothing_filter, sampling_rate=sigproc.default_sampling_rate,
+        trains, smoothing_filter, sampling_rate,
         filter_area_fraction=sigproc.default_kernel_area_fraction):
     """ Calculates the norm distance between spike trains given a smoothing
     filter.
@@ -233,10 +233,7 @@ def norm_dist(
         trains.
     :type smoothing_filter: :class:`.signal_processing.Kernel`
     :param sampling_rate: The sampling rate which will be used to bin
-        the spike trains. If `None`, the maximum sampling rate stored in the
-        two spike trains will be used. If it is also `None` for both spike
-        trains, that, :py:const:`signal_processing.default_sampling_rate`
-        will be used.
+        the spike trains.
     :type sampling_rate: Quantity scalar
     :param float filter_area_fraction: A value between 0 and 1 which controls
         the interval over which the smoothing filter will be discretized. At
@@ -306,7 +303,7 @@ def schreiber_similarity(trains, kernel, sort=True):
 
 
 def st_inner(
-        a, b, smoothing_filter, sampling_rate=sigproc.default_sampling_rate,
+        a, b, smoothing_filter, sampling_rate,
         filter_area_fraction=sigproc.default_kernel_area_fraction):
     """ Calculates the inner product of spike trains given a smoothing
     filter.
@@ -365,7 +362,7 @@ def _prepare_for_inner_prod(
 
 
 def st_norm(
-        train, smoothing_filter, sampling_rate=sigproc.default_sampling_rate,
+        train, smoothing_filter, sampling_rate,
         filter_area_fraction=sigproc.default_kernel_area_fraction):
     """ Calculates the spike train norm given a smoothing filter.
 

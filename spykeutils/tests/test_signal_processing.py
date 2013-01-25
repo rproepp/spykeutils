@@ -333,7 +333,7 @@ class Test_smooth(ut.TestCase):
 class Test_st_convolve(ut.TestCase):
     def test_convolution_with_empty_spike_train_returns_array_of_zeros(self):
         st = create_empty_spike_train()
-        result, _ = sigproc.st_convolve(st, sigproc.GaussianKernel())
+        result, _ = sigproc.st_convolve(st, sigproc.GaussianKernel(), 1 * pq.Hz)
         self.assertTrue(sp.all(result == 0.0))
 
     def test_length_of_returned_array_equals_sampling_rate_times_duration(self):
