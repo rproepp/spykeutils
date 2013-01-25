@@ -296,7 +296,11 @@ class LaplacianKernel(SymmetricKernel):
         # Rossum distances. Network: Computation in Neural Systems, 23(1-2),
         # 48-58.
         #
-        # Note that the cited paper contains some errors.
+        # Note that the cited paper contains some errors: In formula (9) the
+        # left side of the equation should be divided by two and in the last
+        # sum in this equation it should say `j|v_i >= u_i` instead of
+        # `j|v_i > u_i`. Also, in equation (11) it should say `j|u_i >= v_i`
+        # instead of `j|u_i > v_i`.
         #
         # Given N vectors with n entries on average the run-time complexity is
         # O(N^2 * n). O(N^2 + N * n^2) memory will be needed.
