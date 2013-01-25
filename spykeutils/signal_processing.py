@@ -99,9 +99,9 @@ class Kernel(object):
         raise NotImplementedError()
 
     def boundary_enclosing_at_least(self, fraction):
-        """ Calculates the boundary :math:`b` that the integral from :math:`-b`
-        to :math:`b` encloses at least a certain fraction of the integral
-        over the complete kernel.
+        """ Calculates the boundary :math:`b` so that the integral from
+        :math:`-b` to :math:`b` encloses at least a certain fraction of the
+        integral over the complete kernel.
 
         :param float fraction: Fraction of the whole area which at least has to
             be enclosed.
@@ -145,7 +145,7 @@ class Kernel(object):
 
 
 class KernelFromFunction(Kernel):
-    """ Creates a kernel form a function. Please note, that not all function for
+    """ Creates a kernel form a function. Please note, that not all methods for
     such a kernel are implemented.
     """
 
@@ -182,15 +182,13 @@ def as_kernel_of_size(obj, kernel_size):
 
 
 class SymmetricKernel(Kernel):
-    """ Base class for kernels. """
+    """ Base class for symmetric kernels. """
 
     def __init__(self, kernel_size, normalize):
         """
-        :param function kernel_func: Kernel function which takes an array
-            of time points as first argument.
         :param kernel_size: Parameter controlling the kernel size.
-        :param dict params: Additional parameters to be passed to the kernel
-            function.
+        :type kernel_size: Quantity 1D
+        :param bool normalize: Whether to normalize the kernel to unit area.
         """
         Kernel.__init__(self, kernel_size, normalize)
 
@@ -212,6 +210,13 @@ class SymmetricKernel(Kernel):
 
 
 class CausalDecayingExpKernel(Kernel):
+    r""" Unnormalized: :math:`K(t) = \exp(-\frac{t}{\tau}) \Theta(t)` with
+    :math:`\Theta(t) = \left\{\begin{array}{ll}0, & x < 0\\ 1, & x \geq
+    0\end{array}\right.` and kernel size :math:`\tau`.
+
+    Normalized to unit area: :math:`K'(t) = \frac{1}{\tau} K(t)`
+    """
+
     @staticmethod
     def evaluate(t, kernel_size):
         return sp.piecewise(
@@ -234,6 +239,13 @@ class CausalDecayingExpKernel(Kernel):
 
 
 class GaussianKernel(SymmetricKernel):
+    r""" Unnormalized: :math:`K(t) = \exp(-\frac{t^2}{2 \sigma^2})` with kernel
+    size :math:`\sigma` (corresponds to the standard deviation of a Gaussian
+    distribution).
+
+    Normalized to unit area: :math:`K'(t) = \frac{1}{\sigma \sqrt{2 \pi}} K(t)`
+    """
+
     @staticmethod
     def evaluate(t, kernel_size):
         return sp.exp(
@@ -254,6 +266,12 @@ class GaussianKernel(SymmetricKernel):
 
 
 class LaplacianKernel(SymmetricKernel):
+    r""" Unnormalized: :math:`K(t) = \exp(-|\frac{t}{\tau}|)` with kernel size
+    :math:`\tau`.
+
+    Normalized to unit area: :math:`K'(t) = \frac{1}{2 \tau} K(t)`
+    """
+
     @staticmethod
     def evaluate(t, kernel_size):
         return sp.exp(
@@ -328,6 +346,13 @@ class LaplacianKernel(SymmetricKernel):
 
 
 class RectangularKernel(SymmetricKernel):
+    r""" Unnormalized: :math:`K(t) = \left\{\begin{array}{ll}1, & |t| < \tau \\
+    0, & |t| \geq \tau\end{array} \right.` with kernel size :math:`\tau`
+    corresponding to the half width.
+
+    Normalized to unit area: :math:`K'(t) = \frac{1}{2 \tau} K(t)`
+    """
+
     @staticmethod
     def evaluate(t, half_width):
         return (sp.absolute(t) < half_width)
@@ -346,6 +371,13 @@ class RectangularKernel(SymmetricKernel):
 
 
 class TriangularKernel(SymmetricKernel):
+    r""" Unnormalized: :math:`K(t) = \left\{ \begin{array}{ll}1
+    - \frac{|t|}{\tau}, & |t| < \tau \\ 0, & |t| \geq \tau \end{array} \right.`
+    with kernel size :math:`\tau` corresponding to the half width.
+
+    Normalized to unit area: :math:`K'(t) = \frac{1}{\tau} K(t)`
+    """
+
     @staticmethod
     def evaluate(t, half_width):
         return sp.maximum(
