@@ -21,21 +21,23 @@ import helper
 def signals(signals, events=None, epochs=None, spike_trains=None,
            spikes=None, show_waveforms=True, use_subplots=True,
            time_unit=pq.s, y_unit=None, progress=None):
-    """ Create a plot from a list of AnalogSignal objects.
+    """ Create a plot from a list of analog signals.
 
-    :param list signals: The list of signals to plot.
+    :param list signals: The list of :class:`neo.core.AnalogSignal` objects
+        to plot.
     :param sequence events: A list of Event objects to be included in the
         plot.
     :param sequence epochs: A list of Epoch objects to be included in the
         plot.
-    :param list spike_trains: A list of SpikeTrain objects to be
-        included in the plot. The ``unit`` property (if it exists) is used
-        for color and legend entries.
-    :param list spikes: A list Spike objects to be included in the plot.
-        The ``unit`` property (if it exists) is used for color and legend
-        entries.
-    :param bool show_waveforms: Determines if spikes from Spike and
-        SpikeTrain objects are shown as waveforms or vertical lines.
+    :param list spike_trains: A list of :class:`neo.core.SpikeTrain` objects
+        to be included in the plot. The ``unit`` property (if it exists) is
+        used for color and legend entries.
+    :param list spikes: A list :class:`neo.core.Spike` objects to be included
+        in the plot. The ``unit`` property (if it exists) is used for color
+        and legend entries.
+    :param bool show_waveforms: Determines if spikes from
+        :class:`neo.core.Spike` and :class:`neo.core.SpikeTrain` objects are
+        shown as waveforms (if available) or vertical lines.
     :param bool use_subplots: Determines if a separate subplot for is created
         each signal.
     :param Quantity time_unit: The unit of the x axis.
@@ -181,6 +183,8 @@ def signals(signals, events=None, epochs=None, spike_trains=None,
         win.add_x_synchronization_option(True, channels)
         win.add_y_synchronization_option(False, channels)
 
+    return win
+
 
 def _add_spike_waveforms(plot, spikes, x_units, channel, offset, progress):
     for spike in spikes:
@@ -188,7 +192,6 @@ def _add_spike_waveforms(plot, spikes, x_units, channel, offset, progress):
             continue
 
         color = helper.get_object_color(spike.unit)
-        # TODO: Is this usage of Spike.left_sweep correct?
         if spike.left_sweep:
             lsweep = spike.left_sweep
         else:

@@ -11,10 +11,10 @@ from . import SpykeException
 
 def correlogram(trains, bin_size, max_lag=500*pq.ms, border_correction=True,
                 unit=pq.ms, progress=None):
-    """ Return (cross-)correlograms from a dictionary of SpikeTrain
+    """ Return (cross-)correlograms from a dictionary of spike train
     lists for different units.
 
-    :param dict trains: Dictionary of SpikeTrain lists.
+    :param dict trains: Dictionary of :class:`neo.core.SpikeTrain` lists.
     :param bin_size: Bin size (time).
     :type bin_size: Quantity scalar
     :param max_lag: Cut off (end time of calculated correlogram).

@@ -19,8 +19,6 @@ import sys, os
 sys.path.insert(0, os.path.abspath(
     os.path.join(os.pardir,os.pardir)))
 
-import spykeutils
-
 # -- Mocking modules for Read the Docs compatibility ---------------------------
 try:
     import neo
@@ -33,7 +31,8 @@ except ImportError:
     MOCK_MODULES = ['neo', 'numpy', 'tables','guiqwt', 'guiqwt.builder',
                     'guiqwt.baseplot', 'guiqwt.plot', 'guiqwt.curve',
                     'guiqwt.image', 'guiqwt.tools', 'guiqwt.signals',
-                    'guiqwt.config', 'PyQt4', 'PyQt4.QtCore', 'PyQt4.QtGui',
+                    'guiqwt.config', 'guiqwt.events',
+                    'PyQt4', 'PyQt4.QtCore', 'PyQt4.QtGui',
                     'guidata', 'guidata.configtools', 'guidata.qthelpers',
                     'quantities', 'scipy', 'scipy.spatial',
                     'scipy.spatial.distance']
@@ -47,6 +46,16 @@ except ImportError:
         pass
     sys.modules['PyQt4.QtGui'].QDialog = QDialog
     sys.modules['guiqwt.plot'].PlotManager = PlotManager
+
+    # Needed for spykeutils.plot.guiqwt_tools
+    class CommandTool:
+        pass
+    class InteractiveTool:
+        pass
+    sys.modules['guiqwt.tools'].CommandTool = CommandTool
+    sys.modules['guiqwt.tools'].InteractiveTool = InteractiveTool
+
+import spykeutils
 
 # -- General configuration -----------------------------------------------------
 
@@ -258,4 +267,5 @@ intersphinx_mapping = {'python': ('http://docs.python.org/', None),
                        'scipy': ('http://docs.scipy.org/doc/scipy/reference/', None),
                        'quantities': ('http://packages.python.org/quantities/', None),
                        'guiqwt': ('http://packages.python.org/guiqwt/', None),
-                       'guidata': ('http://packages.python.org/guidata/', None)}
+                       'guidata': ('http://packages.python.org/guidata/', None),
+                       'sklearn': ('http://scikit-learn.org/stable/', None)}

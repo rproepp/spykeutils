@@ -4,32 +4,33 @@
 from PyQt4 import QtGui
 from PyQt4.QtCore import Qt
 from PyQt4.QtGui import (QDialog, QGridLayout, QToolBar, QHBoxLayout,
-                         QVBoxLayout, QFrame, QWidget, QMessageBox)
+                         QVBoxLayout, QFrame, QWidget)
 try:
     from PyQt4 import QtCore
     _fromUtf8 = QtCore.QString.fromUtf8
 except AttributeError:
     _fromUtf8 = lambda s: s
 
+from PyQt4.QtGui import QColor
 from guiqwt.baseplot import BasePlot
 from guiqwt.curve import CurvePlot
 from guiqwt.image import ImagePlot
 from guiqwt.plot import PlotManager
+from guiqwt.shapes import Marker
+from guiqwt.curve import CurveItem
 from guiqwt.tools import (SelectTool, RectZoomTool, BasePlotMenuTool,
                           DeleteItemTool, ItemListPanelTool,
                           AntiAliasingTool, AxisScaleTool, DisplayCoordsTool,
-                          ExportItemDataTool, EditItemDataTool,
-                          ItemCenterTool, SignalStatsTool, ColormapTool,
-                          ReverseYAxisTool, AspectRatioTool, ContrastPanelTool,
-                          XCSPanelTool, YCSPanelTool, CrossSectionTool,
-                          AverageCrossSectionTool, SaveAsTool, PrintTool,
-                          CopyToClipboardTool, CommandTool, DefaultToolbarID)
+                          ExportItemDataTool, ItemCenterTool, SignalStatsTool,
+                          ColormapTool, ReverseYAxisTool, AspectRatioTool,
+                          ContrastPanelTool, XCSPanelTool, YCSPanelTool,
+                          CrossSectionTool, AverageCrossSectionTool,
+                          SaveAsTool, PrintTool, CopyToClipboardTool)
 from guiqwt.signals import SIG_PLOT_AXIS_CHANGED
 from guidata.configtools import get_icon
-from guidata.qthelpers import get_std_icon
 
-import window_icon_rc
-
+import icons_rc
+import guiqwt_tools
 
 # Monkeypatch curve and image plot so synchronizing axes works with all tools
 def fixed_do_zoom_rect_view(self, *args, **kwargs):
@@ -57,27 +58,6 @@ ImagePlot.old_do_autoscale = ImagePlot.do_autoscale
 ImagePlot.do_autoscale = fixed_do_autoscale_image
 
 
-# Custom Help tool class (because regular help is missing
-# information on single middle mouse click)
-class HelpTool(CommandTool):
-    def __init__(self, manager, toolbar_id=DefaultToolbarID):
-        super(HelpTool,self).__init__(manager, "Help",
-            get_std_icon("DialogHelpButton", 16),
-            toolbar_id=toolbar_id)
-
-    def activate_command(self, plot, checked):
-        """Activate tool"""
-        QMessageBox.information(plot, "Help",
-            """Keyboard/mouse shortcuts:
-  - single left-click: item (curve, image, ...) selection
-  - single right-click: context-menu relative to selected item
-  - single middle click: home
-  - shift: on-active-curve (or image) cursor
-  - alt: free cursor
-  - left-click + mouse move: move item (when available)
-  - middle-click + mouse move: pan
-  - right-click + mouse move: zoom""")
-
 class PlotDialog(QDialog, PlotManager):
     """ Implements a dialog to which an arbitrary number of plots can be
     added.
@@ -87,14 +67,18 @@ class PlotDialog(QDialog, PlotManager):
     which provide callbacks when the checkbox state changes.
     """
 
-    def __init__(self, wintitle='Plot window',
-                 toolbar=False,  parent=None, panels=None):
+    def __init__(self, wintitle='Plot window', major_grid=True,
+                 minor_grid=False, toolbar=False,  parent=None, panels=None):
         QDialog.__init__(self, parent)
         self.setWindowFlags(Qt.Window)
 
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap(_fromUtf8(':/Application/Main')), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon.addPixmap(QtGui.QPixmap(_fromUtf8(':/Application/Main')),
+            QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.setWindowIcon(icon)
+
+        self.major_grid = major_grid
+        self.minor_grid = minor_grid
 
         # WidgetMixin copy
         PlotManager.__init__(self, main=self)
@@ -139,31 +123,40 @@ class PlotDialog(QDialog, PlotManager):
         self.setLayout(self.main_layout)
         
     def add_custom_curve_tools(self, antialiasing=True,
-                               activate_zoom=True):
+                               activate_zoom=True,
+                               signal_stats=False):
         """ Adds typically needed curve tools to the window.
 
         :param bool antialiasing: Determines if the antialiasing tool is
             added.
         :param bool activate_zoom: Determines if the zoom tool is activated
             initially (otherwise, the selection tool will be activated).
+        :param bool signal_stats: Determines if the signal stats tool is
+            available.
         """
         self.add_toolbar(self.toolbar)
 
         t = self.add_tool(SelectTool)
         if not activate_zoom:
             self.set_default_tool(t)
-        t = self.add_tool(RectZoomTool)
-        if activate_zoom:
-            self.set_default_tool(t)
         self.add_tool(BasePlotMenuTool, "item")
         self.add_tool(ExportItemDataTool)
-        try:
+        try: # Old versions of guiqwt and spyderlib do not support this
             import spyderlib.widgets.objecteditor
+            from guiqwt.tools import EditItemDataTool
             self.add_tool(EditItemDataTool)
         except ImportError:
             pass
         self.add_tool(ItemCenterTool)
         self.add_tool(DeleteItemTool)
+
+        self.add_separator_tool()
+        t = self.add_tool(RectZoomTool)
+        if activate_zoom:
+            self.set_default_tool(t)
+        self.add_tool(guiqwt_tools.HomeTool)
+        self.add_tool(guiqwt_tools.PanTool)
+
         self.add_separator_tool()
         self.add_tool(BasePlotMenuTool, "grid")
         self.add_tool(BasePlotMenuTool, "axes")
@@ -171,8 +164,10 @@ class PlotDialog(QDialog, PlotManager):
         if self.get_itemlist_panel():
             self.add_tool(ItemListPanelTool)
 
-        self.add_separator_tool()
-        self.add_tool(SignalStatsTool)
+        if signal_stats:
+            self.add_separator_tool()
+            self.add_tool(SignalStatsTool)
+
         if antialiasing:
             self.add_tool(AntiAliasingTool)
         self.add_tool(AxisScaleTool)
@@ -180,7 +175,7 @@ class PlotDialog(QDialog, PlotManager):
         self.add_tool(SaveAsTool)
         self.add_tool(CopyToClipboardTool)
         self.add_tool(PrintTool)
-        self.add_tool(HelpTool)
+        self.add_tool(guiqwt_tools.HelpTool)
         self.add_separator_tool()
         self.get_default_tool().activate()
 
@@ -189,11 +184,35 @@ class PlotDialog(QDialog, PlotManager):
         """
         self.add_toolbar(self.toolbar)
 
-        self.register_standard_tools()
-        if activate_zoom:
-            self.set_default_tool(self.get_tool(RectZoomTool))
-        self.add_separator_tool()
+        t = self.add_tool(SelectTool)
+        if not activate_zoom:
+            self.set_default_tool(t)
+        self.add_tool(BasePlotMenuTool, "item")
+        self.add_tool(ExportItemDataTool)
+        try: # Old versions of guiqwt and spyderlib do not support this
+            import spyderlib.widgets.objecteditor
+            from guiqwt.tools import EditItemDataTool
+            self.add_tool(EditItemDataTool)
+        except ImportError:
+            pass
+        self.add_tool(ItemCenterTool)
+        self.add_tool(DeleteItemTool)
 
+        self.add_separator_tool()
+        t = self.add_tool(RectZoomTool)
+        if activate_zoom:
+            self.set_default_tool(t)
+        self.add_tool(guiqwt_tools.HomeTool)
+        self.add_tool(guiqwt_tools.PanTool)
+
+        self.add_separator_tool()
+        self.add_tool(BasePlotMenuTool, "grid")
+        self.add_tool(BasePlotMenuTool, "axes")
+        self.add_tool(DisplayCoordsTool)
+        if self.get_itemlist_panel():
+            self.add_tool(ItemListPanelTool)
+
+        self.add_separator_tool()
         self.add_tool(ColormapTool)
         self.add_tool(ReverseYAxisTool)
         self.add_tool(AspectRatioTool)
@@ -209,7 +228,7 @@ class PlotDialog(QDialog, PlotManager):
         self.add_tool(SaveAsTool)
         self.add_tool(CopyToClipboardTool)
         self.add_tool(PrintTool)
-        self.add_tool(HelpTool)
+        self.add_tool(guiqwt_tools.HelpTool)
         self.add_separator_tool()
         self.get_default_tool().activate()
     
@@ -274,6 +293,48 @@ class PlotDialog(QDialog, PlotManager):
             self.synchronize_axis(BasePlot.Y_LEFT)
         else:
             self.unsynchronize_axis(BasePlot.Y_LEFT)
+
+    def replace_colors(self, replace_list):
+        """ Replace colors of items in all plots.
+
+            This can be useful when changing the background color to black
+            and black items should be drawn in white:
+            ``replace_colors([('#000000', '#ffffff']))``
+
+        :param list replace_list: A list of tuples of Qt color names. The
+            first color in each tuple is replaced by the second color.
+        """
+        for plot in self.plots.itervalues():
+            for i in plot.get_items():
+                if isinstance(i, CurveItem):
+                    pen = i.pen()
+                elif isinstance(i, Marker):
+                    pen = i.linePen()
+                else:
+                    continue
+                for color in replace_list:
+                    c1 = QColor(color[0])
+                    c2 = QColor(color[1])
+                    if pen.color() != c1:
+                        continue
+                    pen.setColor(c2)
+                    break
+                if isinstance(i, CurveItem):
+                    i.setPen(pen)
+                elif isinstance(i, Marker):
+                    i.setLinePen(pen)
+            plot.replot()
+
+
+    def set_background_color(self, color):
+        """ Set the background color for all plots.
+
+        :param str color: A Qt color name (e.g. '#ff0000')
+        """
+        for p in self.plots.itervalues():
+            p.setCanvasBackground(QColor(color))
+            p.replot()
+
         
     def add_unit_color(self, color, name='Unit color:'):
         """ Create a small legend on top of the window with only one entry.
@@ -444,3 +505,14 @@ class PlotDialog(QDialog, PlotManager):
         l = plot.titleLabel()
         l.setFont(self.font())
         plot.setTitle(l.text())
+
+    def show(self):
+        for p in self.plots.itervalues():
+            if not self.minor_grid:
+                p.grid.gridparam.min_xenabled = False
+                p.grid.gridparam.min_yenabled = False
+            if not self.major_grid:
+                p.grid.gridparam.maj_xenabled = False
+                p.grid.gridparam.maj_yenabled = False
+            p.grid.update_params()
+        super(PlotDialog, self).show()

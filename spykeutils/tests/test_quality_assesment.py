@@ -11,25 +11,6 @@ from neo.test.tools import assert_arrays_equal
 import spykeutils.sorting_quality_assesment as qa
 
 class TestQualityAssessment(ut.TestCase):
-    def setUp(self):
-        sp.random.seed(123)
-        dimension = 40 # Needs to be divisible by 4 for Spike objects test!
-        offset = sp.zeros((dimension,1))
-        offset[0] = 4
-        self.cluster1 = sp.randn(dimension,10)
-        self.cluster2 = sp.randn(dimension,100) + offset
-        self.cluster3 = sp.randn(dimension,500) - offset
-        self.clusterList1 = [self.cluster1[:,i]
-                             for i in xrange(sp.size(self.cluster1,1))]
-        self.clusterList2 = [self.cluster2[:,i]
-                             for i in xrange(sp.size(self.cluster2,1))]
-        self.clusterList3 = [self.cluster3[:,i]
-                             for i in xrange(sp.size(self.cluster3,1))]
-        self.mean1 = sp.zeros(dimension)
-        self.mean2 = offset.flatten()
-        self.mean3 = -self.mean2
-
-
     def test_refperiod_violations_empty(self):
         num, d = qa.get_refperiod_violations({}, 1*pq.ms)
         self.assertEqual(num, 0)
@@ -71,64 +52,199 @@ class TestQualityAssessment(ut.TestCase):
 
     def test_overlap_1_cluster(self):
         # One cluster cannot have overlaps...
-        total, pair = qa.calculate_overlap_fp_fn(
-            {1: self.mean1}, {1: self.clusterList1})
+        cluster1 = sp.randn(8,100)
+        clusterList1 = [cluster1[:,i]
+                        for i in xrange(sp.size(cluster1,1))]
+        total, pair = qa.overlap_fp_fn({1: clusterList1})
         self.assertEqual(total[1][0], 0.0)
         self.assertEqual(total[1][1], 0.0)
         self.assertEqual(pair, {})
 
+    def test_overlap_equal_clusters_white(self):
+        cluster1 = sp.randn(40,1000)
+        cluster2 = sp.randn(40,1000)
+        clusterList1 = [cluster1[:,i]
+                             for i in xrange(sp.size(cluster1,1))]
+        clusterList2 = [cluster2[:,i]
+                             for i in xrange(sp.size(cluster2,1))]
+        total, pair = qa.overlap_fp_fn(
+            {1: clusterList1, 2: clusterList2},
+            means={1: sp.zeros(40), 2: sp.zeros(40)},
+            covariances='white')
+        self.assertAlmostEqual(total[1][0], 0.5)
+        self.assertAlmostEqual(total[1][1], 0.5)
+        self.assertAlmostEqual(total[2][0], 0.5)
+        self.assertAlmostEqual(total[2][1], 0.5)
+        self.assertAlmostEqual(pair[1][2][0], 0.5)
+        self.assertAlmostEqual(pair[1][2][1], 0.5)
+        self.assertAlmostEqual(pair[2][1][0], 0.5)
+        self.assertAlmostEqual(pair[2][1][1], 0.5)
 
-    def test_overlap_2_clusters(self):
-        total, pair = qa.calculate_overlap_fp_fn(
-                {1: self.mean1, 2: self.mean2},
-                {1: self.clusterList1, 2: self.clusterList2})
-        self.assertAlmostEqual(total[1][0], 0.122414, 5)
-        self.assertAlmostEqual(total[1][1], 0.151077, 5)
-        self.assertAlmostEqual(total[2][0], 0.015107, 5)
-        self.assertAlmostEqual(total[2][1], 0.012241, 5)
-        self.assertAlmostEqual(pair[1][2][0], 0.122414, 5)
-        self.assertAlmostEqual(pair[1][2][1], 0.151077, 5)
-        self.assertAlmostEqual(pair[2][1][0], 0.015107, 5)
-        self.assertAlmostEqual(pair[2][1][1], 0.012241, 5)
+    def test_overlap_equal_clusters_estimate_mean(self):
+        # Smaller dimensionality and more data for reliable estimates
+        cluster1 = sp.randn(8,100000)
+        cluster2 = sp.randn(8,100000)
+        clusterList1 = [cluster1[:,i]
+                        for i in xrange(sp.size(cluster1,1))]
+        clusterList2 = [cluster2[:,i]
+                        for i in xrange(sp.size(cluster2,1))]
+        total, pair = qa.overlap_fp_fn(
+            {1: clusterList1, 2: clusterList2},
+            means={1: sp.zeros(8), 2: sp.zeros(8)})
+        self.assertAlmostEqual(total[1][0], 0.5, 3)
+        self.assertAlmostEqual(total[1][1], 0.5, 3)
+        self.assertAlmostEqual(total[2][0], 0.5, 3)
+        self.assertAlmostEqual(total[2][1], 0.5, 3)
+        self.assertAlmostEqual(pair[1][2][0], 0.5, 3)
+        self.assertAlmostEqual(pair[1][2][1], 0.5, 3)
+        self.assertAlmostEqual(pair[2][1][0], 0.5, 3)
+        self.assertAlmostEqual(pair[2][1][1], 0.5, 3)
 
+    def test_overlap_equal_clusters_estimate_all(self):
+        # Smaller dimensionality and more data for reliable estimates
+        cluster1 = sp.randn(8,100000)
+        cluster2 = sp.randn(8,100000)
+        clusterList1 = [cluster1[:,i]
+                        for i in xrange(sp.size(cluster1,1))]
+        clusterList2 = [cluster2[:,i]
+                        for i in xrange(sp.size(cluster2,1))]
+        total, pair = qa.overlap_fp_fn(
+            {1: clusterList1, 2: clusterList2})
+        self.assertAlmostEqual(total[1][0], 0.5, 2)
+        self.assertAlmostEqual(total[1][1], 0.5, 2)
+        self.assertAlmostEqual(total[2][0], 0.5, 2)
+        self.assertAlmostEqual(total[2][1], 0.5, 2)
+        self.assertAlmostEqual(pair[1][2][0], 0.5, 2)
+        self.assertAlmostEqual(pair[1][2][1], 0.5, 2)
+        self.assertAlmostEqual(pair[2][1][0], 0.5, 2)
+        self.assertAlmostEqual(pair[2][1][1], 0.5, 2)
 
-    def test_overlap_3_clusters(self):
-        total, pair = qa.calculate_overlap_fp_fn(
-                {1: self.mean1, 2: self.mean2, 3: self.mean3},
-                {1: self.clusterList1, 2: self.clusterList2,
-                 3: self.clusterList3})
-        self.assertAlmostEqual(total[1][0], 0.424307, 5)
-        self.assertAlmostEqual(total[1][1], 0.343706, 5)
-        self.assertAlmostEqual(total[2][0], 0.015108, 5)
-        self.assertAlmostEqual(total[2][1], 0.012239, 5)
-        self.assertAlmostEqual(total[3][0], 0.003852, 5)
-        self.assertAlmostEqual(total[3][1], 0.006038, 5)
-        self.assertAlmostEqual(pair[1][2][0], 0.122414, 5)
-        self.assertAlmostEqual(pair[1][2][1], 0.151077, 5)
-        self.assertAlmostEqual(pair[1][3][0], 0.301949, 5)
-        self.assertAlmostEqual(pair[1][3][1], 0.192634, 5)
-        self.assertAlmostEqual(pair[2][3][0], 1.265653e-06, 11)
-        self.assertAlmostEqual(pair[2][3][1], 1.154522e-06, 11)
+    def test_overlap_unequal_clusters(self):
+        cluster1 = sp.randn(40,1000)
+        cluster2 = sp.randn(40,2000)
+        clusterList1 = [cluster1[:,i]
+                        for i in xrange(sp.size(cluster1,1))]
+        clusterList2 = [cluster2[:,i]
+                        for i in xrange(sp.size(cluster2,1))]
+        total, pair = qa.overlap_fp_fn(
+            {1: clusterList1, 2: clusterList2},
+            {1: sp.zeros(40), 2: sp.zeros(40)},
+            {1: sp.eye(40), 2: sp.eye(40)})
+        self.assertAlmostEqual(total[1][0], 2.0/3.0)
+        self.assertAlmostEqual(total[1][1], 2.0/3.0)
+        self.assertAlmostEqual(total[2][0], 1.0/3.0)
+        self.assertAlmostEqual(total[2][1], 1.0/3.0)
+        self.assertAlmostEqual(pair[1][2][0], 2.0/3.0)
+        self.assertAlmostEqual(pair[1][2][1], 2.0/3.0)
+        self.assertAlmostEqual(pair[2][1][0], 1.0/3.0)
+        self.assertAlmostEqual(pair[2][1][1], 1.0/3.0)
 
+    def test_far_apart_clusters_estimate_all(self):
+        cluster1 = sp.randn(40,1000)
+        cluster2 = sp.randn(40,1000) * 2
+        cluster2[0,:] += 10
+        clusterList1 = [cluster1[:,i]
+                        for i in xrange(sp.size(cluster1,1))]
+        clusterList2 = [cluster2[:,i]
+                        for i in xrange(sp.size(cluster2,1))]
+        total, pair = qa.overlap_fp_fn(
+            {1: clusterList1, 2: clusterList2})
+        self.assertLess(total[1][0], 1e-4)
+        self.assertLess(total[1][1], 1e-4)
+        self.assertLess(total[2][0], 1e-4)
+        self.assertLess(total[2][1], 1e-4)
+        self.assertLess(pair[1][2][0], 1e-4)
+        self.assertLess(pair[1][2][1], 1e-4)
+        self.assertLess(pair[2][1][0], 1e-4)
+        self.assertLess(pair[2][1][1], 1e-4)
+        self.assertGreater(total[1][0], 0.0)
+        self.assertGreater(total[1][1], 0.0)
+        self.assertGreater(total[2][0], 0.0)
+        self.assertGreater(total[2][1], 0.0)
+        self.assertGreater(pair[1][2][0], 0.0)
+        self.assertGreater(pair[1][2][1], 0.0)
+        self.assertGreater(pair[2][1][0], 0.0)
+        self.assertGreater(pair[2][1][1], 0.0)
+
+    def test_overlap_3_clusters_estimate_means(self):
+        cluster1 = sp.randn(20,10000)
+        cluster2 = sp.randn(20,20000)
+        cluster3 = sp.randn(20,10000)
+        cluster3[5,:] += 11
+        clusterList1 = [cluster1[:,i]
+                        for i in xrange(sp.size(cluster1,1))]
+        clusterList2 = [cluster2[:,i]
+                        for i in xrange(sp.size(cluster2,1))]
+        clusterList3 = [cluster3[:,i]
+                        for i in xrange(sp.size(cluster3,1))]
+        total, pair = qa.overlap_fp_fn(
+            {1: clusterList1, 2: clusterList2, 3: clusterList3},
+            covariances={1:sp.eye(20), 2:sp.eye(20), 3:sp.eye(20)*1.5})
+
+        self.assertAlmostEqual(total[1][0], 2.0/3.0, 2)
+        self.assertAlmostEqual(total[1][1], 2.0/3.0, 2)
+        self.assertAlmostEqual(total[2][0], 1.0/3.0, 2)
+        self.assertAlmostEqual(total[2][1], 1.0/3.0, 2)
+        self.assertLess(total[3][0], 1e-4)
+        self.assertLess(total[3][1], 1e-4)
+        self.assertGreater(total[3][0], 0.0)
+        self.assertGreater(total[3][1], 0.0)
+        self.assertAlmostEqual(pair[1][2][0], 2.0/3.0, 2)
+        self.assertAlmostEqual(pair[1][2][1], 2.0/3.0, 2)
+        self.assertLess(pair[1][3][0], 1e-4)
+        self.assertLess(pair[1][3][1], 1e-4)
+        self.assertGreater(pair[1][3][0], 0.0)
+        self.assertGreater(pair[1][3][1], 0.0)
+        self.assertAlmostEqual(pair[2][1][0], 1.0/3.0, 2)
+        self.assertAlmostEqual(pair[2][1][1], 1.0/3.0, 2)
+        self.assertLess(pair[2][3][0], 1e-4)
+        self.assertLess(pair[2][3][1], 1e-4)
+        self.assertGreater(pair[2][3][0], 0.0)
+        self.assertGreater(pair[2][3][1], 0.0)
+        self.assertLess(pair[3][1][0], 1e-4)
+        self.assertLess(pair[3][1][1], 1e-4)
+        self.assertGreater(pair[3][1][0], 0.0)
+        self.assertGreater(pair[3][1][1], 0.0)
+        self.assertLess(pair[3][2][0], 1e-4)
+        self.assertLess(pair[3][2][1], 1e-4)
+        self.assertGreater(pair[3][2][0], 0.0)
+        self.assertGreater(pair[3][2][1], 0.0)
 
     def test_overlap_spike_objects(self):
-        total, pair = qa.calculate_overlap_fp_fn(
-                {1: self.mean1, 2: self.mean2, 3: self.mean3},
-                {1: self.clusterList1, 2: self.clusterList2,
-                 3: self.clusterList3})
+        dimension = 40
+        offset = sp.zeros((dimension,1))
+        offset[0] = 4
+        cluster1 = sp.randn(dimension,10)
+        cluster2 = sp.randn(dimension,100) + offset
+        cluster3 = sp.randn(dimension,500) - offset
+        clusterList1 = [cluster1[:,i]
+                             for i in xrange(sp.size(cluster1,1))]
+        clusterList2 = [cluster2[:,i]
+                             for i in xrange(sp.size(cluster2,1))]
+        clusterList3 = [cluster3[:,i]
+                             for i in xrange(sp.size(cluster3,1))]
+        mean1 = sp.zeros(dimension)
+        mean2 = offset.flatten()
+        mean3 = -mean2
+        
+        total, pair = qa.overlap_fp_fn(
+            {1: clusterList1, 2: clusterList2, 3: clusterList3},
+            means={1: mean1, 2: mean2, 3: mean3},
+            covariances={1: sp.eye(dimension), 2: sp.eye(dimension),
+                         3: sp.eye(dimension)})
 
         # Replacing some arrays with Spike objects
-        mean2 = neo.Spike(waveform=self.mean2.reshape(-1,4) / 1000.0 * pq.mV)
-        mean3 = neo.Spike(waveform=self.mean3.reshape(-1,4) / 1e6 * pq.V)
-        clusterList1 = []
-        for s in self.clusterList1:
-            clusterList1.append(
+        mean2 = neo.Spike(waveform=mean2.reshape(-1,4) / 1000.0 * pq.mV)
+        mean3 = neo.Spike(waveform=mean3.reshape(-1,4) / 1e6 * pq.V)
+        newClusterList = []
+        for s in clusterList1:
+            newClusterList.append(
                 neo.Spike(waveform=s.reshape(-1,4) / 1000.0 * pq.mV))
 
-        total_s, pair_s = qa.calculate_overlap_fp_fn(
-                {1: self.mean1, 2: mean2, 3: mean3},
-                {1: clusterList1, 2: self.clusterList2,
-                 3: self.clusterList3})
+        total_s, pair_s = qa.overlap_fp_fn(
+                {1: newClusterList, 2: clusterList2, 3: clusterList3},
+                means={1: mean1, 2: mean2, 3: mean3},
+                covariances='white')
 
         # Results should be identical for arrays and Spike objects
         for i in total.keys():

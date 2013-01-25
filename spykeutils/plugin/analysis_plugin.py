@@ -62,6 +62,9 @@ class AnalysisPlugin(gui_data.DataSet):
         """
         return 'Prototype Analysis'
 
+    def get_title(self): # Override guidata.DataSet.get_title()
+        return self.get_name()
+
     def start(self, current, selections):
         """ Entry point for processing. Override with analysis code.
 

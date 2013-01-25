@@ -12,14 +12,14 @@ def spike_amplitude_histogram(trains, num_bins, uniform_y_scale=True,
                               unit=pq.uV, progress=None):
     """ Return a spike amplitude histogram.
 
-    The resulting is useful to assess the drift in spike amplitude over a longer
-    recording. It shows histograms (one for each ``trains`` entry, e.g. segment)
-    of maximum and minimum spike amplitudes.
+    The resulting is useful to assess the drift in spike amplitude over a
+    longer recording. It shows histograms (one for each ``trains`` entry,
+    e.g. segment) of maximum and minimum spike amplitudes.
 
-    :param list trains: A list of lists of SpikeTrain objects. Each entry of
-        the outer list will be one point on the x-axis (they could correspond
-        to segments), all amplitude occurences of spikes contained in the
-        inner list will be added up.
+    :param list trains: A list of lists of :class:`neo.core.SpikeTrain`
+        objects. Each entry of the outer list will be one point on the
+        x-axis (they could correspond to segments), all amplitude occurences
+        of spikes contained in the inner list will be added up.
     :param int num_bins: Number of bins for the histograms.
     :param bool uniform_y_scale: If True, the histogram for each channel
         will use the same bins. Otherwise, the minimum bin range is computed

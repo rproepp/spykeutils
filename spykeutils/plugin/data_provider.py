@@ -96,13 +96,13 @@ class DataProvider(object):
         return []
 
     def spike_trains(self):
-        """ Return a list of SpikeTrain objects.
+        """ Return a list of :class:`neo.core.SpikeTrain` objects.
         """
         return []
 
     def spike_trains_by_unit(self):
         """ Return a dictionary (indexed by Unit) of lists of
-        SpikeTrain objects.
+        :class:`neo.core.SpikeTrain` objects.
 
         If spike trains not attached to a Unit are selected, their
         dicionary key will be ``DataProvider.no_unit``.
@@ -111,7 +111,7 @@ class DataProvider(object):
 
     def spike_trains_by_segment(self):
         """ Return a dictionary (indexed by Segment) of lists of
-        SpikeTrain objects.
+        :class:`neo.core.SpikeTrain` objects.
 
         If spike trains not attached to a Segment are selected, their
         dictionary key will be ``DataProvider.no_segment``.
@@ -120,7 +120,7 @@ class DataProvider(object):
 
     def spike_trains_by_unit_and_segment(self):
         """ Return a dictionary (indexed by Unit) of dictionaries
-        (indexed by Segment) of SpikeTrain objects.
+        (indexed by Segment) of :class:`neo.core.SpikeTrain` objects.
 
         If there are multiple spike trains in one Segment for the same Unit,
         only the first will be contained in the returned dictionary. If spike
@@ -132,7 +132,7 @@ class DataProvider(object):
 
     def spike_trains_by_segment_and_unit(self):
         """ Return a dictionary (indexed by Unit) of dictionaries
-        (indexed by Segment) of SpikeTrain objects.
+        (indexed by Segment) of :class:`neo.core.SpikeTrain` objects.
 
         If there are multiple spike trains in one Segment for the same Unit,
         only the first will be contained in the returned dictionary. If spike
@@ -143,13 +143,13 @@ class DataProvider(object):
         return self._invert_indices(self.spike_trains_by_unit_and_segment())
 
     def spikes(self):
-        """ Return a list of Spike objects.
+        """ Return a list of :class:`neo.core.Spike` objects.
         """
         return []
 
     def spikes_by_unit(self):
         """ Return a dictionary (indexed by Unit) of lists of
-        Spike objects.
+        :class:`neo.core.Spike` objects.
 
         If spikes not attached to a Unit are selected, their
         dicionary key will be ``DataProvider.no_unit``.
@@ -158,7 +158,7 @@ class DataProvider(object):
 
     def spikes_by_segment(self):
         """ Return a dictionary (indexed by Segment) of lists of
-        Spike objects.
+        :class:`neo.core.Spike` objects.
 
         If spikes not attached to a Segment are selected, their
         dictionary key will be ``DataProvider.no_segment``.
@@ -167,7 +167,7 @@ class DataProvider(object):
 
     def spikes_by_unit_and_segment(self):
         """ Return a dictionary (indexed by Unit) of dictionaries
-        (indexed by Segment) of Spike lists.
+        (indexed by Segment) of :class:`neo.core.Spike` lists.
 
         If there are multiple spikes in one Segment for the same Unit,
         only the first will be contained in the returned dictionary. If
@@ -179,7 +179,7 @@ class DataProvider(object):
 
     def spikes_by_segment_and_unit(self):
         """ Return a dictionary (indexed by Segment) of dictionaries
-        (indexed by Unit) of lists of Spike lists.
+        (indexed by Unit) of lists of :class:`neo.core.Spike` lists.
 
         If spikes not attached to a Unit or Segment are selected, their
         dictionary key will be ``DataProvider.no_unit`` or
@@ -241,70 +241,108 @@ class DataProvider(object):
         """
         return {}
 
-    def num_analog_signals(self):
-        """ Return the number of AnalogSignal objects.
+    def num_analog_signals(self, conversion_mode=1):
+        """ Return the number of :class:`neo.core.AnalogSignal` objects.
+
+        :param int conversion_mode: Determines what signals are included:
+
+            1. AnalogSignal objects only
+            2. AnalogSignal objects extracted from AnalogSignalArrays only
+            3. Both AnalogSignal objects and extracted AnalogSignalArrays
         """
         return 0
 
-    def analog_signals(self):
-        """ Return a list of AnalogSignal objects.
+    def analog_signals(self, conversion_mode=1):
+        """ Return a list of :class:`neo.core.AnalogSignal` objects.
+
+        :param int conversion_mode: Determines what signals are returned:
+
+            1. AnalogSignal objects only
+            2. AnalogSignal objects extracted from AnalogSignalArrays only
+            3. Both AnalogSignal objects and extracted AnalogSignalArrays
         """
         return []
 
-    def analog_signals_by_segment(self):
+    def analog_signals_by_segment(self, conversion_mode=1):
         """ Return a dictionary (indexed by Segment) of lists of
-        AnalogSignal objects.
+        :class:`neo.core.AnalogSignal` objects.
 
         If analog signals not attached to a Segment are selected, their
         dictionary key will be ``DataProvider.no_segment``.
+
+        :param int conversion_mode: Determines what signals are returned:
+
+            1. AnalogSignal objects only
+            2. AnalogSignal objects extracted from AnalogSignalArrays only
+            3. Both AnalogSignal objects and extracted AnalogSignalArrays
         """
         return {}
 
-    def analog_signals_by_channel(self):
+    def analog_signals_by_channel(self, conversion_mode=1):
         """ Return a dictionary (indexed by RecordingChannel) of lists
-        of AnalogSignal objects.
+        of :class:`neo.core.AnalogSignal` objects.
 
         If analog signals not attached to a RecordingChannel are selected,
         their dictionary key will be ``DataProvider.no_channel``.
+
+        :param int conversion_mode: Determines what signals are returned:
+
+            1. AnalogSignal objects only
+            2. AnalogSignal objects extracted from AnalogSignalArrays only
+            3. Both AnalogSignal objects and extracted AnalogSignalArrays
         """
         return {}
 
-    def analog_signals_by_channel_and_segment(self):
+    def analog_signals_by_channel_and_segment(self, conversion_mode=1):
         """ Return a dictionary (indexed by RecordingChannel) of
-        dictionaries (indexed by Segment) of AnalogSignal lists.
+        dictionaries (indexed by Segment) of :class:`neo.core.AnalogSignal`
+        lists.
 
         If analog signals not attached to a Segment or
         RecordingChannel are selected, their dictionary key will be
         ``DataProvider.no_segment`` or ``DataProvider.no_channel``,
         respectively.
+
+        :param int conversion_mode: Determines what signals are returned:
+
+            1. AnalogSignal objects only
+            2. AnalogSignal objects extracted from AnalogSignalArrays only
+            3. Both AnalogSignal objects and extracted AnalogSignalArrays
         """
         return {}
 
-    def analog_signals_by_segment_and_channel(self):
+    def analog_signals_by_segment_and_channel(self, conversion_mode=1):
         """ Return a dictionary (indexed by Segment) of
-        dictionaries (indexed by RecordingChannel) of AnalogSignal lists.
+        dictionaries (indexed by RecordingChannel) of :class:`neo.core.AnalogSignal`
+        lists.
 
         If analog signals not attached to a Segment or
         RecordingChannel are selected, their dictionary key will be
         ``DataProvider.no_segment`` or ``DataProvider.no_channel``,
         respectively.
+
+        :param int conversion_mode: Determines what signals are returned:
+
+            1. AnalogSignal objects only
+            2. AnalogSignal objects extracted from AnalogSignalArrays only
+            3. Both AnalogSignal objects and extracted AnalogSignalArrays
         """
         return self._invert_indices(
-            self.analog_signals_by_channel_and_segment())
+            self.analog_signals_by_channel_and_segment(conversion_mode))
 
     def num_analog_signal_arrays(self):
-        """ Return the number of AnalogSignalArray objects.
+        """ Return the number of :class:`neo.core.AnalogSignalArray` objects.
         """
         return 0
 
     def analog_signal_arrays(self):
-        """ Return a list of AnalogSignalArray objects.
+        """ Return a list of :class:`neo.core.AnalogSignalArray` objects.
         """
         return []
 
     def analog_signal_arrays_by_segment(self):
         """ Return a dictionary (indexed by Segment) of lists of
-        AnalogSignalArray objects.
+        :class:`neo.core.AnalogSignalArray` objects.
 
         If analog signals arrays not attached to a Segment are selected,
         their dictionary key will be ``DataProvider.no_segment``.
@@ -313,7 +351,7 @@ class DataProvider(object):
 
     def analog_signal_arrays_by_channelgroup(self):
         """ Return a dictionary (indexed by RecordingChannelGroup) of
-        lists of AnalogSignalArray objects.
+        lists of :class:`neo.core.AnalogSignalArray` objects.
 
         If analog signals arrays not attached to a RecordingChannel are
         selected, their dictionary key will be
@@ -323,7 +361,8 @@ class DataProvider(object):
 
     def analog_signal_arrays_by_channelgroup_and_segment(self):
         """ Return a dictionary (indexed by RecordingChannelGroup) of
-        dictionaries (indexed by Segment) of AnalogSignalArray objects.
+        dictionaries (indexed by Segment) of
+        :class:`neo.core.AnalogSignalArray` objects.
 
         If there are multiple analog signals in one RecordingChannel for
         the same Segment, only the first will be contained in the returned
@@ -336,7 +375,8 @@ class DataProvider(object):
 
     def analog_signal_arrays_by_segment_and_channelgroup(self):
         """ Return a dictionary (indexed by RecordingChannelGroup) of
-        dictionaries (indexed by Segment) of AnalogSignalArray objects.
+        dictionaries (indexed by Segment) of
+        :class:`neo.core.AnalogSignalArray` objects.
 
         If there are multiple analog signals in one RecordingChannel for
         the same Segment, only the first will be contained in the returned
@@ -347,6 +387,16 @@ class DataProvider(object):
         """
         return self._invert_indices(
             self.analog_signal_arrays_by_channelgroup_and_segment())
+
+    def refresh_view(self):
+        """ Refresh associated views of the data.
+
+        Use this method if when you change the neo hierarchy on which the
+        selection is based (e.g. adding or removing objects). It will ensure
+        that all current views on the data are updated, for example in
+        Spyke Viewer.
+        """
+        pass
 
     def data_dict(self):
         """ Return a dictionary with all information to serialize the

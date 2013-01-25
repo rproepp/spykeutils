@@ -7,6 +7,9 @@ data. It can be used by itself or in conjunction with
 `Spyke Viewer <http://spyke-viewer.readthedocs.org>`_, a
 multi-platform GUI application for navigating electrophysiological datasets.
 
+A mailinglist for discussion and support is available at
+https://groups.google.com/d/forum/spyke-viewer
+
 Contents:
 
 .. toctree::
@@ -15,6 +18,7 @@ Contents:
    intro
    examples
    apidoc/spykeutils
+   changelog
 
 Indices and tables
 ==================

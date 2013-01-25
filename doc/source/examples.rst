@@ -104,7 +104,7 @@ finding the optimal kernel size automatically for each unit:
 
 >>> kernel_sizes = sp.logspace(2,3.3,100) * pq.ms
 >>> spykeutils.rate_estimation.spike_density_estimation(st_dict, optimize_steps=kernel_sizes)[0] # doctest: +ELLIPSIS
-{<neo.core.unit.Unit object at 0x...>: array([ 3.61293378,  3.62744654,  3.64195481,  3.65645819, ...
+{<neo.core.unit.Unit object at 0x...>: array([ 5.05428068,  5.06979364,  5.08530387, ...
 
 As with the PSTH, there is also a plot function for creating a spike
 density estimation. Here, we use both units because the function produces
@@ -128,7 +128,7 @@ As a final example, we will again use the :mod:`spykeutils.plot` package to
 create a plot of the signals we created. This plot will also display the
 timings of our spike trains.
 
->>> spykeutils.plot.signals(segments[0].analogsignals, spike_trains=segments[0].spiketrains) # doctest: +SKIP
+>>> spykeutils.plot.signals(segments[0].analogsignals, spike_trains=segments[0].spiketrains, show_waveforms=False) # doctest: +SKIP
 
 .. image:: /img/signal.png
 

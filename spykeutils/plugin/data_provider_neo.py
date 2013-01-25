@@ -159,36 +159,6 @@ class NeoDataProvider(DataProvider):
 
         return data
 
-    def spike_trains(self):
-        """ Return a list of SpikeTrain objects.
-        """
-        trains = []
-        units = self.units()
-        for s in self.segments():
-            trains.extend([t for t in s.spiketrains if t.unit in units or
-                                                       t.unit is None])
-        for u in self.units():
-            trains.extend([t for t in u.spiketrains if t.segment is None])
-
-        return trains
-
-    def spike_trains_by_unit(self):
-        """ Return a dictionary (indexed by Unit) of lists of
-        SpikeTrain objects.
-        """
-        trains = OrderedDict()
-        segments = self.segments()
-        for u in self.units():
-            trains[u] = [t for t in u.spiketrains if t.segment in segments]
-
-        nonetrains = []
-        for s in self.segments():
-            nonetrains.extend([t for t in s.spiketrains if t.unit is None])
-        if nonetrains:
-            trains[self.no_unit] = nonetrains
-
-        return trains
-
     def _active_block(self, old):
         """ Return a copy of all selected elements in the given block
         """
@@ -204,17 +174,17 @@ class NeoDataProvider(DataProvider):
                 segment = copy(s)
                 segment.analogsignals = [sig for sig in s.analogsignals
                                          if sig.recordingchannel
-                                         in selected_channels]
-                segment.analogsignalarrays = \
-                    [asa for asa in s.analogsignalarrays
-                     if asa.recordingchannelgroup in selected_rcgs]
-                segment.irregularlysampledsignals = \
-                    [iss for iss in s.irregularlysampledsignals
-                     if iss.recordingchannel in selected_channels]
+                in selected_channels]
+                segment.analogsignalarrays =\
+                [asa for asa in s.analogsignalarrays
+                 if asa.recordingchannelgroup in selected_rcgs]
+                segment.irregularlysampledsignals =\
+                [iss for iss in s.irregularlysampledsignals
+                 if iss.recordingchannel in selected_channels]
                 segment.spikes = [sp for sp in s.spikes
                                   if sp.unit in selected_units]
                 segment.spiketrains = [st for st in s.spiketrains
-                                        if st.unit in selected_units]
+                                       if st.unit in selected_units]
                 segment.block = block
                 block.segments.append(segment)
 
@@ -223,8 +193,8 @@ class NeoDataProvider(DataProvider):
             if old_rcg in selected_rcgs:
                 rcg = copy(old_rcg)
                 rcg.analogsignalarrays =\
-                    [asa for asa in old_rcg.analogsignalarrays
-                     if asa.segment in selected_segments]
+                [asa for asa in old_rcg.analogsignalarrays
+                 if asa.segment in selected_segments]
 
                 rcg.recordingchannels = []
                 for c in old_rcg.recordingchannels:
@@ -233,10 +203,10 @@ class NeoDataProvider(DataProvider):
                     channel = copy(c)
                     channel.analogsignals = [sig for sig in c.analogsignals
                                              if sig.segment
-                                             in selected_segments]
+                    in selected_segments]
                     channel.irregularlysampledsignals =\
-                        [iss for iss in c.irregularlysampledsignals
-                         if iss.segment in selected_segments]
+                    [iss for iss in c.irregularlysampledsignals
+                     if iss.segment in selected_segments]
                     channel.recordingchannelgroups = copy(
                         c.recordingchannelgroups)
                     channel.recordingchannelgroups.insert(
@@ -253,7 +223,7 @@ class NeoDataProvider(DataProvider):
                     unit.spikes = [sp for sp in u.spikes
                                    if sp.segment in selected_segments]
                     unit.spiketrains = [st for st in u.spiketrains
-                                         if st.segment in selected_segments]
+                                        if st.segment in selected_segments]
                     unit.recordingchannelgroup = rcg
                     rcg.units.append(unit)
 
@@ -267,15 +237,50 @@ class NeoDataProvider(DataProvider):
         """
         return [self._active_block(b) for b in self.blocks()]
 
+    def spike_trains(self):
+        """ Return a list of :class:`neo.core.SpikeTrain` objects.
+        """
+        trains = []
+        units = self.units()
+        for s in self.segments():
+            trains.extend([t for t in s.spiketrains if t.unit in units or
+                                                       t.unit is None])
+        for u in self.units():
+            trains.extend([t for t in u.spiketrains if t.segment is None])
+
+        return trains
+
+    def spike_trains_by_unit(self):
+        """ Return a dictionary (indexed by Unit) of lists of
+        :class:`neo.core.SpikeTrain` objects.
+        """
+        trains = OrderedDict()
+        segments = self.segments()
+        for u in self.units():
+            st = [t for t in u.spiketrains if t.segment in segments or
+                                                  t.segment is None]
+            if st:
+                trains[u] = st
+
+        nonetrains = []
+        for s in self.segments():
+            nonetrains.extend([t for t in s.spiketrains if t.unit is None])
+        if nonetrains:
+            trains[self.no_unit] = nonetrains
+
+        return trains
 
     def spike_trains_by_segment(self):
         """ Return a dictionary (indexed by Segment) of lists of
-        SpikeTrain objects.
+        :class:`neo.core.SpikeTrain` objects.
         """
         trains = OrderedDict()
         units = self.units()
         for s in self.segments():
-            trains[s] = [t for t in s.spiketrains if t.unit in units]
+            st = [t for t in s.spiketrains if t.unit in units or
+                                              t.unit is None]
+            if st:
+                trains[s] = st
 
         nonetrains = []
         for u in self.units():
@@ -287,7 +292,7 @@ class NeoDataProvider(DataProvider):
 
     def spike_trains_by_unit_and_segment(self):
         """ Return a dictionary (indexed by Unit) of dictionaries
-        (indexed by Segment) of SpikeTrain objects.
+        (indexed by Segment) of :class:`neo.core.SpikeTrain` objects.
         """
         trains = OrderedDict()
         segments = self.segments()
@@ -315,7 +320,7 @@ class NeoDataProvider(DataProvider):
         return trains
 
     def spikes(self):
-        """ Return a list of Spike objects.
+        """ Return a list of :class:`neo.core.Spike` objects.
         """
         spikes = []
         units = self.units()
@@ -329,12 +334,15 @@ class NeoDataProvider(DataProvider):
 
     def spikes_by_unit(self):
         """ Return a dictionary (indexed by Unit) of lists of
-        Spike objects.
+        :class:`neo.core.Spike` objects.
         """
         spikes = OrderedDict()
         segments = self.segments()
         for u in self.units():
-            spikes[u] = [t for t in u.spikes if t.segment in segments]
+            sp = [t for t in u.spikes if t.segment in segments or
+                                         t.segment is None]
+            if sp:
+                spikes[u] = sp
 
         nonespikes = []
         for s in self.segments():
@@ -346,12 +354,15 @@ class NeoDataProvider(DataProvider):
 
     def spikes_by_segment(self):
         """ Return a dictionary (indexed by Segment) of lists of
-        Spike objects.
+        :class:`neo.core.Spike` objects.
         """
         spikes = OrderedDict()
         units = self.units()
         for s in self.segments():
-            spikes[s] = [t for t in s.spikes if t.unit in units]
+            sp = [t for t in s.spikes if t.unit in units or
+                                         t.unit is None]
+            if sp:
+                spikes[s] = sp
 
         nonespikes = []
         for u in self.units():
@@ -363,7 +374,7 @@ class NeoDataProvider(DataProvider):
 
     def spikes_by_unit_and_segment(self):
         """ Return a dictionary (indexed by Unit) of dictionaries
-        (indexed by Segment) of Spike lists.
+        (indexed by Segment) of :class:`neo.core.Spike` lists.
         """
         spikes = OrderedDict()
         segments = self.segments()
@@ -396,9 +407,12 @@ class NeoDataProvider(DataProvider):
         """
         ret = OrderedDict()
         for s in self.segments():
-            ret[s] = s.events
+            if s.events:
+                ret[s] = s.events
             if include_array_events:
                 for a in s.eventarrays:
+                    if s not in ret:
+                        ret[s] = []
                     ret[s].extend(convert.event_array_to_events(a))
         return ret
 
@@ -408,9 +422,13 @@ class NeoDataProvider(DataProvider):
         """
         ret = OrderedDict()
         for s in self.segments():
-            ret[s] = [e for e in s.events if e.label == label]
+            events = [e for e in s.events if e.label == label]
+            if events:
+                ret[s] = events
             if include_array_events:
                 for a in s.eventarrays:
+                    if s not in ret:
+                        ret[s] = []
                     events = convert.event_array_to_events(a)
                     ret[s].extend((e for e in events if e.label == label))
         return ret
@@ -421,7 +439,8 @@ class NeoDataProvider(DataProvider):
         """
         ret = OrderedDict()
         for s in self.segments():
-            ret[s] = s.eventarrays
+            if s.eventarrays:
+                ret[s] = s.eventarrays
         return ret
 
     def epochs(self, include_array_epochs = True):
@@ -430,9 +449,12 @@ class NeoDataProvider(DataProvider):
         """
         ret = OrderedDict()
         for s in self.segments():
-            ret[s] = s.epochs
+            if s.epochs:
+                ret[s] = s.epochs
             if include_array_epochs:
                 for a in s.epocharrays:
+                    if s not in ret:
+                        ret[s] = []
                     ret[s].extend(convert.epoch_array_to_epochs(a))
         return ret
 
@@ -442,9 +464,13 @@ class NeoDataProvider(DataProvider):
         """
         ret = OrderedDict()
         for s in self.segments():
-            ret[s] = [e for e in s.epochs if e.label == label]
+            epochs = [e for e in s.epochs if e.label == label]
+            if epochs:
+                ret[s] = epochs
             if include_array_epochs:
                 for a in s.epocharrays:
+                    if s not in ret:
+                        ret[s] = []
                     epochs = convert.epoch_array_to_epochs(a)
                     ret[s].extend((e for e in epochs if e.label == label))
         return ret
@@ -455,95 +481,163 @@ class NeoDataProvider(DataProvider):
         """
         ret = OrderedDict()
         for s in self.segments():
-            ret[s] = s.epocharrays
+            if s.epocharrays:
+                ret[s] = s.epocharrays
         return ret
 
-    def num_analog_signals(self):
-        """ Return the number of AnalogSignal objects.
+    def num_analog_signals(self, mode=1):
+        """ Return the number of :class:`neo.core.AnalogSignal` objects.
         """
-        return len(self.analog_signals())
+        return len(self.analog_signals(mode))
 
-    def analog_signals(self):
-        """ Return a list of AnalogSignal objects.
+    def analog_signals(self, mode=1):
+        """ Return a list of :class:`neo.core.AnalogSignal` objects.
         """
         signals = []
         channels = self.recording_channels()
-        for s in self.segments():
-            signals.extend([t for t in s.analogsignals
-                           if t.recordingchannel in channels or
-                              t.recordingchannel is None])
-        for u in self.recording_channels():
-            signals.extend([t for t in u.analogsignals if t.segment is None])
+
+        if mode == 1 or mode == 3:
+            for s in self.segments():
+                signals.extend([t for t in s.analogsignals
+                               if t.recordingchannel in channels or
+                                  t.recordingchannel is None])
+            for u in self.recording_channels():
+                signals.extend([t for t in u.analogsignals
+                                if t.segment is None])
+        if mode > 1:
+            for sa in self.analog_signal_arrays():
+                for sig in convert.analog_signal_array_to_analog_signals(sa):
+                    if sig.recordingchannel is None or \
+                        sig.recordingchannel in channels:
+                        signals.append(sig)
 
         return signals
 
-    def analog_signals_by_segment(self):
+    def analog_signals_by_segment(self, mode=1):
         """ Return a dictionary (indexed by Segment) of lists of
-        AnalogSignal objects.
+        :class:`neo.core.AnalogSignal` objects.
         """
         signals = OrderedDict()
         channels = self.recording_channels()
-        for s in self.segments():
-            signals[s] = [t for t in s.analogsignals
-                          if t.recordingchannel in channels or
-                             t.recordingchannel is None]
 
-        nonesignals = []
-        for c in channels:
-            nonesignals.extend([t for t in c.analogsignals
-                                if t.segment is None])
-        if nonesignals:
-            signals[self.no_segment] = nonesignals
+        if mode == 1 or mode == 3:
+            for s in self.segments():
+                sig = [t for t in s.analogsignals
+                       if t.recordingchannel in channels or
+                          t.recordingchannel is None]
+                if sig:
+                    signals[s] = sig
+
+            nonesignals = []
+            for c in channels:
+                nonesignals.extend([t for t in c.analogsignals
+                                    if t.segment is None])
+            if nonesignals:
+                signals[self.no_segment] = nonesignals
+
+        if mode > 1:
+            for o, sa_list in \
+                self.analog_signal_arrays_by_segment().iteritems():
+                for sa in sa_list:
+                    for sig in \
+                        convert.analog_signal_array_to_analog_signals(sa):
+                        if sig.recordingchannel is None or \
+                            sig.recordingchannel in channels:
+                            if o not in signals:
+                                signals[o] = []
+                            signals[o].append(sig)
 
         return signals
 
-    def analog_signals_by_channel(self):
+    def analog_signals_by_channel(self, mode=1):
         """ Return a dictionary (indexed by RecordingChannel) of lists
-        of AnalogSignal objects.
+        of :class:`neo.core.AnalogSignal` objects.
         """
         signals = OrderedDict()
-        segments = self.segments()
-        for c in self.recording_channels():
-            signals[c] = [t for t in c.analogsignals
-                          if t.segment in segments or
-                             t.segment is None]
+        channels = self.recording_channels()
 
-        nonesignals = []
-        for s in segments:
-            nonesignals.extend([t for t in s.analogsignals
-                                if t.recordingchannel is None])
-        if nonesignals:
-            signals[self.no_segment] = nonesignals
+        if mode == 1 or mode == 3:
+            segments = self.segments()
+            for c in channels:
+                sig = [t for t in c.analogsignals
+                       if t.segment in segments or
+                          t.segment is None]
+                if sig:
+                    signals[c] = sig
+
+            nonesignals = []
+            for s in segments:
+                nonesignals.extend([t for t in s.analogsignals
+                                    if t.recordingchannel is None])
+            if nonesignals:
+                signals[self.no_channel] = nonesignals
+
+        if mode > 1:
+            for o, sa_list in \
+                self.analog_signal_arrays_by_channelgroup().iteritems():
+                for sa in sa_list:
+                    for sig in \
+                        convert.analog_signal_array_to_analog_signals(sa):
+                        if sig.recordingchannel is None:
+                            if self.no_channel not in signals:
+                                signals[self.no_channel] = [sig]
+                            else:
+                                signals[self.no_channel].append(sig)
+                        elif sig.recordingchannel in channels:
+                            if sig.recordingchannel not in signals:
+                                signals[sig.recordingchannel] = [sig]
+                            else:
+                                signals[sig.recordingchannel].append(sig)
 
         return signals
 
-    def analog_signals_by_channel_and_segment(self):
+    def analog_signals_by_channel_and_segment(self, mode=1):
         """ Return a dictionary (indexed by RecordingChannel) of
-        dictionaries (indexed by Segment) of AnalogSignal lists.
+        dictionaries (indexed by Segment) of :class:`neo.core.AnalogSignal`
+        lists.
         """
         signals = OrderedDict()
-        segments = self.segments()
-        for c in self.recording_channels():
-            for s in segments:
-                segsignals = [t for t in c.analogsignals if t.segment == s]
-                if segsignals:
+        channels = self.recording_channels()
+
+        if mode == 1 or mode == 3:
+            segments = self.segments()
+            for c in channels:
+                for s in segments:
+                    segsignals = [t for t in c.analogsignals if t.segment == s]
+                    if segsignals:
+                        if c not in signals:
+                            signals[c] = OrderedDict()
+                        signals[c][s] = segsignals
+                nonesignals = [t for t in c.analogsignals if t.segment is None]
+                if nonesignals:
                     if c not in signals:
                         signals[c] = OrderedDict()
-                    signals[c][s] = segsignals
-            nonesignals = [t for t in c.analogsignals if t.segment is None]
-            if nonesignals:
-                if c not in signals:
-                    signals[c] = OrderedDict()
-                signals[c][self.no_segment] = nonesignals
+                    signals[c][self.no_segment] = nonesignals
 
-        nonesignals = OrderedDict()
-        for s in self.segments():
-            segsignals = [t for t in s.analogsignals
-                          if t.recordingchannel is None]
-            if segsignals:
-                nonesignals[s] = segsignals
-        if nonesignals:
-            signals[self.no_channel] = nonesignals
+            nonesignals = OrderedDict()
+            for s in self.segments():
+                segsignals = [t for t in s.analogsignals
+                              if t.recordingchannel is None]
+                if segsignals:
+                    nonesignals[s] = segsignals
+            if nonesignals:
+                signals[self.no_channel] = nonesignals
+
+        if mode > 1:
+            for cg, inner in self.analog_signal_arrays_by_channelgroup_and_segment().iteritems():
+                for seg, sa_list in inner.iteritems():
+                    for sa in sa_list:
+                        for sig in \
+                            convert.analog_signal_array_to_analog_signals(sa):
+                            chan = sig.recordingchannel
+                            if chan not in channels:
+                                continue
+                            if chan not in signals:
+                                signals[chan] = OrderedDict()
+                            if seg not in signals[chan]:
+                                signals[chan][seg] = []
+                            signals[chan][seg].append(sig)
+
 
         return signals
 
@@ -553,7 +647,7 @@ class NeoDataProvider(DataProvider):
         return len(self.analog_signal_arrays())
 
     def analog_signal_arrays(self):
-        """ Return a list of AnalogSignalArray objects.
+        """ Return a list of :class:`neo.core.AnalogSignalArray` objects.
         """
         signals = []
         channelgroups = self.recording_channel_groups()
@@ -569,13 +663,15 @@ class NeoDataProvider(DataProvider):
 
     def analog_signal_arrays_by_segment(self):
         """ Return a dictionary (indexed by Segment) of lists of
-        AnalogSignalArray objects.
+        :class:`neo.core.AnalogSignalArray` objects.
         """
         signals = OrderedDict()
         channelgroups = self.recording_channel_groups()
         for s in self.segments():
-            signals[s] = [t for t in s.analogsignalarrays
-                          if t.recordingchannelgroup in channelgroups]
+            sa = [t for t in s.analogsignalarrays
+                  if t.recordingchannelgroup in channelgroups]
+            if sa:
+                signals[s] = sa
 
         nonesignals = []
         for c in channelgroups:
@@ -588,13 +684,15 @@ class NeoDataProvider(DataProvider):
 
     def analog_signal_arrays_by_channelgroup(self):
         """ Return a dictionary (indexed by RecordingChannelGroup) of
-        lists of AnalogSignalArray objects.
+        lists of :class:`neo.core.AnalogSignalArray` objects.
         """
         signals = OrderedDict()
         segments = self.segments()
         for c in self.recording_channel_groups():
-            signals[c] = [t for t in c.analogsignalarrays
-                          if t.segment in segments]
+            sa = [t for t in c.analogsignalarrays
+                  if t.segment in segments]
+            if sa:
+                signals[c] = sa
 
         nonesignals = []
         for s in segments:
@@ -607,7 +705,8 @@ class NeoDataProvider(DataProvider):
 
     def analog_signal_arrays_by_channelgroup_and_segment(self):
         """ Return a dictionary (indexed by RecordingChannelGroup) of
-        dictionaries (indexed by Segment) of AnalogSignalArray objects.
+        dictionaries (indexed by Segment) of
+        :class:`neo.core.AnalogSignalArray` lists.
         """
         signals = OrderedDict()
         segments = self.segments()
@@ -618,20 +717,20 @@ class NeoDataProvider(DataProvider):
                 if segsignals:
                     if c not in signals:
                         signals[c] = OrderedDict()
-                    signals[c][s] = segsignals[0]
+                    signals[c][s] = segsignals
             nonesignals = [t for t in c.analogsignalarrays
                            if t.segment is None]
             if nonesignals:
                 if c not in signals:
                     signals[c] = OrderedDict()
-                signals[c][self.no_segment] = nonesignals[0]
+                signals[c][self.no_segment] = nonesignals
 
         nonesignals = OrderedDict()
         for s in self.segments():
             segsignals = [t for t in s.analogsignalarrays
                           if t.recordingchannelgroup is None]
             if segsignals:
-                nonesignals[s] = segsignals[0]
+                nonesignals[s] = segsignals
         if nonesignals:
             signals[self.no_channelgroup] = nonesignals
 

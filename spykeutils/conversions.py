@@ -13,12 +13,14 @@ def spike_train_to_spikes(spike_train, include_waveforms = True):
     segment). Other properties like annotations are not copied or referenced
     in the created spikes.
 
-    :param SpikeTrain spike_train: A spike train from which the Spike objects
-        are constructed.
+    :param spike_train: A spike train from which the :class:`neo.core.Spike`
+        objects are constructed.
+    :type spike_train: :class:`neo.core.SpikeTrain`
     :param bool include_waveforms: Determines if the ``waveforms`` property is
         converted to the spike waveforms. If ``waveforms`` is None, this
         parameter has no effect.
-    :returns: A list of Spike objects, one for every spike in ``spike_train``.
+    :returns: A list of :class:`neo.core.Spike` objects, one for every
+        spike in ``spike_train``.
     :rtype: list
     """
     waves = None
@@ -50,14 +52,14 @@ def spikes_to_spike_train(spikes, include_waveforms=True):
     unit or segment). Other properties like annotations are not copied or
     referenced in the created spike train.
 
-    :param spikes: A list of spike objects from which the SpikeTrain object
-        is constructed.
-    :param bool include_waveforms: Determines if the waveforms from the Spike
+    :param sequence spikes: A sequence of :class:`neo.core.Spike` objects
+        from which the spike train is constructed.
+    :param bool include_waveforms: Determines if the waveforms from the spike
         objects are used to fill the ``waveforms`` property of the resulting
         spike train. If ``True``, all spikes need a ``waveform`` property
         with the same shape or a ``SpykeException`` is raised (or the
         ``waveform`` property needs to be ``None`` for all spikes).
-    :return: A SpikeTrain object including all elements of ``spikes``.
+    :return: All elements of ``spikes`` as spike train.
     :rtype: :class:`neo.core.SpikeTrain`
     """
     if not spikes:
@@ -121,8 +123,8 @@ def analog_signal_array_to_analog_signals(signal_array):
     channel or segment). Other properties like annotations are not copied or
     referenced in the created analog signals.
 
-    :param signal_array: An analog signal array from which the AnalogSignal
-        objects are constructed.
+    :param signal_array: An analog signal array from which the
+        :class:`neo.core.AnalogSignal` objects are constructed.
     :type signal_array: :class:`neo.core.AnalogSignalArray`
     :return: A list of analog signals, one for every channel in
         ``signal_array``.

@@ -37,15 +37,15 @@
     :undoc-members:
     :show-inheritance:
 
-:mod:`staionarity` Module
--------------------------
+:mod:`stationarity` Module
+--------------------------
 
 .. automodule:: spykeutils.stationarity
     :members:
     :exclude-members: spike_amplitude_histogram
 """
 
-__version__ = '0.2.0'
+__version__ = '0.2.1'
 
 class SpykeException(Exception):
     """ Exception thrown when a function in spykeutils encounters a

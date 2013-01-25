@@ -66,7 +66,11 @@ class NeoStoredProvider(NeoDataProvider):
     def recording_channels(self):
         """ Return a list of selected recording channel indices
         """
-        return self.data['channels']
+        rcgs = self.recording_channel_groups()
+        rcs = []
+        for rc in self.data['channels']:
+            rcs.append(rcgs[rc[1]].recordingchannels[rc[0]])
+        return rcs
 
     def units(self):
         """ Return a list of selected Unit objects

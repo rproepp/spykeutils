@@ -36,11 +36,7 @@ def raster(trains, units=None, show_lines=True, events=None, epochs=None):
         units = pq.ms
 
     win_title = 'Spike Trains'
-    win = PlotDialog(toolbar=True, wintitle=win_title)
-    trial_length = None
-    if show_lines:
-        trial_length = max([t.t_stop - t.t_start for t in trains.itervalues()])
-        trial_length.units = units
+    win = PlotDialog(toolbar=True, wintitle=win_title, major_grid=False)
 
     pW = BaseCurveWidget(win)
     plot = pW.plot
@@ -60,8 +56,10 @@ def raster(trains, units=None, show_lines=True, events=None, epochs=None):
 
         if u.name:
             legend_items.append(train)
-        if trial_length:
-            plot.add_item(make.curve([0, trial_length], [offset, offset], color='k'))
+        if show_lines:
+            plot.add_item(make.curve(
+                [t.t_start.rescale(units), t.t_stop.rescale(units)],
+                [offset, offset], color='k'))
         offset -= 1
 
     helper.add_epochs(plot, epochs, units)
@@ -81,6 +79,8 @@ def raster(trains, units=None, show_lines=True, events=None, epochs=None):
 
     win.add_custom_curve_tools()
     win.show()
+
+    return win
 
 if __name__ == '__main__':
     import guidata

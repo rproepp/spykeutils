@@ -2,4 +2,7 @@
   <qresource prefix="Application">
     <file alias="Main">appicon.png</file>
   </qresource>
+  <qresource prefix="Plottools">
+    <file alias="Home">home.png</file>
+  </qresource>
 </RCC>

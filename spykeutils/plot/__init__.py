@@ -30,6 +30,13 @@ this package can not be used.
 
 .. automodule:: spykeutils.plot.helper
     :members:
+
+:mod:`guiqwt_tools` Module
+--------------------------
+
+.. automodule:: spykeutils.plot.guiqwt_tools
+    :members:
+    :show-inheritance:
 """
 
 from interspike_intervals import ISI
