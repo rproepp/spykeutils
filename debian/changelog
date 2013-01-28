@@ -1,3 +1,9 @@
+spykeutils (0.2.1-1) experimental; urgency=low
+
+  * Package upstream 0.2.1.
+
+ -- Robert Pröpper <robert.proepper@gmail.com>  Fri, 25 Jan 2013 15:23:12 +0100
+
 spykeutils (0.2.0-1) experimental; urgency=low
 
   * Initial public release (Closes: #687726).
