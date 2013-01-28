@@ -211,6 +211,13 @@ class Test_hunter_milton_similarity(ut.TestCase, CommonSimilarityTestCases):
         actual = stm.hunter_milton_similarity([a, b], kernel=kernel)
         assert_array_almost_equal(expected, actual)
 
+    def test_spike_trains_may_be_empty(self):
+        empty = create_empty_spike_train()
+        non_empty = neo.SpikeTrain(sp.array([1.0]) * pq.s, t_stop=3.0 * pq.s)
+        expected = sp.array([[1.0, 0.0], [0.0, 1.0]])
+        actual = stm.hunter_milton_similarity([empty, non_empty])
+        assert_array_almost_equal(expected, actual)
+
 
 class Test_norm_dist(ut.TestCase):
     def test_returns_zero_for_equal_spike_trains(self):

@@ -174,6 +174,9 @@ def hunter_milton_similarity(trains, tau=1.0 * pq.s, kernel=None):
     \\frac{1}{2} \\left(\\frac{1}{n_x} \\sum_{k = 1}^{n_x} d(x_k)
     + \\frac{1}{n_y} \\sum_{k' = 1}^{n_y} d(y_{k'})\\right)`.
 
+    This implementation returns 0 if one of the spike trains is empty, but 1 if
+    both are empty.
+
     Further information can be found in
 
     - *Hunter, J. D., & Milton, J. G. (2003). Amplitude and Frequency
@@ -201,6 +204,8 @@ def hunter_milton_similarity(trains, tau=1.0 * pq.s, kernel=None):
     def compute(i, j):
         if i == j:
             return 1.0
+        elif trains[i].size <= 0 or trains[j].size <= 0:
+            return 0.0
         else:
             diff_matrix = sp.absolute(trains[i] - sp.atleast_2d(trains[j]).T)
             return 0.5 * (
