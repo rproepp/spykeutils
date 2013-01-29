@@ -69,6 +69,15 @@ def _bin_single_spike_train(train, bins):
 
 
 def st_concatenate(trains):
+    """ Concatenates spike trains.
+
+    :param sequence trains: `neo.SpikeTrain` objects to concatenate.
+    :returns: A spike train consisting of the concatenated spike trains. The
+        spikes will be in the order of the given spike trains and `t_start` and
+        `t_stop` will be set to the minimum and maximum value.
+    :rtype: `neo.SpikeTrain`
+    """
+
     t_start, t_stop = maximum_spike_train_interval({0: trains})
     return neo.SpikeTrain(
         spq.concatenate([train.view(type=pq.Quantity) for train in trains]),
