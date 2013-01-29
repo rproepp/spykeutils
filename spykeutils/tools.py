@@ -1,6 +1,8 @@
 
+import neo
 import quantities as pq
 import scipy as sp
+import _scipy_quantities as spq
 
 
 def apply_to_dict(fn, dictionary, *args):
@@ -64,6 +66,13 @@ def _bin_single_spike_train(train, bins):
     :rtype: 1-D array
     """
     return sp.histogram(train.rescale(bins.units), bins)[0]
+
+
+def st_concatenate(trains):
+    t_start, t_stop = maximum_spike_train_interval({0: trains})
+    return neo.SpikeTrain(
+        spq.concatenate([train.view(type=pq.Quantity) for train in trains]),
+        t_start=t_start, t_stop=t_stop)
 
 
 def minimum_spike_train_interval(

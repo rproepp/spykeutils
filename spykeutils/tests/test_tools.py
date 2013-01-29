@@ -88,5 +88,28 @@ class Test_bin_spike_trains(ut.TestCase):
             expectedBins, actualBins.rescale(expectedBins.units))
 
 
+class Test_st_concatenate(ut.TestCase):
+    def test_concatenates_spike_trains(self):
+        a = arange_spikes(3.0 * pq.s)
+        b = arange_spikes(2.0 * pq.s, 5.0 * pq.s)
+        expected = arange_spikes(5.0 * pq.s)
+        actual = tools.st_concatenate((a, b))
+        assert_array_almost_equal(expected, actual)
+
+    def test_t_start_is_min_of_all_trains(self):
+        a = arange_spikes(3.0 * pq.s, 5.0 * pq.s)
+        b = arange_spikes(1.0 * pq.s, 6.0 * pq.s)
+        expected = 1.0 * pq.s
+        actual = tools.st_concatenate((a, b)).t_start
+        self.assertAlmostEqual(expected, actual)
+
+    def test_t_stop_is_max_of_all_trains(self):
+        a = arange_spikes(3.0 * pq.s, 5.0 * pq.s)
+        b = arange_spikes(1.0 * pq.s, 6.0 * pq.s)
+        expected = 6.0 * pq.s
+        actual = tools.st_concatenate((a, b)).t_stop
+        self.assertAlmostEqual(expected, actual)
+
+
 if __name__ == '__main__':
     ut.main()
