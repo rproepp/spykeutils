@@ -3,7 +3,6 @@
 """
 
 import copy
-import functional
 import quantities as pq
 import scipy as sp
 import scipy.signal
