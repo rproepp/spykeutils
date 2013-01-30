@@ -601,23 +601,21 @@ def _victor_purpura_dist_for_trial_pair(a, b, kernel):
     cost_a = sp.arange(float(max(1, a.size)) + 1)
     cost_b = sp.arange(float(max(1, b.size)) + 1)
 
-    k = kernel((sp.atleast_2d(a).T - b).flatten()).simplified \
+    k = 2 - 2 * kernel((sp.atleast_2d(a).T - b).flatten()).simplified \
         .reshape((a.size, b.size))
 
     for num_spikes_processed in xrange(b.size):
         cost_a[0] = cost_b[0] = min(
             cost_b[1] + 1, cost_a[1] + 1,
-            cost_a[0] + 2 - 2 * k[num_spikes_processed, num_spikes_processed])
+            cost_a[0] + k[num_spikes_processed, num_spikes_processed])
         for i in xrange(1, cost_a.size - num_spikes_processed - 1):
             cost_a[i] = min(
                 cost_a[i - 1] + 1, cost_a[i + 1] + 1,
-                cost_a[i] + 2 - 2 * k[
-                    num_spikes_processed + i, num_spikes_processed])
+                cost_a[i] + k[num_spikes_processed + i, num_spikes_processed])
         for j in xrange(1, cost_b.size - num_spikes_processed - 1):
             cost_b[j] = min(
                 cost_b[j - 1] + 1, cost_b[j + 1] + 1,
-                cost_b[j] + 2 - 2 * k[
-                    num_spikes_processed, num_spikes_processed + j])
+                cost_b[j] + k[num_spikes_processed, num_spikes_processed + j])
 
     return cost_a[-cost_b.size]
 
