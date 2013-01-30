@@ -108,16 +108,16 @@ class AnalysisPlugin(gui_data.DataSet):
 
     def set_parameters(self, parameters):
         """ Load configuration from a dictionary that has been
-        created by :func:`serialize_parameters`. Override both if
-        non-guidata attributes need to be serialized or if some guidata
-        parameterss hould not be serialized (e.g. they only affect the
-        visual presentation).
+        created by :func:`serialize_parameters`. Parameters that are not
+        part of the guidata attributes of the plugin are ignored. Override if
+        non-guidata attributes need to be serialized.
 
         :param dict parameters: A dictionary of all configuration
             parameters.
         """
         for n,v in parameters.iteritems():
-            setattr(self, '_' + n, v)
+            if hasattr(self, '_' + n):
+                setattr(self, '_' + n, v)
 
 
     def _get_hash(self, selections, params, use_guiparams):
