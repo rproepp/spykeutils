@@ -33,8 +33,7 @@ def _create_matrix_from_indexed_function(
     mat = sp.empty(shape)
     if symmetric_2d:
         for i in xrange(shape[0]):
-            mat[i, i] = func(i, i)
-            for j in xrange(shape[1]):
+            for j in xrange(i, shape[1]):
                 mat[i, j] = mat[j, i] = func(i, j, **func_params)
     else:
         for idx in sp.ndindex(*shape):
