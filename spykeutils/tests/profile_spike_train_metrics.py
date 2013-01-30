@@ -25,6 +25,6 @@ if __name__ == '__main__':
         help="Output file for the profiling information.")
     args = parser.parse_args()
 
-    trains = [stg.gen_homogeneous_poisson(50.0 * pq.Hz, t_stop=3.0 * pq.s)
-              for i in xrange(10)]
+    trains = [stg.gen_homogeneous_poisson(50.0 * pq.Hz, t_stop=10.0 * pq.s)
+              for i in xrange(50)]
     cProfile.run('calc_analytic_metrics(trains)', args.output[0])
