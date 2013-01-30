@@ -309,7 +309,7 @@ class LaplacianKernel(SymmetricKernel):
             for v in vectors:
                 v.sort()
 
-        exp_vecs = [sp.exp(v / self.kernel_size) for v in vectors]
+        exp_vecs = [sp.exp((v / self.kernel_size).simplified) for v in vectors]
         inv_exp_vecs = [1.0 / v for v in exp_vecs]
         exp_diffs = [sp.outer(v, iv) for v, iv in zip(exp_vecs, inv_exp_vecs)]
 
