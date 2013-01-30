@@ -84,3 +84,12 @@ def diag(v, k=0):
         return sp.diag(v, k) * v.units
     else:
         return sp.diag(v, k)
+
+
+# linspace loses unit for only one bin, see bug report
+# <https://github.com/python-quantities/python-quantities/issues/55>
+def linspace(start, stop, num=50, endpoint=True, retstep=False):
+    if num == 1 and isinstance(start, pq.Quantity):
+        return sp.linspace(start, stop, num, endpoint, retstep) * start.units
+    else:
+        return sp.linspace(start, stop, num, endpoint, retstep)

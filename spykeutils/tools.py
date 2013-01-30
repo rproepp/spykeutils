@@ -52,7 +52,7 @@ def bin_spike_trains(trains, sampling_rate, t_start=None, t_stop=None):
 
     duration = t_stop - t_start
     num_bins = sampling_rate * duration + 1
-    bins = sp.linspace(t_start, t_stop, num_bins)
+    bins = spq.linspace(t_start, t_stop, num_bins)
     return apply_to_dict(_bin_single_spike_train, trains, bins), bins
 
 
