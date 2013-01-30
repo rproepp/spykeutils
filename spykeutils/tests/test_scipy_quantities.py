@@ -267,6 +267,11 @@ class Test_linspace(ut.TestCase):
         actual = spq.linspace(1.0 * pq.s, 4.0 * pq.s, 1)
         assert_array_almost_equal(expected, actual)
 
+    def test_returns_correct_quantity_for_one_bin_after_rounding(self):
+        expected = sp.array([1.0]) * pq.s
+        actual = spq.linspace(1.0 * pq.s, 4.0 * pq.s, 1.4)
+        assert_array_almost_equal(expected, actual)
+
     def test_returns_correct_quantity_for_more_than_one_bin(self):
         expected = sp.array([1.0, 2.0, 3.0, 4.0]) * pq.s
         actual = spq.linspace(1.0 * pq.s, 4.0 * pq.s, 4)
