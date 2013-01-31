@@ -5,7 +5,7 @@ try:
 except ImportError:
     import unittest as ut
 
-from builders import create_empty_spike_train, arange_spikes
+from builders import create_empty_spike_train
 from mock import MagicMock
 from numpy.testing import assert_array_almost_equal, assert_array_equal
 import neo
@@ -235,6 +235,23 @@ class TestRectangularKernel(ut.TestCase):
     def test_evaluates_to_correct_values(self):
         t = sp.array([-0.1, 0, 0.6, 1]) * pq.s
         expected = sp.array([1.0, 1.0, 0.0, 0.0]) / pq.s
+        actual = self.kernel(t)
+        assert_array_almost_equal(expected, actual.rescale(expected.units))
+
+    def test_boundary_enclosing_at_least_is_correct(self):
+        actual = self.kernel.boundary_enclosing_at_least(0.99)
+        self.assertAlmostEqual(
+            actual.rescale(self.kernel_size.units), self.kernel_size)
+
+
+class TestTriangularKernel(ut.TestCase):
+    def setUp(self):
+        self.kernel_size = 500 * pq.ms
+        self.kernel = sigproc.TriangularKernel(self.kernel_size)
+
+    def test_evaluates_to_correct_values(self):
+        t = sp.array([-0.7, -0.1, 0, 0.3, 0.6, 1]) * pq.s
+        expected = 2 * sp.array([0.0, 0.8, 1.0, 0.4, 0.0, 0.0]) / pq.s
         actual = self.kernel(t)
         assert_array_almost_equal(expected, actual.rescale(expected.units))
 

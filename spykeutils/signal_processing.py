@@ -326,7 +326,7 @@ class TriangularKernel(SymmetricKernel):
     def evaluate(t, half_width):
         return sp.maximum(
             0.0,
-            (1.0 - sp.absolute(t) * pq.dimensionless / half_width).magnitude)
+            (1.0 - sp.absolute(t.rescale(half_width.units)) * pq.dimensionless / half_width).magnitude)
 
     def _evaluate(self, t, kernel_size):
         return self.evaluate(t, kernel_size)
