@@ -598,37 +598,21 @@ def _victor_purpura_dist_for_trial_pair(a, b, kernel):
     # to cost[num_spikes_processed:, num_spikes_processed]. The same holds for
     # cost_b by replacing the occurrences of cost_a.
 
-    cost_a = sp.arange(float(max(1, a.size)) + 1)
-    cost_b = sp.arange(float(max(1, b.size)) + 1)
+    cost = sp.asfortranarray(sp.tile(sp.arange(float(max(1, a.size)) + 1), (2, 1)))
 
-    k = 2 - 2 * sp.ascontiguousarray(kernel(sp.atleast_2d(a).T - b).simplified)
-        #.reshape((a.size, b.size)))
-    #scr = sp.empty((a.size + 1, b.size + 1))
-    #scr[:, 0] = sp.arange(a.size + 1)
-    #scr[0, :] = sp.arange(b.size + 1)
+    k = 1 - 2 * sp.asfortranarray(kernel(sp.atleast_2d(a).T - b).simplified)
 
-    #for i in range(1, a.size + 1):
-        #for j in range(1, b.size + 1):
-            ##scr[i, j] = k[i - 1, j - 1]
-            #scr[i, j] = min(
-                #scr[i - 1, j] + 1, scr[i, j - 1] + 1,
-                #scr[i - 1, j - 1] + k[i - 1, j - 1])
-    #print scr.shape
-    #return scr[-1, -1]
-
+    d = sp.asfortranarray(sp.tile(sp.arange(cost.shape[1] - 1, -1, -1), (2, 1)))
     for num_spikes_processed in xrange(b.size):
-        x = sp.minimum(cost_a[1:cost_a.size-num_spikes_processed], cost_a[:-num_spikes_processed-1] - 1 + k[num_spikes_processed:, num_spikes_processed])
-        y = sp.minimum(cost_b[1:cost_b.size-num_spikes_processed], cost_b[:-num_spikes_processed-1] - 1 + k[num_spikes_processed, num_spikes_processed:])
-        x[0] = y[0] = min(cost_b[1], x[0])
-        x += sp.arange(x.size, 0, -1)
-        y += sp.arange(y.size, 0, -1)
-        x = sp.minimum.accumulate(x)
-        y = sp.minimum.accumulate(y)
+        x = sp.minimum(cost[:, 1:cost.shape[1]-num_spikes_processed],
+                       cost[:, :-num_spikes_processed-1] +
+                       k[num_spikes_processed:, num_spikes_processed])
+        x[:, 0] = min(cost[1, 1], x[0, 0])
+        x += d[:, -x.shape[1]-1:-1]
+        x = sp.minimum.accumulate(x, axis=1)
+        cost[:, :x.shape[1]] = x - d[:, -x.shape[1]:]
 
-        cost_a[:x.size] = x - sp.arange(x.size, 0, -1) + 1
-        cost_b[:y.size] = y - sp.arange(y.size, 0, -1) + 1
-
-    return cost_a[-cost_b.size]
+    return cost[0, -max(1, b.size) - 1]
 
 
 def victor_purpura_multiunit_dist(
