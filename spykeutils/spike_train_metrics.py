@@ -591,30 +591,44 @@ def _victor_purpura_dist_for_trial_pair(a, b, kernel):
     # coding in visual cortex: a metric-space analysis. Journal of
     # Neurophysiology.
     #
-    # It constructs a matrix cost[i, j] containing the minimal cost when only
-    # considering the first i and j spikes of the spike trains (the reference
-    # given above denotes this matrix with G). However, one never needs to
-    # store more than one row and one column at the same time for calculating
-    # the VP distance. cost_a[0:cost_a.size - num_spikes_processed] corresponds
-    # to cost[num_spikes_processed:, num_spikes_processed]. The same holds for
-    # cost_b by replacing the occurrences of cost_a.
+    # It constructs a matrix G[i, j] containing the minimal cost when only
+    # considering the first i and j spikes of the spike trains. However, one
+    # never needs to store more than one row and one column at the same time
+    # for calculating the VP distance.
+    # cost[0, :cost.shape[1] - num_spikes_processed] corresponds to
+    # G[num_spikes_processed:, num_spikes_processed]. In the same way
+    # cost[1, :cost.shape[1] - num_spikes_processed] corresponds to
+    # G[num_spikes_processed, num_spikes_processed:].
+    #
+    # Moreover, the minimum operation on the costs of the three kind of actions
+    # (delete, insert or move spike) can be split up in two operations. One
+    # operation depends only on the already calculated costs and kernel
+    # evaluation (insertion of spike vs moving a spike). The other minimum
+    # depends on that result and the cost of deleting a spike. This operation
+    # always depends on the last calculated element in the cost array and
+    # corresponds to a recursive application of
+    # f(x[i]) = min(f(x[i-1]), x[i]) + 1. That '+1' can be excluded from this
+    # function if the summed value for all recursive applications is added
+    # upfront to x. Afterwards it has to be removed again except one for the
+    # currently processed spike to get the real costs up to the evaluation of
+    # num_spikes_processed. One can save here a couple of additions by
+    # intelligently shifting the min_summands array.
 
-    cost = sp.asfortranarray(sp.tile(
-        sp.arange(float(max(1, a.size)) + 1), (2, 1)))
-
+    cost = sp.asfortranarray(sp.tile(sp.arange(a.size + 1.0), (2, 1)))
+    min_summands = sp.asfortranarray(cost[:, ::-1])
     k = 1 - 2 * sp.asfortranarray(kernel(sp.atleast_2d(a).T - b).simplified)
 
-    d = sp.asfortranarray(cost[:, ::-1])
     for num_spikes_processed in xrange(b.size):
-        x = sp.minimum(cost[:, 1:cost.shape[1]-num_spikes_processed],
-                       cost[:, :-num_spikes_processed-1] +
-                       k[num_spikes_processed:, num_spikes_processed])
+        x = sp.minimum(
+            cost[:, 1:cost.shape[1] - num_spikes_processed],
+            cost[:, :-num_spikes_processed - 1] +
+            k[num_spikes_processed:, num_spikes_processed])
         x[:, 0] = min(cost[1, 1], x[0, 0])
-        x += d[:, -x.shape[1]-1:-1]
+        x += min_summands[:, -x.shape[1] - 1:-1]
         x = sp.minimum.accumulate(x, axis=1)
-        cost[:, :x.shape[1]] = x - d[:, -x.shape[1]:]
+        cost[:, :x.shape[1]] = x - min_summands[:, -x.shape[1]:]
 
-    return cost[0, -max(1, b.size) - 1]
+    return cost[0, -b.size - 1]
 
 
 def victor_purpura_multiunit_dist(
