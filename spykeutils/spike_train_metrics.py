@@ -576,7 +576,7 @@ def victor_purpura_dist(trains, q=1.0 * pq.Hz, kernel=None, sort=True):
     return _create_matrix_from_indexed_function(
         (len(trains), len(trains)), compute, kernel.is_symmetric())
 
-
+#@profile
 def _victor_purpura_dist_for_trial_pair(a, b, kernel):
     if a.size <= 0 or b.size <= 0:
         return max(a.size, b.size)
@@ -601,21 +601,32 @@ def _victor_purpura_dist_for_trial_pair(a, b, kernel):
     cost_a = sp.arange(float(max(1, a.size)) + 1)
     cost_b = sp.arange(float(max(1, b.size)) + 1)
 
-    k = 2 - 2 * kernel((sp.atleast_2d(a).T - b).flatten()).simplified \
-        .reshape((a.size, b.size))
+    k = 2 - 2 * sp.ascontiguousarray(kernel(sp.atleast_2d(a).T - b).simplified)
+        #.reshape((a.size, b.size)))
+    #scr = sp.empty((a.size + 1, b.size + 1))
+    #scr[:, 0] = sp.arange(a.size + 1)
+    #scr[0, :] = sp.arange(b.size + 1)
+
+    #for i in range(1, a.size + 1):
+        #for j in range(1, b.size + 1):
+            ##scr[i, j] = k[i - 1, j - 1]
+            #scr[i, j] = min(
+                #scr[i - 1, j] + 1, scr[i, j - 1] + 1,
+                #scr[i - 1, j - 1] + k[i - 1, j - 1])
+    #print scr.shape
+    #return scr[-1, -1]
 
     for num_spikes_processed in xrange(b.size):
-        cost_a[0] = cost_b[0] = min(
-            cost_b[1] + 1, cost_a[1] + 1,
-            cost_a[0] + k[num_spikes_processed, num_spikes_processed])
-        for i in xrange(1, cost_a.size - num_spikes_processed - 1):
-            cost_a[i] = min(
-                cost_a[i - 1] + 1, cost_a[i + 1] + 1,
-                cost_a[i] + k[num_spikes_processed + i, num_spikes_processed])
-        for j in xrange(1, cost_b.size - num_spikes_processed - 1):
-            cost_b[j] = min(
-                cost_b[j - 1] + 1, cost_b[j + 1] + 1,
-                cost_b[j] + k[num_spikes_processed, num_spikes_processed + j])
+        x = sp.minimum(cost_a[1:cost_a.size-num_spikes_processed], cost_a[:-num_spikes_processed-1] - 1 + k[num_spikes_processed:, num_spikes_processed])
+        y = sp.minimum(cost_b[1:cost_b.size-num_spikes_processed], cost_b[:-num_spikes_processed-1] - 1 + k[num_spikes_processed, num_spikes_processed:])
+        x[0] = y[0] = min(cost_b[1], x[0])
+        x += sp.arange(x.size, 0, -1)
+        y += sp.arange(y.size, 0, -1)
+        x = sp.minimum.accumulate(x)
+        y = sp.minimum.accumulate(y)
+
+        cost_a[:x.size] = x - sp.arange(x.size, 0, -1) + 1
+        cost_b[:y.size] = y - sp.arange(y.size, 0, -1) + 1
 
     return cost_a[-cost_b.size]
 
