@@ -616,7 +616,8 @@ def _victor_purpura_dist_for_trial_pair(a, b, kernel):
 
     cost = sp.asfortranarray(sp.tile(sp.arange(a.size + 1.0), (2, 1)))
     min_summands = sp.asfortranarray(cost[:, ::-1])
-    k = 1 - 2 * sp.asfortranarray(kernel(sp.atleast_2d(a).T - b).simplified)
+    k = 1 - 2 * sp.asfortranarray(kernel(
+        (sp.atleast_2d(a).T - b).view(type=pq.Quantity)).simplified)
 
     for num_spikes_processed in xrange(b.size):
         x = sp.minimum(
