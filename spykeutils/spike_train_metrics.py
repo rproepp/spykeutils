@@ -576,6 +576,7 @@ def victor_purpura_dist(trains, q=1.0 * pq.Hz, kernel=None, sort=True):
     return _create_matrix_from_indexed_function(
         (len(trains), len(trains)), compute, kernel.is_symmetric())
 
+
 #@profile
 def _victor_purpura_dist_for_trial_pair(a, b, kernel):
     if a.size <= 0 or b.size <= 0:
@@ -598,11 +599,12 @@ def _victor_purpura_dist_for_trial_pair(a, b, kernel):
     # to cost[num_spikes_processed:, num_spikes_processed]. The same holds for
     # cost_b by replacing the occurrences of cost_a.
 
-    cost = sp.asfortranarray(sp.tile(sp.arange(float(max(1, a.size)) + 1), (2, 1)))
+    cost = sp.asfortranarray(sp.tile(
+        sp.arange(float(max(1, a.size)) + 1), (2, 1)))
 
     k = 1 - 2 * sp.asfortranarray(kernel(sp.atleast_2d(a).T - b).simplified)
 
-    d = sp.asfortranarray(sp.tile(sp.arange(cost.shape[1] - 1, -1, -1), (2, 1)))
+    d = sp.asfortranarray(cost[:, ::-1])
     for num_spikes_processed in xrange(b.size):
         x = sp.minimum(cost[:, 1:cost.shape[1]-num_spikes_processed],
                        cost[:, :-num_spikes_processed-1] +
