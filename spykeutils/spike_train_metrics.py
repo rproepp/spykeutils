@@ -561,7 +561,11 @@ def victor_purpura_dist(trains, q=1.0 * pq.Hz, kernel=None, sort=True):
     """
 
     if kernel is None:
-        kernel = sigproc.TriangularKernel(2.0 / q, normalize=False)
+        if q == 0.0:
+            num_spikes = sp.atleast_2d([st.size for st in trains])
+            return sp.absolute(num_spikes.T - num_spikes)
+        else:
+            kernel = sigproc.TriangularKernel(2.0 / q, normalize=False)
 
     if sort:
         trains = [sp.sort(st.view(type=pq.Quantity)) for st in trains]

@@ -518,6 +518,16 @@ class Test_victor_purpura_dist(ut.TestCase, CommonMetricTestCases):
         assert_array_almost_equal(
             expected, stm.victor_purpura_dist([a, b], kernel=k))
 
+    def test_allows_q_to_be_zero(self):
+        q = 0.0
+        a = neo.SpikeTrain(
+            sp.array([1.0, 2.0, 4.1, 7.0, 7.1]) * pq.s, t_stop=8.0 * pq.s)
+        b = neo.SpikeTrain(
+            sp.array([1.2, 4.0, 4.3]) * pq.s, t_stop=8.0 * pq.s)
+        # Pure rate code
+        expected = sp.array([[0.0, 2.0], [2.0, 0.0]])
+        assert_array_almost_equal(expected, stm.victor_purpura_dist([a, b], q))
+
 
 class Test_victor_purpura_multiunit_dist(ut.TestCase, CommonMetricTestCases):
     # With only one spike train each we should get the normal VP distance.
