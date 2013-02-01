@@ -413,11 +413,7 @@ def van_rossum_dist(trains, tau=1.0 * pq.s, kernel=None, sort=True):
     normalization used in the cited paper.
 
     Given :math:`N` spike trains with :math:`n` spikes on average the run-time
-    complexity of this function is :math:`O(N^2 n)` and :math:`O(N^2 + Nn^2)`
-    memory will be needed, if the default Laplacian kernel is used (which
-    corresponds to the causal decaying exponential smoothing function). Other
-    kernels usually have run-time complexity of :math:`O(N^2 n^2)` depending on
-    the implementation of :meth:`.Kernel.summed_dist_matrix`.
+    complexity of this function is :math:`O(N^2 n^2)`.
 
     :param sequence trains: SpikeTrains of which the van Rossum distance will be
         calculated pairwise.
