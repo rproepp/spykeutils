@@ -440,7 +440,8 @@ def van_rossum_dist(trains, tau=1.0 * pq.s, kernel=None, sort=True):
             return (spike_counts - sp.atleast_2d(spike_counts).T) ** 2
         kernel = sigproc.LaplacianKernel(tau, normalize=False)
 
-    k_dist = kernel.summed_dist_matrix(trains, not sort)
+    k_dist = kernel.summed_dist_matrix(
+        [st.view(type=pq.Quantity) for st in trains], not sort)
     vr_dist = sp.empty_like(k_dist)
     for i, j in sp.ndindex(*k_dist.shape):
         vr_dist[i, j] = (

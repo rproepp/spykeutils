@@ -417,6 +417,14 @@ class Test_van_rossum_dist(ut.TestCase, CommonMetricTestCases):
         actual = stm.van_rossum_dist((a, b), kernel=k)
         assert_array_almost_equal(expected, actual)
 
+    def test_does_not_fail_with_kernel_not_allowing_spike_trains_as_argument(
+            self):
+        # Compare <https://neuralensemble.org/trac/neo/ticket/65>
+        a = neo.SpikeTrain(sp.array([1.0, 2.0]) * pq.s, t_stop=3.0 * pq.s)
+        b = neo.SpikeTrain(sp.array([1.5]) * pq.s, t_stop=2.0 * pq.s)
+        k = sigproc.TriangularKernel(1.0 * pq.s, normalize=False)
+        stm.van_rossum_dist((a, b), kernel=k)
+
     def test_allows_tau_equal_to_infinity(self):
         a = neo.SpikeTrain(sp.array([1.0, 1.9, 2.0]) * pq.s, t_stop=3.0 * pq.s)
         b = neo.SpikeTrain(sp.array([1.5]) * pq.s, t_stop=2.0 * pq.s)
