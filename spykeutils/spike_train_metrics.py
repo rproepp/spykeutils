@@ -437,7 +437,7 @@ def van_rossum_dist(trains, tau=1.0 * pq.s, kernel=None, sort=True):
     if kernel is None:
         if tau == sp.inf:
             spike_counts = [st.size for st in trains]
-            return sp.absolute(spike_counts - sp.atleast_2d(spike_counts).T)
+            return (spike_counts - sp.atleast_2d(spike_counts).T) ** 2
         kernel = sigproc.LaplacianKernel(tau, normalize=False)
 
     k_dist = kernel.summed_dist_matrix(trains, not sort)

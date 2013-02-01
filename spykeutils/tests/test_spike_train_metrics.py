@@ -422,8 +422,8 @@ class Test_van_rossum_dist(ut.TestCase, CommonMetricTestCases):
         b = neo.SpikeTrain(sp.array([1.5]) * pq.s, t_stop=2.0 * pq.s)
         tau = sp.inf * pq.s
         expected = sp.array([
-            [0.0, 2.0],
-            [2.0, 0.0]])
+            [0.0, 4.0],
+            [4.0, 0.0]])
         actual = stm.van_rossum_dist((a, b), tau)
         assert_array_almost_equal(expected, actual)
 
