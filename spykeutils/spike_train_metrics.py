@@ -693,7 +693,7 @@ def victor_purpura_multiunit_dist(
         reassignment_cost=reassignment_cost, kernel=kernel)
 
 
-#@profile
+@profile
 def _victor_purpura_multiunit_dist_for_trial_pair(
         a, b, reassignment_cost, kernel):
     # The algorithm used is based on the one given in
@@ -731,7 +731,10 @@ def _victor_purpura_multiunit_dist_for_trial_pair(
         a_spike_time = a_merged[a_idx - 1][0]
         a_spike_label = a_merged[a_idx - 1][1]
 
-        k = kernel(a_spike_time - bmat.flatten()).simplified.reshape(bmat.shape)
+        reassignments = sp.ones(bmat.shape, dtype=bool)
+        reassignments[a_spike_label, :] = False
+        k = 2 - 2 * kernel(a_spike_time - bmat.flatten()).simplified.reshape(bmat.shape) + \
+            reassignment_cost * reassignments
 
         b_idx_iter = sp.ndindex(*b_dims)
         b_idx_iter.next()  # cost[:, 0, ..., 0] has already been initialized
@@ -747,10 +750,8 @@ def _victor_purpura_multiunit_dist_for_trial_pair(
             origin_costs[invalid_origin_indices] = sp.inf
 
             b_spike_label = sp.argmin(origin_costs)
-            #b_spike_time = b[b_spike_label][b_idx[b_spike_label] - 1]
             cost_shift = origin_costs[b_spike_label] + \
-                2 - 2 * k[b_spike_label, b_idx[b_spike_label] - 1] + \
-                reassignment_cost * (a_spike_label != b_spike_label)
+                k[b_spike_label, b_idx[b_spike_label] - 1]
 
             cost_delete_in_a = cost[(a_idx - 1,) + b_idx] + 1
             if sp.all(invalid_origin_indices):
