@@ -596,10 +596,8 @@ def _victor_purpura_dist_for_trial_pair(a, b, kernel):
     # considering the first i and j spikes of the spike trains. However, one
     # never needs to store more than one row and one column at the same time
     # for calculating the VP distance.
-    # cost[0, :cost.shape[1] - num_spikes_processed] corresponds to
-    # G[num_spikes_processed:, num_spikes_processed]. In the same way
-    # cost[1, :cost.shape[1] - num_spikes_processed] corresponds to
-    # G[num_spikes_processed, num_spikes_processed:].
+    # cost[0, :cost.shape[1] - i] corresponds to G[i:, i]. In the same way
+    # cost[1, :cost.shape[1] - i] corresponds to G[i, i:].
     #
     # Moreover, the minimum operation on the costs of the three kind of actions
     # (delete, insert or move spike) can be split up in two operations. One
@@ -608,29 +606,40 @@ def _victor_purpura_dist_for_trial_pair(a, b, kernel):
     # depends on that result and the cost of deleting a spike. This operation
     # always depends on the last calculated element in the cost array and
     # corresponds to a recursive application of
-    # f(x[i]) = min(f(x[i-1]), x[i]) + 1. That '+1' can be excluded from this
-    # function if the summed value for all recursive applications is added
-    # upfront to x. Afterwards it has to be removed again except one for the
-    # currently processed spike to get the real costs up to the evaluation of
-    # num_spikes_processed. One can save here a couple of additions by
-    # intelligently shifting the min_summands array.
+    # f(accumulated_min[i]) = min(f(accumulated_min[i-1]), accumulated_min[i])
+    # + 1. That '+1' can be excluded from this function if the summed value for
+    # all recursive applications is added upfront to accumulated_min.
+    # Afterwards it has to be removed again except one for the currently
+    # processed spike to get the real costs up to the evaluation of i.
+    #
+    # All currently calculated costs will be considered -1 because this saves
+    # a number of additions as in most cases the cost would be increased by
+    # exactly one (the only exception is shifting, but in that calculation is
+    # already the addition of a constant involved, thus leaving the number of
+    # operations the same). The increase by one will be added after calculating
+    # all minima by shifting decreasing_sequence by one when removing it from
+    # accumulated_min.
 
-    cost = sp.asfortranarray(sp.tile(sp.arange(a.size + 1.0), (2, 1)))
-    min_summands = sp.asfortranarray(cost[:, ::-1])
+    min_dim, max_dim = b.size, a.size + 1
+    cost = sp.asfortranarray(sp.tile(sp.arange(float(max_dim)), (2, 1)))
+    decreasing_sequence = sp.asfortranarray(cost[:, ::-1])
     k = 1 - 2 * sp.asfortranarray(kernel(
         (sp.atleast_2d(a).T - b).view(type=pq.Quantity)).simplified)
 
-    for num_spikes_processed in xrange(b.size):
-        x = sp.minimum(
-            cost[:, 1:cost.shape[1] - num_spikes_processed],
-            cost[:, :-num_spikes_processed - 1] +
-            k[num_spikes_processed:, num_spikes_processed])
-        x[:, 0] = min(cost[1, 1], x[0, 0])
-        x += min_summands[:, -x.shape[1] - 1:-1]
-        x = sp.minimum.accumulate(x, axis=1)
-        cost[:, :x.shape[1]] = x - min_summands[:, -x.shape[1]:]
+    for i in xrange(min_dim):
+        # determine G[i, i] == accumulated_min[:, 0]
+        accumulated_min = sp.minimum(
+            cost[:, 1:max_dim - i],  # insert
+            cost[:, :-i - 1] + k[i:, i])  # shift
+        acc_dim = accumulated_min.shape[1]
+        # delete vs min(insert, shift)
+        accumulated_min[:, 0] = min(cost[1, 1], accumulated_min[0, 0])
+        # determine G[i, :] and G[:, i] by propagating minima.
+        accumulated_min += decreasing_sequence[:, -acc_dim - 1:-1]
+        accumulated_min = sp.minimum.accumulate(accumulated_min, axis=1)
+        cost[:, :acc_dim] = accumulated_min - decreasing_sequence[:, -acc_dim:]
 
-    return cost[0, -b.size - 1]
+    return cost[0, -min_dim - 1]
 
 
 def victor_purpura_multiunit_dist(
