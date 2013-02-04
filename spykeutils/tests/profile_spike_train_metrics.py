@@ -17,6 +17,13 @@ def calc_analytic_metrics(trains):
     stm.victor_purpura_dist(trains, 2.0 / tau)
 
 
+def calc_multiunit_metrics(trains):
+    tau = 5.0 * pq.ms
+    half = len(trains) // 2
+    units = {0: trains[:half], 1: trains[half:2 * half]}
+    stm.victor_purpura_multiunit_dist(units, 0.3, 2.0 / tau)
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description="Profile the analytic spike train distances.")
@@ -25,6 +32,7 @@ if __name__ == '__main__':
         help="Output file for the profiling information.")
     args = parser.parse_args()
 
-    trains = [stg.gen_homogeneous_poisson(50.0 * pq.Hz, t_stop=10.0 * pq.s)
-              for i in xrange(50)]
-    cProfile.run('calc_analytic_metrics(trains)', args.output[0])
+    trains = [stg.gen_homogeneous_poisson(10.0 * pq.Hz, t_stop=1.0 * pq.s)
+              for i in xrange(4)]
+    #cProfile.run('calc_multiunit_metrics(trains)', args.output[0])
+    calc_multiunit_metrics(trains)
