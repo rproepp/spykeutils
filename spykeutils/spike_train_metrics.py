@@ -717,7 +717,7 @@ def _victor_purpura_multiunit_dist_for_trial_pair(
         a_num_spikes, b_num_spikes = b_num_spikes, a_num_spikes
 
     a_merged = _merge_trains_and_label_spikes(a)
-    b_dims = sp.asarray(b_num_spikes) + 1
+    b_dims = tuple(sp.asarray(b_num_spikes) + 1)
     cost = sp.empty((sp.sum(a_num_spikes) + 1,) + tuple(b_dims))
     cost[(sp.s_[:],) + len(b) * (0,)] = sp.arange(cost.shape[0])
     cost[0, ...] = sp.sum(sp.indices(b_dims), axis=0)
@@ -731,54 +731,44 @@ def _victor_purpura_multiunit_dist_for_trial_pair(
         a_spike_time = a_merged[a_idx - 1][0]
         a_spike_label = a_merged[a_idx - 1][1]
 
-        reassignments = sp.ones(bmat.shape, dtype=bool)
-        reassignments[a_spike_label, :] = False
-        k = 2 - 2 * kernel(a_spike_time - bmat.flatten()).simplified.reshape(bmat.shape) + \
-            reassignment_cost * reassignments
+        reassignment_costs = sp.empty(bmat.shape)
+        reassignment_costs.fill(reassignment_cost)
+        reassignment_costs[a_spike_label, :] = 0.0
+        k = 2 - 2 * kernel(a_spike_time - bmat.flatten()).simplified.reshape(
+            bmat.shape) + reassignment_costs
 
-        flat_idxs = sp.arange(sp.prod(b_dims))
-        x = sp.atleast_2d(flat_idxs).T - sp.cumprod((tuple(b_dims) + (1,))[::-1])[:-1][::-1]
-        x = sp.maximum(0, x)
-        origin_costs2 = cost[a_idx - 1].flat[x]
-        invalid = sp.vstack(sp.unravel_index(flat_idxs, b_dims)).T == 0
-        valid = sp.vstack(sp.unravel_index(flat_idxs, b_dims)).T != 0
-        origin_costs2[invalid, :] = sp.inf
-        b_spike_label = sp.argmin(origin_costs2, axis=1)
-        pre_cost_shift = k[b_spike_label, :] + sp.atleast_2d(origin_costs2[sp.arange(origin_costs2.shape[0]), b_spike_label]).T
+        flat_b_indices = sp.arange(sp.prod(b_dims))
+        b_indices = sp.vstack(sp.unravel_index(flat_b_indices, b_dims))
+        flat_neighbor_shifts = sp.cumprod((b_dims + (1,))[::-1])[:-1][::-1]
+        flat_neighbor_indices = sp.maximum(
+            0, sp.atleast_2d(flat_b_indices).T - flat_neighbor_shifts)
+        invalid_neighbors = b_indices.T == 0
+        base_costs = cost[a_idx - 1].flat[flat_neighbor_indices]
+        base_costs[invalid_neighbors, :] = sp.inf
+        min_base_cost_units = sp.argmin(base_costs, axis=1)
+        cost_all_possible_shifts = k[min_base_cost_units, :] + \
+            sp.atleast_2d(base_costs[flat_b_indices, min_base_cost_units]).T
+        cost_shift = cost_all_possible_shifts[
+            sp.arange(cost_all_possible_shifts.shape[0]),
+            b_indices[min_base_cost_units, flat_b_indices] - 1]
 
-        #print sp.vstack(sp.unravel_index(flat_idxs, b_dims))[b_spike_label, sp.arange(len(flat_idxs))] - 1
-        pre_cost_shift2 = pre_cost_shift[sp.arange(pre_cost_shift.shape[0]),
-            sp.vstack(sp.unravel_index(flat_idxs, b_dims))[b_spike_label, sp.arange(len(flat_idxs))] - 1]
-
-        cost_delete_in_a2 = cost[a_idx - 1].flat[flat_idxs] + 1
-        if sp.any(valid):
-            #cost_delete_in_b2 = sp.amin(cost[a_idx].flat[x], axis=1) + 1
-            pass
-        else:
-            cost_delete_in_b2 = sp.inf
+        cost_delete_in_a = cost[a_idx - 1].flat[flat_b_indices] + 1
 
         b_idx_iter = sp.ndindex(*b_dims)
         b_idx_iter.next()  # cost[:, 0, ..., 0] has already been initialized
         for i, b_idx in enumerate(b_idx_iter, 1):
-            invalid_origin_indices = sp.asarray(b_idx) == 0
             # Generate set of indices
             # {(j_1, ..., j_w - 1, ... j_L) | 1 <= w <= L}
             # and determine the calculated cost for each element.
-            b_origin_indices = x[i]
 
-            origin_costs = origin_costs2[i]
-
-            cost_shift = pre_cost_shift2[i]
-
-            cost_delete_in_a = cost_delete_in_a2[i]
-            #cost_delete_in_b = cost_delete_in_b2[i]
-
-            if sp.all(invalid_origin_indices):
+            if sp.all(invalid_neighbors[i]):
                 cost_delete_in_b = sp.inf
             else:
-                cost_delete_in_b = sp.amin(cost[a_idx].flat[b_origin_indices[sp.logical_not(invalid_origin_indices)]]) + 1
+                cost_delete_in_b = sp.amin(cost[a_idx].flat[
+                    flat_neighbor_indices[i][
+                        sp.logical_not(invalid_neighbors[i])]]) + 1
 
             cost[(a_idx,) + b_idx] = min(
-                cost_delete_in_a, cost_delete_in_b, cost_shift)
+                cost_delete_in_a[i], cost_delete_in_b, cost_shift[i])
 
     return cost.flat[-1]
