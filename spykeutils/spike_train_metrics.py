@@ -740,13 +740,22 @@ def _victor_purpura_multiunit_dist_for_trial_pair(
         x = sp.atleast_2d(flat_idxs).T - sp.cumprod((tuple(b_dims) + (1,))[::-1])[:-1][::-1]
         x = sp.maximum(0, x)
         origin_costs2 = cost[a_idx - 1].flat[x]
-        origin_costs2[sp.any(sp.vstack(sp.unravel_index(flat_idxs, b_dims)) == 0, axis=1), :] = sp.inf
+        invalid = sp.vstack(sp.unravel_index(flat_idxs, b_dims)).T == 0
+        valid = sp.vstack(sp.unravel_index(flat_idxs, b_dims)).T != 0
+        origin_costs2[invalid, :] = sp.inf
         b_spike_label = sp.argmin(origin_costs2, axis=1)
         pre_cost_shift = k[b_spike_label, :] + sp.atleast_2d(origin_costs2[sp.arange(origin_costs2.shape[0]), b_spike_label]).T
 
         #print sp.vstack(sp.unravel_index(flat_idxs, b_dims))[b_spike_label, sp.arange(len(flat_idxs))] - 1
         pre_cost_shift2 = pre_cost_shift[sp.arange(pre_cost_shift.shape[0]),
             sp.vstack(sp.unravel_index(flat_idxs, b_dims))[b_spike_label, sp.arange(len(flat_idxs))] - 1]
+
+        cost_delete_in_a2 = cost[a_idx - 1].flat[flat_idxs] + 1
+        if sp.any(valid):
+            #cost_delete_in_b2 = sp.amin(cost[a_idx].flat[x], axis=1) + 1
+            pass
+        else:
+            cost_delete_in_b2 = sp.inf
 
         b_idx_iter = sp.ndindex(*b_dims)
         b_idx_iter.next()  # cost[:, 0, ..., 0] has already been initialized
@@ -757,9 +766,13 @@ def _victor_purpura_multiunit_dist_for_trial_pair(
             # and determine the calculated cost for each element.
             b_origin_indices = x[i]
 
+            origin_costs = origin_costs2[i]
+
             cost_shift = pre_cost_shift2[i]
 
-            cost_delete_in_a = cost[(a_idx - 1,) + b_idx] + 1
+            cost_delete_in_a = cost_delete_in_a2[i]
+            #cost_delete_in_b = cost_delete_in_b2[i]
+
             if sp.all(invalid_origin_indices):
                 cost_delete_in_b = sp.inf
             else:
