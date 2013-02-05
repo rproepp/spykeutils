@@ -693,7 +693,7 @@ def victor_purpura_multiunit_dist(
         reassignment_cost=reassignment_cost, kernel=kernel)
 
 
-@profile
+#@profile
 def _victor_purpura_multiunit_dist_for_trial_pair(
         a, b, reassignment_cost, kernel):
     # The algorithm used is based on the one given in
@@ -736,30 +736,34 @@ def _victor_purpura_multiunit_dist_for_trial_pair(
         k = 2 - 2 * kernel(a_spike_time - bmat.flatten()).simplified.reshape(bmat.shape) + \
             reassignment_cost * reassignments
 
+        flat_idxs = sp.arange(sp.prod(b_dims))
+        x = sp.atleast_2d(flat_idxs).T - sp.cumprod((tuple(b_dims) + (1,))[::-1])[:-1][::-1]
+        x = sp.maximum(0, x)
+        origin_costs2 = cost[a_idx - 1].flat[x]
+        origin_costs2[sp.any(sp.vstack(sp.unravel_index(flat_idxs, b_dims)) == 0, axis=1), :] = sp.inf
+        b_spike_label = sp.argmin(origin_costs2, axis=1)
+        pre_cost_shift = k[b_spike_label, :] + sp.atleast_2d(origin_costs2[sp.arange(origin_costs2.shape[0]), b_spike_label]).T
+
+        #print sp.vstack(sp.unravel_index(flat_idxs, b_dims))[b_spike_label, sp.arange(len(flat_idxs))] - 1
+        pre_cost_shift2 = pre_cost_shift[sp.arange(pre_cost_shift.shape[0]),
+            sp.vstack(sp.unravel_index(flat_idxs, b_dims))[b_spike_label, sp.arange(len(flat_idxs))] - 1]
+
         b_idx_iter = sp.ndindex(*b_dims)
         b_idx_iter.next()  # cost[:, 0, ..., 0] has already been initialized
-        for b_idx in b_idx_iter:
+        for i, b_idx in enumerate(b_idx_iter, 1):
+            invalid_origin_indices = sp.asarray(b_idx) == 0
             # Generate set of indices
             # {(j_1, ..., j_w - 1, ... j_L) | 1 <= w <= L}
             # and determine the calculated cost for each element.
-            b_origin_indices = [
-                tuple(sp.atleast_1d(sp.squeeze(idx))) for idx in sp.split(
-                    sp.asarray(b_idx) - sp.eye(len(b_idx)), len(b_idx), axis=1)]
-            invalid_origin_indices = sp.asarray(b_idx) == 0
-            origin_costs = cost[[a_idx - 1] + b_origin_indices]
-            origin_costs[invalid_origin_indices] = sp.inf
+            b_origin_indices = x[i]
 
-            b_spike_label = sp.argmin(origin_costs)
-            cost_shift = origin_costs[b_spike_label] + \
-                k[b_spike_label, b_idx[b_spike_label] - 1]
+            cost_shift = pre_cost_shift2[i]
 
             cost_delete_in_a = cost[(a_idx - 1,) + b_idx] + 1
             if sp.all(invalid_origin_indices):
                 cost_delete_in_b = sp.inf
             else:
-                cost_delete_in_b = sp.amin(
-                    cost[[a_idx] + b_origin_indices]
-                    [sp.logical_not(invalid_origin_indices) != 0]) + 1
+                cost_delete_in_b = sp.amin(cost[a_idx].flat[b_origin_indices[sp.logical_not(invalid_origin_indices)]]) + 1
 
             cost[(a_idx,) + b_idx] = min(
                 cost_delete_in_a, cost_delete_in_b, cost_shift)
