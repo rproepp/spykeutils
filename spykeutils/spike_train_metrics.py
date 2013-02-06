@@ -693,7 +693,7 @@ def victor_purpura_multiunit_dist(
         reassignment_cost=reassignment_cost, kernel=kernel)
 
 
-@profile
+#@profile
 def _victor_purpura_multiunit_dist_for_trial_pair(
         a, b, reassignment_cost, kernel):
     # The algorithm used is based on the one given in
@@ -718,17 +718,14 @@ def _victor_purpura_multiunit_dist_for_trial_pair(
 
     a_merged = _merge_trains_and_label_spikes(a)
     b_dims = tuple(sp.asarray(b_num_spikes) + 1)
-    # TODO a_num_spikes dim is unnecessary
-    cost = sp.empty((sp.sum(a_num_spikes) + 1,) + tuple(b_dims))
-    cost[(sp.s_[:],) + len(b) * (0,)] = sp.arange(cost.shape[0])
-    cost[0, ...] = sp.sum(sp.indices(b_dims), axis=0)
+    cost = sp.asfarray(sp.sum(sp.indices(b_dims), axis=0))
 
     bmat = sp.empty((len(b), sp.amax(b_num_spikes))) * b[0].units
     for i, st in enumerate(b):
         bmat[i, :st.size] = st.rescale(b[0].units)
         bmat[i, st.size:] = sp.nan * b[0].units
 
-    for a_idx in xrange(1, cost.shape[0]):
+    for a_idx in xrange(1, sp.sum(a_num_spikes) + 1):
         a_spike_time = a_merged[a_idx - 1][0]
         a_spike_label = a_merged[a_idx - 1][1]
 
@@ -745,7 +742,7 @@ def _victor_purpura_multiunit_dist_for_trial_pair(
             0, sp.atleast_2d(flat_b_indices).T - flat_neighbor_shifts))
         valid_neighbors = b_indices.T != 0
         invalid_neighbors = sp.logical_not(valid_neighbors)
-        base_costs = cost[a_idx - 1].flat[flat_neighbor_indices]
+        base_costs = cost.flat[flat_neighbor_indices]
         base_costs[invalid_neighbors, :] = sp.inf
         min_base_cost_units = sp.argmin(base_costs, axis=1)
         cost_all_possible_shifts = k[min_base_cost_units, :] + \
@@ -754,68 +751,23 @@ def _victor_purpura_multiunit_dist_for_trial_pair(
             sp.arange(cost_all_possible_shifts.shape[0]),
             b_indices[min_base_cost_units, flat_b_indices] - 1]
 
-        cost_delete_in_a = cost[a_idx - 1].flat[flat_b_indices]
+        cost_delete_in_a = cost.flat[flat_b_indices]
 
         # cost_shift is dimensionless, but there is a bug in quantities with
         # the minimum function:
         # <https://github.com/python-quantities/python-quantities/issues/52>
         # The explicit request for the magnitude circumvents this problem.
-        min_delete_in_a_vs_shift = sp.ascontiguousarray(sp.minimum(
-            cost_delete_in_a, cost_shift.magnitude))
-
-        cost[a_idx].flat[flat_neighbor_indices[invalid_neighbors]] = sp.inf
-
-        #x = sp.asfortranarray(cost[a_idx].flat[flat_neighbor_indices])
-
-        t = sp.zeros_like(cost[a_idx])
-        #for i in flat_b_indices[1:]:
-            #cost_delete_in_b = sp.amin(cost[a_idx].flat[
-                #flat_neighbor_indices[i][valid_neighbors[i]]])
-            #cost[a_idx].flat[i] = min(
-                #min_delete_in_a_vs_shift[i], cost_delete_in_b) + 1
-            #if cost_delete_in_b > min_delete_in_a_vs_shift[i]:
-                #mi = sp.argmin(cost[a_idx].flat[
-                    #flat_neighbor_indices[i][valid_neighbors[i]]])
-                #t.flat[i] = t.flat[mi]
-            #t.flat[i] += 1
-            #print min_delete_in_a_vs_shift[i], flat_neighbor_indices[i], valid_neighbors[i]
-            #print cost[a_idx]
-        #print t
+        cost.flat = sp.minimum(cost_delete_in_a, cost_shift.magnitude) + 1
+        cost.flat[0] = sp.inf
 
         x = sp.cumprod((b_dims + (1,))[::-1])[:-1]
-        flat = min_delete_in_a_vs_shift + 1
-        #flat[0] = cost[a_idx].flat[i]
-        flat[0] = sp.inf
-        #print flat
-        t.fill(0)
         for dim_size, stride in zip(b_dims[::-1], x):
             for i in xrange(stride):
-                for j in xrange(i, flat.size, dim_size * stride):
-                    #print j, j + dim_size*stride, stride
-                    y = sp.arange(flat[j:j + dim_size * stride:stride].size - 1, -1, -1)
-                    flat[j:j + dim_size * stride:stride] += y
-                    #t.flat[j:j + dim_size * stride:stride] += y + 1
-                    flat[j:j + dim_size * stride:stride] = sp.minimum.accumulate(
-                        flat[j:j + dim_size * stride:stride])
-                    flat[j:j + dim_size * stride:stride] += -y
-                    #t.flat[j:j + dim_size * stride:stride] += -y + 1
-        #print t
-
-            #for i in xrange(1, flat.size, dim_size * stride):
-                #y = sp.arange(flat[i::stride].size - 1, -1, -1)
-                #print y, flat[i::stride].size
-                #flat[i::stride] += y
-                #flat[i:dim_size * stride:stride] = sp.minimum.accumulate(
-                    #flat[i:dim_size * stride:stride])
-                #flat[i::stride] += -y + 1
-        #print flat
-        #print cost[a_idx].flatten()
-        cost[a_idx].flat = flat
-        #assert sp.all(cost[a_idx].flatten() == flat)
-        #print '----'
-
-            #cost_delete_in_b = sp.amin(x[i])
-            #x[i] = min(
-                #min_delete_in_a_vs_shift[i], cost_delete_in_b) + 1
+                for j in xrange(i, cost.size, dim_size * stride):
+                    y = sp.arange(cost.flat[j:j + dim_size * stride:stride].size - 1, -1, -1)
+                    cost.flat[j:j + dim_size * stride:stride] += y
+                    cost.flat[j:j + dim_size * stride:stride] = sp.minimum.accumulate(
+                        cost.flat[j:j + dim_size * stride:stride])
+                    cost.flat[j:j + dim_size * stride:stride] += -y
 
     return cost.flat[-1]
