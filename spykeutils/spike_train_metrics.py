@@ -1,6 +1,5 @@
 
 from monkeypatch import quantities_patch
-import heapq
 import quantities as pq
 import scipy as sp
 import _scipy_quantities as spq
@@ -42,9 +41,11 @@ def _create_matrix_from_indexed_function(
 
 
 def _merge_trains_and_label_spikes(trains):
-    labeled_trains = (zip(st, len(st) * (label,)) for label, st
-                      in enumerate(trains))
-    return list(heapq.merge(*labeled_trains))
+    labels = sp.concatenate(
+        [sp.zeros(st.size, dtype=int) + i for i, st in enumerate(trains)])
+    trains = spq.concatenate([st.view(dtype=pq.Quantity) for st in trains])
+    sorted_indices = sp.argsort(trains)
+    return trains[sorted_indices], labels[sorted_indices]
 
 
 def cs_dist(
@@ -693,7 +694,6 @@ def victor_purpura_multiunit_dist(
         reassignment_cost=reassignment_cost, kernel=kernel)
 
 
-#@profile
 def _victor_purpura_multiunit_dist_for_trial_pair(
         a, b, reassignment_cost, kernel):
     # The algorithm used is based on the one given in
@@ -720,6 +720,9 @@ def _victor_purpura_multiunit_dist_for_trial_pair(
         a_num_spikes, b_num_spikes = b_num_spikes, a_num_spikes
         a_num_total_spikes = sp.sum(a_num_spikes)
 
+    if a_num_total_spikes <= 0:
+        return sp.sum(b_num_spikes)
+
     b_dims = tuple(sp.asarray(b_num_spikes) + 1)
 
     cost = sp.asfarray(sp.sum(sp.indices(b_dims), axis=0))
@@ -735,26 +738,23 @@ def _victor_purpura_multiunit_dist_for_trial_pair(
     b_train_mat = sp.empty((len(b), sp.amax(b_num_spikes))) * b[0].units
     for i, st in enumerate(b):
         b_train_mat[i, :st.size] = st.rescale(b[0].units)
-        b_train_mat[i, st.size:] = sp.nan * b[0].units  # TODO check whether non-nan number is faster
-    reassignment_costs = sp.empty(b_train_mat.shape)
+        b_train_mat[i, st.size:] = sp.nan * b[0].units
+
+    reassignment_costs = sp.empty((a_merged[0].size,) + b_train_mat.shape)
+    reassignment_costs.fill(reassignment_cost)
+    reassignment_costs[sp.arange(a_merged[1].size), a_merged[1], :] = 0.0
+    k = 1 - 2 * kernel(sp.atleast_2d(
+        a_merged[0]).T - b_train_mat.flatten()).simplified.reshape(
+            (a_merged[0].size,) + b_train_mat.shape) + reassignment_costs
 
     decreasing_sequence = flat_b_indices[::-1]
 
     # Do the actual calculations.
     for a_idx in xrange(1, a_num_total_spikes + 1):
-        a_spike_time = a_merged[a_idx - 1][0]
-        a_spike_label = a_merged[a_idx - 1][1]
-
-        reassignment_costs.fill(reassignment_cost)
-        reassignment_costs[a_spike_label, :] = 0.0
-        k = 1 - 2 * kernel(
-            a_spike_time - b_train_mat.flatten()).simplified.reshape(
-                b_train_mat.shape) + reassignment_costs
-
         base_costs = cost.flat[flat_neighbor_indices]
         base_costs[invalid_neighbors, :] = sp.inf
         min_base_cost_labels = sp.argmin(base_costs, axis=1)
-        cost_all_possible_shifts = k[min_base_cost_labels, :] + \
+        cost_all_possible_shifts = k[a_idx - 1, min_base_cost_labels, :] + \
             sp.atleast_2d(base_costs[flat_b_indices, min_base_cost_labels]).T
         cost_shift = cost_all_possible_shifts[
             sp.arange(cost_all_possible_shifts.shape[0]),
@@ -775,8 +775,8 @@ def _victor_purpura_multiunit_dist_for_trial_pair(
                 segment_size = dim_size * stride
                 for j in xrange(i, cost.size, segment_size):
                     s = sp.s_[j:j + segment_size:stride]
-                    cost.flat[s] += decreasing_sequence[-cost.flat[s].size:]
-                    cost.flat[s] = sp.minimum.accumulate(cost.flat[s])
-                    cost.flat[s] -= decreasing_sequence[-cost.flat[s].size:]
+                    seq = decreasing_sequence[-cost.flat[s].size:]
+                    cost.flat[s] = sp.minimum.accumulate(
+                        cost.flat[s] + seq) - seq
 
     return cost.flat[-1]
