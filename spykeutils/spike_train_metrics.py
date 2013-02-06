@@ -707,49 +707,58 @@ def _victor_purpura_multiunit_dist_for_trial_pair(
     # j_w spikes of the spike trains of b (the reference given above denotes
     # this matrix with G).
 
-    # The algorithm is not asymmetric, swap a and b if that will save us time.
+    # Initialization of various variables needed by the algorithm. Also swap
+    # a and b if it will save time as the algorithm is not symmetric.
     a_num_spikes = [st.size for st in a]
     b_num_spikes = [st.size for st in b]
-    complexity_same = sp.sum(a_num_spikes) * sp.prod(b_num_spikes)
+    a_num_total_spikes = sp.sum(a_num_spikes)
+
+    complexity_same = a_num_total_spikes * sp.prod(b_num_spikes)
     complexity_swapped = sp.prod(a_num_spikes) * sp.sum(b_num_spikes)
     if complexity_swapped < complexity_same:
         a, b = b, a
         a_num_spikes, b_num_spikes = b_num_spikes, a_num_spikes
+        a_num_total_spikes = sp.sum(a_num_spikes)
 
-    a_merged = _merge_trains_and_label_spikes(a)
     b_dims = tuple(sp.asarray(b_num_spikes) + 1)
+
     cost = sp.asfarray(sp.sum(sp.indices(b_dims), axis=0))
 
-    bmat = sp.empty((len(b), sp.amax(b_num_spikes))) * b[0].units
-    for i, st in enumerate(b):
-        bmat[i, :st.size] = st.rescale(b[0].units)
-        bmat[i, st.size:] = sp.nan * b[0].units
+    a_merged = _merge_trains_and_label_spikes(a)
+    b_strides = sp.cumprod((b_dims + (1,))[::-1])[:-1]
+    flat_b_indices = sp.arange(cost.size)
+    b_indices = sp.vstack(sp.unravel_index(flat_b_indices, b_dims))
+    flat_neighbor_indices = sp.maximum(
+        0, sp.atleast_2d(flat_b_indices).T - b_strides[::-1])
+    invalid_neighbors = b_indices.T == 0
 
-    for a_idx in xrange(1, sp.sum(a_num_spikes) + 1):
+    b_train_mat = sp.empty((len(b), sp.amax(b_num_spikes))) * b[0].units
+    for i, st in enumerate(b):
+        b_train_mat[i, :st.size] = st.rescale(b[0].units)
+        b_train_mat[i, st.size:] = sp.nan * b[0].units  # TODO check whether non-nan number is faster
+    reassignment_costs = sp.empty(b_train_mat.shape)
+
+    decreasing_sequence = flat_b_indices[::-1]
+
+    # Do the actual calculations.
+    for a_idx in xrange(1, a_num_total_spikes + 1):
         a_spike_time = a_merged[a_idx - 1][0]
         a_spike_label = a_merged[a_idx - 1][1]
 
-        reassignment_costs = sp.empty(bmat.shape)
         reassignment_costs.fill(reassignment_cost)
         reassignment_costs[a_spike_label, :] = 0.0
-        k = 1 - 2 * kernel(a_spike_time - bmat.flatten()).simplified.reshape(
-            bmat.shape) + reassignment_costs
+        k = 1 - 2 * kernel(
+            a_spike_time - b_train_mat.flatten()).simplified.reshape(
+                b_train_mat.shape) + reassignment_costs
 
-        flat_b_indices = sp.arange(sp.prod(b_dims))
-        b_indices = sp.vstack(sp.unravel_index(flat_b_indices, b_dims))
-        flat_neighbor_shifts = sp.cumprod((b_dims + (1,))[::-1])[:-1][::-1]
-        flat_neighbor_indices = sp.ascontiguousarray(sp.maximum(
-            0, sp.atleast_2d(flat_b_indices).T - flat_neighbor_shifts))
-        valid_neighbors = b_indices.T != 0
-        invalid_neighbors = sp.logical_not(valid_neighbors)
         base_costs = cost.flat[flat_neighbor_indices]
         base_costs[invalid_neighbors, :] = sp.inf
-        min_base_cost_units = sp.argmin(base_costs, axis=1)
-        cost_all_possible_shifts = k[min_base_cost_units, :] + \
-            sp.atleast_2d(base_costs[flat_b_indices, min_base_cost_units]).T
+        min_base_cost_labels = sp.argmin(base_costs, axis=1)
+        cost_all_possible_shifts = k[min_base_cost_labels, :] + \
+            sp.atleast_2d(base_costs[flat_b_indices, min_base_cost_labels]).T
         cost_shift = cost_all_possible_shifts[
             sp.arange(cost_all_possible_shifts.shape[0]),
-            b_indices[min_base_cost_units, flat_b_indices] - 1]
+            b_indices[min_base_cost_labels, flat_b_indices] - 1]
 
         cost_delete_in_a = cost.flat[flat_b_indices]
 
@@ -760,14 +769,14 @@ def _victor_purpura_multiunit_dist_for_trial_pair(
         cost.flat = sp.minimum(cost_delete_in_a, cost_shift.magnitude) + 1
         cost.flat[0] = sp.inf
 
-        x = sp.cumprod((b_dims + (1,))[::-1])[:-1]
-        for dim_size, stride in zip(b_dims[::-1], x):
+        # Minimum with cost for deleting in b
+        for dim_size, stride in zip(b_dims[::-1], b_strides):
             for i in xrange(stride):
-                for j in xrange(i, cost.size, dim_size * stride):
-                    y = sp.arange(cost.flat[j:j + dim_size * stride:stride].size - 1, -1, -1)
-                    cost.flat[j:j + dim_size * stride:stride] += y
-                    cost.flat[j:j + dim_size * stride:stride] = sp.minimum.accumulate(
-                        cost.flat[j:j + dim_size * stride:stride])
-                    cost.flat[j:j + dim_size * stride:stride] += -y
+                segment_size = dim_size * stride
+                for j in xrange(i, cost.size, segment_size):
+                    s = sp.s_[j:j + segment_size:stride]
+                    cost.flat[s] += decreasing_sequence[-cost.flat[s].size:]
+                    cost.flat[s] = sp.minimum.accumulate(cost.flat[s])
+                    cost.flat[s] -= decreasing_sequence[-cost.flat[s].size:]
 
     return cost.flat[-1]
