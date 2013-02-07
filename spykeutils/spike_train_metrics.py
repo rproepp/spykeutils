@@ -628,13 +628,12 @@ def _victor_purpura_dist_for_trial_pair(a, b, kernel):
 
     for i in xrange(min_dim):
         # determine G[i, i] == accumulated_min[:, 0]
-        accumulated_min = cost[:, 1:max_dim - i]  # insert
-        accumulated_min[0, :] = sp.minimum(
-            accumulated_min[0, :],
-            cost[0, :-i - 1] + k[i:, i])  # shift
-        accumulated_min[1, :b.size - i] = sp.minimum(
-            accumulated_min[1, :b.size - i],
-            cost[1, :b.size - i] + k[i, i:])  # shift
+        #accumulated_min = sp.empty((2, max_dim - i - 1))
+        accumulated_min = cost[:, :-i - 1] + k[i:, i]
+        accumulated_min[1, :b.size - i] = cost[1, :b.size - i] + k[i, i:]
+        accumulated_min = sp.minimum(
+            accumulated_min,  # shift
+            cost[:, 1:max_dim - i])  # insert
         acc_dim = accumulated_min.shape[1]
         # delete vs min(insert, shift)
         accumulated_min[:, 0] = min(cost[1, 1], accumulated_min[0, 0])
