@@ -69,6 +69,15 @@ class TestKernel(ut.TestCase):
         actual = kernel.summed_dist_matrix(vectors)
         assert_array_almost_equal(expected, actual)
 
+    def test_summed_dist_matrix_with_units(self):
+        kernel = sigproc.Kernel(2000 * pq.ms, normalize=False)
+        kernel._evaluate = lambda t, size: 1.0 / size / size * t
+        vectors = [sp.array([2.0, 1.0, 3.0]) * pq.s,
+                   sp.array([1500, 4000]) * pq.ms]
+        expected = sp.array([[0.0, -1.125], [1.125, 0.0]]) / pq.s
+        actual = kernel.summed_dist_matrix(vectors)
+        assert_array_almost_equal(expected, actual.rescale(1.0 / pq.s))
+
 
 class TestSymmetricKernel(ut.TestCase):
     def test_summed_dist_matrix(self):
@@ -78,6 +87,15 @@ class TestSymmetricKernel(ut.TestCase):
         expected = sp.array([[8.0, 8.5], [8.5, 5.0]])
         actual = kernel.summed_dist_matrix(vectors)
         assert_array_almost_equal(expected, actual)
+
+    def test_summed_dist_matrix_with_units(self):
+        kernel = sigproc.Kernel(2000 * pq.ms, normalize=False)
+        kernel._evaluate = lambda t, size: 1.0 / size / size * sp.absolute(t)
+        vectors = [sp.array([2.0, 1.0, 3.0]) * pq.s,
+                   sp.array([1500, 4000]) * pq.ms]
+        expected = sp.array([[2.0, 2.125], [2.125, 1.25]]) / pq.s
+        actual = kernel.summed_dist_matrix(vectors)
+        assert_array_almost_equal(expected, actual.rescale(1.0 / pq.s))
 
 
 class Test_discretize_kernel(ut.TestCase):
@@ -242,6 +260,16 @@ class TestLaplacianKernel(ut.TestCase):
              [1.9891932723496157, 2.1641699972477975]])
         actual = kernel.summed_dist_matrix(vectors)
         assert_array_almost_equal(expected, actual)
+
+    def test_summed_dist_matrix_with_units(self):
+        kernel = sigproc.LaplacianKernel(1000 * pq.ms, normalize=True)
+        vectors = [sp.array([2.0, 1.0, 3.0]) * pq.s,
+                   sp.array([1500, 4000]) * pq.ms]
+        expected = sp.array(
+            [[4.7421883311589941, 1.9891932723496157],
+             [1.9891932723496157, 2.1641699972477975]]) / 2.0 / pq.s
+        actual = kernel.summed_dist_matrix(vectors)
+        assert_array_almost_equal(expected, actual.rescale(1.0 / pq.s))
 
 
 class TestRectangularKernel(ut.TestCase):
