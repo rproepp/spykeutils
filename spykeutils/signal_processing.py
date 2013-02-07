@@ -343,7 +343,8 @@ class LaplacianKernel(SymmetricKernel):
         # Cross vector terms
         for u in xrange(D.shape[0]):
             for v in xrange(u + 1, D.shape[1]):
-                js, ks = _searchsorted_pairwise(vectors[u], vectors[v])
+                js = sp.searchsorted(vectors[v], vectors[u], 'right') - 1
+                ks = sp.searchsorted(vectors[u], vectors[v], 'left') - 1
                 start_j = sp.searchsorted(js, 0)
                 start_k = sp.searchsorted(ks, 0)
                 D[u, v] += sp.sum(inv_exp_vecs[u][start_j:js.size] * exp_vecs[v][js[start_j:]] *
