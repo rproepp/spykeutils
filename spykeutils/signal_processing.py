@@ -308,13 +308,23 @@ class LaplacianKernel(SymmetricKernel):
         # Given N vectors with n entries on average the run-time complexity is
         # O(N^2 * n). O(N^2 + N * n^2) memory will be needed.
 
+        if len(vectors) <= 0:
+            return sp.zeros((0, 0))
+
         if not presorted:
             vectors = [v.copy() for v in vectors]
             for v in vectors:
                 v.sort()
 
-        exp_vecs = [sp.exp((v / self.kernel_size).simplified) for v in vectors]
-        inv_exp_vecs = [1.0 / v for v in exp_vecs]
+        sizes = [v.size for v in vectors]
+        max_size = max(sizes)
+        mat = sp.empty((len(vectors), max_size)) * vectors[0].units
+        for i, v in enumerate(vectors):
+            if v.size > 0:
+                mat[i, :v.size] = v
+
+        exp_vecs = sp.exp((mat / self.kernel_size).simplified)
+        inv_exp_vecs = 1.0 / exp_vecs
         exp_diffs = [sp.outer(v, iv) for v, iv in zip(exp_vecs, inv_exp_vecs)]
 
         markage = [sp.empty(v.size) for v in vectors]
