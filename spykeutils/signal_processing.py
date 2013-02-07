@@ -26,8 +26,8 @@ def _searchsorted_pairwise(a, b):
     :rtype: Tuple of arrays.
     """
 
-    idx_a = sp.empty(len(a))
-    idx_b = sp.empty(len(b))
+    idx_a = sp.empty(len(a), dtype=int)
+    idx_b = sp.empty(len(b), dtype=int)
     i = j = 0
     while i < len(a) and j < len(b):
         if a[i] < b[j]:
@@ -267,6 +267,7 @@ class GaussianKernel(SymmetricKernel):
             scipy.special.erfinv(fraction + scipy.special.erf(0.0))
 
 
+#@profile
 class LaplacianKernel(SymmetricKernel):
     r""" Unnormalized: :math:`K(t) = \exp(-|\frac{t}{\tau}|)` with kernel size
     :math:`\tau`.
@@ -290,6 +291,63 @@ class LaplacianKernel(SymmetricKernel):
 
     def boundary_enclosing_at_least(self, fraction):
         return -self.kernel_size * sp.log(1.0 - fraction)
+
+    def summed_dist_matrix(self, vectors, presorted=False):
+        # This implementation is based on
+        #
+        # Houghton, C., & Kreuz, T. (2012). On the efficient calculation of van
+        # Rossum distances. Network: Computation in Neural Systems, 23(1-2),
+        # 48-58.
+        #
+        # Note that the cited paper contains some errors: In formula (9) the
+        # left side of the equation should be divided by two and in the last
+        # sum in this equation it should say `j|v_i >= u_i` instead of
+        # `j|v_i > u_i`. Also, in equation (11) it should say `j|u_i >= v_i`
+        # instead of `j|u_i > v_i`.
+        #
+        # Given N vectors with n entries on average the run-time complexity is
+        # O(N^2 * n). O(N^2 + N * n^2) memory will be needed.
+
+        if not presorted:
+            vectors = [v.copy() for v in vectors]
+            for v in vectors:
+                v.sort()
+
+        exp_vecs = [sp.exp((v / self.kernel_size).simplified) for v in vectors]
+        inv_exp_vecs = [1.0 / v for v in exp_vecs]
+        exp_diffs = [sp.outer(v, iv) for v, iv in zip(exp_vecs, inv_exp_vecs)]
+
+        markage = [sp.empty(v.size) for v in vectors]
+        for u in xrange(len(markage)):
+            if markage[u].size <= 0:
+                continue
+            markage[u][0] = 0
+            for i in xrange(1, markage[u].size):
+                markage[u][i] = (
+                    (markage[u][i - 1] + 1.0) * exp_diffs[u][i - 1, i])
+
+        # Same vector terms
+        D = sp.zeros((len(vectors), len(vectors)))
+        for u in xrange(D.shape[0]):
+            D[u, u] = markage[u].size + 2.0 * sp.sum(markage[u])
+
+        # Cross vector terms
+        for u in xrange(D.shape[0]):
+            for v in xrange(u + 1, D.shape[1]):
+                js, ks = _searchsorted_pairwise(vectors[u], vectors[v])
+                start_j = sp.searchsorted(js, 0)
+                start_k = sp.searchsorted(ks, 0)
+                D[u, v] += sp.sum(inv_exp_vecs[u][start_j:js.size] * exp_vecs[v][js[start_j:]] *
+                            (1.0 + markage[v][js[start_j:]]))
+                D[u, v] += sp.sum(inv_exp_vecs[v][start_k:ks.size] * exp_vecs[u][ks[start_k:]] *
+                            (1.0 + markage[u][ks[start_k:]]))
+                D[v, u] = D[u, v]
+
+        if self.normalize:
+            normalization = self.normalization_factor(self.kernel_size)
+        else:
+            normalization = 1.0
+        return normalization * D
 
 
 class RectangularKernel(SymmetricKernel):
