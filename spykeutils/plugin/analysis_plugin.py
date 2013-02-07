@@ -21,21 +21,20 @@ class AnalysisPlugin(gui_data.DataSet):
     results.
 
     The GUI configuration uses :mod:`guidata`. Because `AnalysisPlugin`
-    inherits from `DataSet`,
-    configuration options can easily be added directly to the class
-    definition. For example, the following code creates an analysis that
-    has two configuration options which are used in the start() method
-    to print to the console::
+    inherits from `DataSet`, configuration options can easily be added
+    directly to the class definition. For example, the following code
+    creates an analysis that has two configuration options which are
+    used in the start() method to print to the console::
 
-        from spykeutils.plugin.analysis_plugin import AnalysisPlugin
+        from spykeutils.plugin import analysis_plugin, gui_data
 
-        class ExampleAnalysis(AnalysisPlugin):
-            some_time = di.FloatItem('Some time', default=2.0, unit='ms')
-            print_more = di.BoolItem('Print additional info', default=True)
+        class SamplePlugin(analysis_plugin.AnalysisPlugin):
+            some_time = gui_data.FloatItem('Some time', default=2.0, unit='ms')
+            print_more = gui_data.BoolItem('Print additional info', default=True)
 
             def start(self, current, selections):
-                print 'The selected time is', some_time, 'milliseconds.'
-                if print_more:
+                print 'The selected time is', self.some_time, 'milliseconds.'
+                if self.print_more:
                     print 'This is important additional information!'
 
 
@@ -60,7 +59,7 @@ class AnalysisPlugin(gui_data.DataSet):
         :returns: The name of the plugin.
         :rtype: str
         """
-        return 'Prototype Analysis'
+        return 'Prototype Plugin'
 
     def get_title(self): # Override guidata.DataSet.get_title()
         return self.get_name()
