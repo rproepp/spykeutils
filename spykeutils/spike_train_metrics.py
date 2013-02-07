@@ -1,4 +1,3 @@
-
 from monkeypatch import quantities_patch
 import quantities as pq
 import scipy as sp
@@ -73,13 +72,13 @@ def cs_dist(
     train domain. Statistical Signal Processing for Neuroscience and
     Neurotechnology, Academic Press, New York.*
 
-    :param sequence trains: Sequence of `SpikeTrain` of which the distance
-        will be calculated pairwise.
+    :param sequence trains: Sequence of :class:`neo.core.SpikeTrain` objects of
+        which the distance will be calculated pairwise.
     :param smoothing_filter: Smoothing filter to be convolved with the spike
         trains.
     :type smoothing_filter: :class:`.signal_processing.Kernel`
     :param sampling_rate: The sampling rate which will be used to bin
-        the spike trains.
+        the spike trains as inverse time scalar.
     :type sampling_rate: Quantity scalar
     :param float filter_area_fraction: A value between 0 and 1 which controls
         the interval over which the smoothing filter will be discretized. At
@@ -98,9 +97,11 @@ def cs_dist(
 
 
 def event_synchronization(
-        trains, tau=None, kernel=sigproc.RectangularKernel(1, normalize=False),
-        sort=True):
-    """ Calculates the event synchronization.
+        trains, tau=None,
+        kernel=sigproc.RectangularKernel(1.0, normalize=False), sort=True):
+    """ event_synchronization(trains, tau=None, kernel=signal_processing.RectangularKernel(1.0, normalize=False), sort=True)
+
+    Calculates the event synchronization.
 
     Let :math:`d(x|y)` be the count of spikes in :math:`y` which occur shortly
     before an event in :math:`x` with a time difference of less then
@@ -119,11 +120,11 @@ def event_synchronization(
     synchronization: a simple and fast method to measure synchronicity and time
     delay patterns. Physical Review E, 66(4), 041904.*
 
-    :param sequence trains: SpikeTrains of which the van Rossum distance will be
-        calculated pairwise.
+    :param sequence trains: Sequence of :class:`neo.core.SpikeTrain` objects of
+        which the van Rossum distance will be calculated pairwise.
     :param tau: The maximum time lag for two spikes to be considered coincident
-        or synchronous. To have it determined automatically by above formula set
-        it to `None`.
+        or synchronous as time scalar. To have it determined automatically by
+        above formula set it to `None`.
     :type tau: Quantity scalar
     :param kernel: Kernel to use in the calculation of the distance.
     :type kernel: :class:`.signal_processing.Kernel`
@@ -186,9 +187,10 @@ def hunter_milton_similarity(trains, tau=1.0 * pq.s, kernel=None):
       similarity measures for spike trains. Advances in Neuro-Information
       Processing, 177-185.*
 
-    :param sequence trains: SpikeTrains of which the Hunter-Milton similarity
-        will be calculated pairwise.
-    :param tau: The time scale for determining the coincidence of two events.
+    :param sequence trains: Sequence of :class:`neo.core.SpikeTrain` objects of
+        which the Hunter-Milton similarity will be calculated pairwise.
+    :param tau: The time scale for determining the coincidence of two events as
+        time scalar.
     :type tau: Quantity scalar
     :param kernel: Kernel to use in the calculation of the distance. If `None`,
         a unnormalized Laplacian kernel will be used.
@@ -232,14 +234,13 @@ def norm_dist(
     train domain. Statistical Signal Processing for Neuroscience and
     Neurotechnology, Academic Press, New York.*
 
-    :param sequence trains: Sequence of `SpikeTrain` of which the distance
-        will be calculated pairwise.
-    :param SpikeTrain b: Second spike train.
+    :param sequence trains: Sequence of :class:`neo.core.SpikeTrain` objects of
+        which the distance will be calculated pairwise.
     :param smoothing_filter: Smoothing filter to be convolved with the spike
         trains.
     :type smoothing_filter: :class:`.signal_processing.Kernel`
     :param sampling_rate: The sampling rate which will be used to bin
-        the spike trains.
+        the spike trains as inverse time scalar.
     :type sampling_rate: Quantity scalar
     :param float filter_area_fraction: A value between 0 and 1 which controls
         the interval over which the smoothing filter will be discretized. At
@@ -248,7 +249,8 @@ def norm_dist(
         sampling rate).
     :returns: Matrix containing the norm distance of all pairs of spike trains
         given the smoothing_filter.
-    :rtype: Quantity 2D
+    :rtype: Quantity 2D with units depending on the smoothing filter (usually
+        temporal frequency units)
     """
 
     inner = st_inner(
@@ -285,8 +287,8 @@ def schreiber_similarity(trains, kernel, sort=True):
       binless spike train measures. Neural Computing and Applications, 19(3),
       405-419. doi:10.1007/s00521-009-0307-6*
 
-    :param sequence trains: Sequence of `SpikeTrain` of which the distance
-        will be calculated pairwise.
+    :param sequence trains: Sequence of :class:`neo.core.SpikeTrain` objects of
+        which the distance will be calculated pairwise.
     :param kernel: Kernel to use. It corresponds to a smoothing filter
         by being the autocorrelation of such a filter.
     :type kernel: :class:`.signal_processing.Kernel`
@@ -324,13 +326,13 @@ def st_inner(
     train domain. Statistical Signal Processing for Neuroscience and
     Neurotechnology, Academic Press, New York.*
 
-    :param sequence a: Sequence of `SpikeTrain`.
-    :param sequence b: Sequence of `SpikeTrain`.
+    :param sequence a: Sequence of :class:`neo.core.SpikeTrain` objects.
+    :param sequence b: Sequence of :class:`neo.core.SpikeTrain` objects.
     :param smoothing_filter: A smoothing filter to be convolved with the spike
         trains.
     :type smoothing_filter: :class:`.signal_processing.Kernel`
     :param sampling_rate: The sampling rate which will be used to bin
-        the spike train.
+        the spike train as inverse time scalar.
     :type sampling_rate: Quantity scalar
     :param float filter_area_fraction: A value between 0 and 1 which controls
         the interval over which the `smoothing_filter` will be discretized. At
@@ -339,7 +341,8 @@ def st_inner(
         sampling rate).
     :returns: Matrix containing the inner product for each pair of spike trains
         with one spike train from `a` and the other one from `b`.
-    :rtype: Quantity 2D
+    :rtype: Quantity 2D with units depending on the smoothing filter (usually
+        temporal frequency units)
     """
 
     if all((x is y for x, y in zip(a, b))):
@@ -381,20 +384,22 @@ def st_norm(
     train domain. Statistical Signal Processing for Neuroscience and
     Neurotechnology, Academic Press, New York.*
 
-    :param SpikeTrain train: A spike train.
+    :param train: Spike train of which to calculate the norm.
+    :type train: :class:`neo.core.SpikeTrain`
     :param smoothing_filter: Smoothing filter to be convolved with the spike
         train.
     :type smoothing_filter: :class:`.signal_processing.Kernel`
     :param sampling_rate: The sampling rate which will be used to bin
-        the spike train.
+        the spike train as inverse time scalar.
     :type sampling_rate: Quantity scalar
     :param float filter_area_fraction: A value between 0 and 1 which controls
         the interval over which the smoothing filter will be discretized. At
         least the given fraction of the complete smoothing filter area will be
         covered. Higher values can lead to more accurate results (besides the
         sampling rate).
-    :returns: The of norm the spike train given the smoothing_filter.
-    :rtype: Quantity scalar
+    :returns: The norm of the spike train given the smoothing_filter.
+    :rtype: Quantity scalar with units depending on the smoothing filter (usually
+        temporal frequency units)
     """
 
     return st_inner(
@@ -414,14 +419,16 @@ def van_rossum_dist(trains, tau=1.0 * pq.s, kernel=None, sort=True):
     normalization used in the cited paper.
 
     Given :math:`N` spike trains with :math:`n` spikes on average the run-time
-    complexity of this function is :math:`O(N^2 n^2)`.
+    complexity of this function is :math:`O(N^2 n^2)`. An implementation in
+    :math:`O(N^2 n)` would be possible but has a high constant factor rendering
+    it slower in practical cases.
 
-    :param sequence trains: SpikeTrains of which the van Rossum distance will be
-        calculated pairwise.
-    :param tau: Decay rate of the exponential function. Controls for which time
-        scale the metric will be sensitive. This parameter will be ignored if
-        `kernel` is not `None`. May also be `inf` which will lead to only
-        measuring differences in spike count.
+    :param sequence trains: Sequence of :class:`neo.core.SpikeTrain` objects of
+        which the van Rossum distance will be calculated pairwise.
+    :param tau: Decay rate of the exponential function as time scalar. Controls
+        for which time scale the metric will be sensitive. This parameter will
+        be ignored if `kernel` is not `None`. May also be :const:`scipy.inf`
+        which will lead to only measuring differences in spike count.
     :type tau: Quantity scalar
     :param kernel: Kernel to use in the calculation of the distance. This is not
         the smoothing filter, but its autocorrelation. If `kernel` is `None`, an
@@ -473,20 +480,19 @@ def van_rossum_multiunit_dist(units, weighting, tau=1.0 * pq.s, kernel=None):
     Rossum distances. Network: Computation in Neural Systems, 23(1-2), 48-58.*
 
     Given :math:`N` spike trains in total with :math:`n` spikes on average the
-    run-time complexity of this function is :math:`O(N^2 n)` and :math:`O(N^2
-    + Nn^2)` memory will be needed, if the default Laplacian kernel is used
-    (which corresponds to the causal decaying exponential smoothing function).
-    Other kernels have probably a worse performance.
+    run-time complexity of this function is :math:`O(N^2 n^2)` and :math:`O(N^2
+    + Nn^2)` memory will be needed.
 
-    :param dict units: Dictionary of lists with each list containing the trials
-            of one unit. Each trial should be a `SpikeTrain` and all units
-            should have the same number of trials.
+    :param dict units: Dictionary of sequences with each sequence containing
+        the trials of one unit. Each trial should be
+        a :class:`neo.core.SpikeTrain` and all units should have the same
+        number of trials.
     :param float weighting: Controls the interpolation between a labeled line
         and a summed population coding.
-    :param tau: Decay rate of the exponential function. Controls for which time
-        scale the metric will be sensitive. This parameter will be ignored if
-        `kernel` is not `None`. May also be `inf` which will lead to only
-        measuring differences in spike count.
+    :param tau: Decay rate of the exponential function as time scalar. Controls
+        for which time scale the metric will be sensitive. This parameter will
+        be ignored if `kernel` is not `None`. May also be :const:`scipy.inf`
+        which will lead to only measuring differences in spike count.
     :type tau: Quantity scalar
     :param kernel: Kernel to use in the calculation of the distance. This is not
         the smoothing filter, but its autocorrelation. If `kernel` is `None`, an
@@ -542,10 +548,10 @@ def victor_purpura_dist(trains, q=1.0 * pq.Hz, kernel=None, sort=True):
     spike trains the run-time complexity of this function is
     :math:`O(N^2 n^2)` and :math:`O(N^2 + n^2)` memory will be needed.
 
-    :param sequence trains: Sequence of `SpikeTrain` of which the distance
-        will be calculated pairwise.
-    :param q: Cost factor for spike shifts. If `kernel` is not `None`, `q` will
-        be ignored.
+    :param sequence trains: Sequence of :class:`neo.core.SpikeTrain` objects of
+        which the distance will be calculated pairwise.
+    :param q: Cost factor for spike shifts as inverse time scalar. If `kernel`
+        is not `None`, `q` will be ignored.
     :type q: Quantity scalar
     :param kernel: Kernel to use in the calculation of the distance. If
         `kernel` is `None`, an unnormalized triangular kernel with a half width
@@ -664,20 +670,21 @@ def victor_purpura_multiunit_dist(
 
     Given the average number of spikes :math:`N` in a spike train and :math:`L`
     units with :math:`n` spike trains each the run-time complexity is
-    :math:`O(n^2 LN^{L+1})`. The space complexity is :math:`O(n^2 + LN^{L+1}`.
+    :math:`O(n^2 LN^{L+1})`. The space complexity is :math:`O(n^2 + LN^{L+1})`.
 
     For calculating the distance between only two units one should use
-    :func:`victor_purpura_dist` which is more memory efficient.
+    :func:`victor_purpura_dist` which is more efficient.
 
-    :param dict units: Dictionary of lists with each list containing the trials
-            of one unit. Each trial should be a `SpikeTrain` and all units
-            should have the same number of trials.
+    :param dict units: Dictionary of sequences with each sequence containing
+        the trials of one unit. Each trial should be
+        a :class:`neo.core.SpikeTrain` and all units should have the same
+        number of trials.
     :param float reassignment_cost: Cost to reassign a spike from one train to
         another (sometimes denoted with :math:`k`). Should be between 0 and 2.
         For 0 spikes can be reassigned without any cost, for 2 and above it is
         cheaper to delete and reinsert a spike.
-    :param q: Cost factor for spike shifts. If `kernel` is not `None`, `q` will
-        be ignored.
+    :param q: Cost factor for spike shifts as inverse time scalar. If `kernel`
+        is not `None`, `q` will be ignored.
     :type q: Quantity scalar
     :param kernel: Kernel to use in the calculation of the distance. If
         `kernel` is `None`, an unnormalized triangular kernel with a half width

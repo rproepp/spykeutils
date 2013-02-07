@@ -12,21 +12,22 @@ def gen_homogeneous_poisson(
     with `t_stop` and `max_spikes`. Either one or both of these arguments have
     to be given.
 
-    :param rate: Average firing rate of the spike train to generate.
+    :param rate: Average firing rate of the spike train to generate as
+        frequency scalar.
     :type rate: Quantity scalar
-    :param t_start: Time at which the spike train begins. The first actual spike
-        will be greater than this time.
+    :param t_start: Time at which the spike train begins as time scalar. The
+        first actual spike will be greater than this time.
     :type t_start: Quantity scalar
-    :param t_stop: Time at which the spike train ends. All generated spikes will
-        be lower or equal than this time. If set to None, the number of
-        generated spikes is controlled by `max_spikes` and `t_stop` will be
-        equal to the last generated spike.
+    :param t_stop: Time at which the spike train ends as time scalar. All
+        generated spikes will be lower or equal than this time. If set to None,
+        the number of generated spikes is controlled by `max_spikes` and
+        `t_stop` will be equal to the last generated spike.
     :type t_stop: Quantity scalar
     :param max_spikes: Maximum number of spikes to generate. Fewer spikes might
         be generated in case `t_stop` is also set.
 
     :returns: The generated spike train.
-    :rtype: SpikeTrain
+    :rtype: :class:`neo.core.SpikeTrain`
     """
 
     if t_stop is None and max_spikes is None:
@@ -73,19 +74,20 @@ def gen_inhomogeneous_poisson(
         the instantaneous firing rates at times :math:`(t_1, \\dots, t_n)` as
         proportion of `max_rate`. Thus, a 1-D array will be passed to the
         function and it should return an array of the same size.
-    :param max_rate: Maximum firing rate of the spike train to generate.
+    :param max_rate: Maximum firing rate of the spike train to generate as
+        frequency scalar.
     :type max_rate: Quantity scalar
-    :param t_start: Time at which the spike train begins. The first actual spike
-        will be greater than this time.
+    :param t_start: Time at which the spike train begins as time scalar. The
+        first actual spike will be greater than this time.
     :type t_start: Quantity scalar
-    :param t_stop: Time at which the spike train ends. All generated spikes will
-        be lower or equal than this time. If set to None, the number of
-        generated spikes is controlled by `max_spikes` and `t_stop` will be
-        equal to the last generated spike.
+    :param t_stop: Time at which the spike train ends as time scalar. All
+        generated spikes will be lower or equal than this time. If set to None,
+        the number of generated spikes is controlled by `max_spikes` and
+        `t_stop` will be equal to the last generated spike.
     :type t_stop: Quantity scalar
 
     :returns: The generated spike train.
-    :rtype: SpikeTrain
+    :rtype: :class:`neo.core.SpikeTrain`
     """
 
     st = gen_homogeneous_poisson(max_rate, t_start, t_stop)

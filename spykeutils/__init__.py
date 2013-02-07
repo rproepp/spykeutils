@@ -14,11 +14,6 @@
 
 .. automodule:: spykeutils.correlations
 
-:mod:`functional` Module
-------------------------
-
-.. automodule:: spykeutils.functional
-
 :mod:`progress_indicator` Module
 --------------------------------
 
@@ -70,6 +65,12 @@
 .. automodule:: spykeutils.stationarity
     :members:
     :exclude-members: spike_amplitude_histogram
+
+:mod:`tools` Module
+------------------------
+
+.. automodule:: spykeutils.tools
+    :members:
 """
 
 __version__ = '0.2.1'

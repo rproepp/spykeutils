@@ -128,7 +128,7 @@ def minimum_spike_train_interval(trains):
 
     .. deprecated:: 0.3.0
 
-    Use :func:`.signal_processing.minimum_spike_train_interval` instead.
+    Use :func:`.tools.minimum_spike_train_interval` instead.
 
     :param dict trains: A dictionary of sequences of SpikeTrain
         objects.

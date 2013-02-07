@@ -7,12 +7,12 @@ import _scipy_quantities as spq
 
 def apply_to_dict(fn, dictionary, *args):
     """ Applies a function to all spike trains in a dictionary of spike train
-    lists.
+    sequences.
 
-    :param func fn: Function to apply. Should take a spike train as first
-        argument.
-    :param dict dictionary: Dictionary of spike train lists to apply the
-        function to.
+    :param function fn: Function to apply. Should take a
+        :class:`neo.core.SpikeTrain` as first argument.
+    :param dict dictionary: Dictionary of sequences of
+        :class:`neo.core.SpikeTrain` objects to apply the function to.
     :param args: Additional arguments which will be passed to `fn`.
     :returns: A new dictionary with the same keys as `dictionary`.
     :rtype: dict
@@ -27,20 +27,22 @@ def apply_to_dict(fn, dictionary, *args):
 def bin_spike_trains(trains, sampling_rate, t_start=None, t_stop=None):
     """ Creates a binned representation of a spike train.
 
-    :param dict trains: A dictionary of lists of SpikeTrain objects.
+    :param dict trains: A dictionary of sequences of
+        :class:`neo.core.SpikeTrain` objects.
     :param sampling_rate: The sampling rate which will be used to bin
-        the spike trains.
+        the spike trains as inverse time scalar.
     :type sampling_rate: Quantity scalar
-    :type t_start: The desired time for the start of the first bin.
-        It will be the minimum start time of all spike trains if `None` is
-        passed.
+    :type t_start: The desired time for the start of the first bin as time
+        scalar. It will be the minimum start time of all spike trains if `None`
+        is passed.
     :type t_start: Quantity scalar
-    :param t_stop: The desired time for the end of the last bin. It will be the
-        maximum stop time of all spike trains if `None` is passed.
+    :param t_stop: The desired time for the end of the last bin as time scalar.
+        It will be the maximum stop time of all spike trains if `None` is
+        passed.
     :type t_stop: Quantity scalar
     :returns: A dictionary (with the same indices as ``trains``) of lists
         of spike train counts and the bin borders.
-    :rtype: dict, Quantity 1D
+    :rtype: dict, Quantity 1D with time units
     """
 
     if t_start is None or t_stop is None:
@@ -59,8 +61,9 @@ def bin_spike_trains(trains, sampling_rate, t_start=None, t_stop=None):
 def _bin_single_spike_train(train, bins):
     """ Return a binned representation of SpikeTrain object.
 
-    :param SpikeTrain train: A SpikeTrain object.
-    :param bins: The bin edges, including the rightmost edge.
+    :param train: A spike train to bin.
+    :type train: :class:`neo.core.SpikeTrain`
+    :param bins: The bin edges, including the rightmost edge, with time units.
     :type bins: Quantity 1D
     :returns: The binned spike train.
     :rtype: 1-D array
@@ -71,11 +74,11 @@ def _bin_single_spike_train(train, bins):
 def st_concatenate(trains):
     """ Concatenates spike trains.
 
-    :param sequence trains: `neo.SpikeTrain` objects to concatenate.
+    :param sequence trains: :class:`neo.core.SpikeTrain` objects to concatenate.
     :returns: A spike train consisting of the concatenated spike trains. The
         spikes will be in the order of the given spike trains and `t_start` and
         `t_stop` will be set to the minimum and maximum value.
-    :rtype: `neo.SpikeTrain`
+    :rtype: :class:`neo.core.SpikeTrain`
     """
 
     t_start, t_stop = maximum_spike_train_interval({0: trains})
@@ -90,11 +93,12 @@ def minimum_spike_train_interval(
     given spike trains share. This yields the shortest interval shared by all
     spike trains.
 
-    :param dict trains: A dictionary of sequences of SpikeTrain
-        objects.
-    :param t_start: Minimal starting time to return.
-    :param t_stop: Maximum end time to return.
-    :returns: Maximum shared t_start time and minimum shared t_stop time.
+    :param dict trains: A dictionary of sequences of
+        :class:`neo.core.SpikeTrain` objects.
+    :param t_start: Minimal starting time to return as time scalar.
+    :param t_stop: Maximum end time to return as time scalar.
+    :returns: Maximum shared t_start time and minimum shared t_stop time as time
+        scalars.
     :rtype: Quantity scalar, Quantity scalar
     """
     # Load data and find shortest spike train
@@ -113,11 +117,11 @@ def maximum_spike_train_interval(
     given spike trains. This yields an interval containing the spikes of
     all spike trains.
 
-    :param dict trains: A dictionary of sequences of SpikeTrain
-        objects.
-    :param t_start: Maximum starting time to return.
-    :param t_stop: Minimum end time to return.
-    :returns: Minimum t_start time and maximum t_stop time.
+    :param dict trains: A dictionary of sequences of
+        :class:`neo.core.SpikeTrain` objects.
+    :param t_start: Maximum starting time to return as time scalar.
+    :param t_stop: Minimum end time to return as time scalar.
+    :returns: Minimum t_start time and maximum t_stop time as time scalars.
     :rtype: Quantity scalar, Quantity scalar
     """
     for st in trains.itervalues():

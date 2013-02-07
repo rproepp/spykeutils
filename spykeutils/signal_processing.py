@@ -117,18 +117,19 @@ class Kernel(object):
         """ Calculates the sum of all element pair distances for each
         pair of vectors.
 
-        If :math:`(a_1, \\dots, a_n)` and :math:`(b_1, \\dots, b_m)` is a pair
-        of vectors from `vectors` and :math:`K` the kernel, the resulting entry
-        in the 2D array will be :math:`D_{ij} = \\sum_{i=1}^{n} \\sum_{j=1}^{m}
-        K(a_i - b_j)`.
+        If :math:`(a_1, \\dots, a_n)` and :math:`(b_1, \\dots, b_m)` are the
+        :math:`u`-th and :math:`v`-th vector from `vectors` and :math:`K` the
+        kernel, the resulting entry in the 2D array will be :math:`D_{uv}
+        = \\sum_{i=1}^{n} \\sum_{j=1}^{m} K(a_i - b_j)`.
 
-        :param sequence vectors: A sequence of 1D arrays to calculate the summed
-            distances for each pair.
+        :param sequence vectors: A sequence of Quantity 1D to calculate the
+            summed distances for each pair. The required units depend on the
+            kernel. Usually it will be the inverse unit of the kernel size.
         :param bool presorted: Some optimized specializations of this function
             may need sorted vectors. Set `presorted` to `True` if you know that
             the passed vectors are already sorted to skip the sorting and thus
             increase performance.
-        :rtype: 2D array
+        :rtype: Quantity 2D
         """
 
         D = sp.empty((len(vectors), len(vectors)))
@@ -136,6 +137,8 @@ class Kernel(object):
             might_have_units = self(vectors[0])
             if hasattr(might_have_units, 'units'):
                 D = D * might_have_units.units
+            else:
+                D = D * pq.dimensionless
 
         for i, j in sp.ndindex(len(vectors), len(vectors)):
             D[i, j] = sp.sum(self(
@@ -349,14 +352,15 @@ def discretize_kernel(
 
     :param kernel: The kernel or kernel function. If a kernel function is used
         it should take exactly one 1-D array as argument.
-    :type kernel: :class:`Kernel` or func
+    :type kernel: :class:`Kernel` or function
     :param float area_fraction: Fraction between 0 and 1 (exclusive)
         of the integral of the kernel which will be at least covered by the
-        discretization. Will be ignored if `num_bins` is not `None`. If it is
-        not `None`, the kernel has to provide a method
-        :meth:`boundary_enclosing_at_least`
-        (see :meth:`.Kernel.boundary_enclosing_at_least`).
-    :param sampling_rate: Sampling rate for the discretization.
+        discretization. Will be ignored if `num_bins` is not `None`. If
+        `area_fraction` is used, the kernel has to provide a method
+        :meth:`boundary_enclosing_at_least` (see
+        :meth:`.Kernel.boundary_enclosing_at_least`).
+    :param sampling_rate: Sampling rate for the discretization. The unit will
+        typically be a frequency unit.
     :type sampling_rate: Quantity scalar
     :param int num_bins: Number of bins to use for the discretization.
     :param bool ensure_unit_area: If `True`, the area of the discretized
@@ -397,6 +401,7 @@ def smooth(
     :type kernel: :class:`Kernel`
     :param sampling_rate: The sampling rate which will be used to discretize the
         kernel. It should be equal to the sampling rate used to obtain `binned`.
+        The unit will typically be a frequency unit.
     :type sampling_rate: Quantity scalar
     :param mode:
         * 'same': The default which returns an array of the same size as
@@ -422,13 +427,14 @@ def smooth(
 def st_convolve(
         train, kernel, sampling_rate, mode='same', binning_params={},
         kernel_discretization_params={}):
-    """ Convolves a spike train with a kernel.
+    """ Convolves a :class:`neo.core.SpikeTrain` with a kernel.
 
-    :param SpikeTrain train: Spike train to convolve.
+    :param train: Spike train to convolve.
+    :type train: :class:`neo.core.SpikeTrain`
     :param kernel: The kernel instance to convolve with.
     :type kernel: :class:`Kernel`
     :param sampling_rate: The sampling rate which will be used to bin
-        the spike train.
+        the spike train. The unit will typically be a frequency unit.
     :type sampling_rate: Quantity scalar
     :param mode:
         * 'same': The default which returns an array covering the whole
@@ -439,16 +445,15 @@ def st_convolve(
         * 'valid': Returns only the discretization bins where the discretized
           kernel and spike train completely overlap.
 
-        See also `numpy.convolve
-        <http://docs.scipy.org/doc/numpy/reference/generated/numpy.convolve.html>`_.
+        See also :func:`scipy.signal.convolve`.
     :type mode: {'same', 'full', 'valid'}
     :param dict binning_params: Additional discretization arguments which will
         be passed to :func:`.tools.bin_spike_trains`.
     :param dict kernel_discretization_params: Additional discretization
-        arguments which will be passed to :meth:`.discretize_kernel`.
+        arguments which will be passed to :func:`.discretize_kernel`.
     :returns: The convolved spike train, the boundaries of the discretization
         bins
-    :rtype: (Quantity 1D, Quantity 1D)
+    :rtype: (Quantity 1D, Quantity 1D with the inverse units of `sampling_rate`)
     """
 
     binned, bins = tools.bin_spike_trains(
