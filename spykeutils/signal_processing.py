@@ -371,6 +371,8 @@ def discretize_kernel(
         stop = num_bins // 2
     elif area_fraction is not None:
         boundary = kernel.boundary_enclosing_at_least(area_fraction)
+        if hasattr(boundary, 'rescale'):
+            boundary = boundary.rescale(t_step.units)
         start = sp.ceil(-boundary / t_step)
         stop = sp.floor(boundary / t_step) + 1
     else:
@@ -452,7 +454,7 @@ def st_convolve(
     binned, bins = tools.bin_spike_trains(
         {0: [train]}, sampling_rate, **binning_params)
     binned = binned[0][0]
-    sampling_rate = binned.size / (bins[-1] - bins[0])
+    #sampling_rate = binned.size / (bins[-1] - bins[0])
     result = smooth(
         binned, kernel, sampling_rate, mode, **kernel_discretization_params)
 

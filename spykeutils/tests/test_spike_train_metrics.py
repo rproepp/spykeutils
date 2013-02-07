@@ -331,7 +331,7 @@ class Test_st_inner(ut.TestCase):
         smoothing_filter = sigproc.GaussianKernel(1.0 * pq.s)
         expected = 0.530007 * pq.Hz
         actual = stm.st_inner(
-            [a], [b], smoothing_filter, sampling_rate=100 * pq.Hz)
+            [a], [b], smoothing_filter, sampling_rate=1000 * pq.Hz)
         self.assertAlmostEqual(
             expected, actual.rescale(expected.units), places=3)
 

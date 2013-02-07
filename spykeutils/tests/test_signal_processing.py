@@ -98,6 +98,23 @@ class Test_discretize_kernel(ut.TestCase):
             kernel_area_fraction)
         assert_array_equal(actual, mock_discretization)
 
+    def test_discretizes_requested_area_with_units(self):
+        kernel = sigproc.Kernel(100.0 * pq.ms, normalize=False)
+        kernel.boundary_enclosing_at_least = MagicMock(
+            name='boundary_enclosing_at_least')
+        kernel.boundary_enclosing_at_least.return_value = 100.0 * pq.ms
+        kernel._evaluate = lambda x, _: sp.ones(len(x))
+        sampling_rate = 10.0 * pq.Hz
+        mock_discretization = sp.ones(3)
+
+        kernel_area_fraction = 0.5
+        actual = sigproc.discretize_kernel(
+            kernel, sampling_rate, kernel_area_fraction)
+
+        kernel.boundary_enclosing_at_least.assert_called_with(
+            kernel_area_fraction)
+        assert_array_equal(actual, mock_discretization)
+
     def test_discretizes_requested_number_of_bins(self):
         kernel = sigproc.Kernel(1.0, normalize=False)
         kernel._evaluate = lambda x, _: sp.ones(len(x))
