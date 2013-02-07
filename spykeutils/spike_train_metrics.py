@@ -1,6 +1,5 @@
 
 from monkeypatch import quantities_patch
-import heapq
 import quantities as pq
 import scipy as sp
 import _scipy_quantities as spq
@@ -42,9 +41,11 @@ def _create_matrix_from_indexed_function(
 
 
 def _merge_trains_and_label_spikes(trains):
-    labeled_trains = (zip(st, len(st) * (label,)) for label, st
-                      in enumerate(trains))
-    return list(heapq.merge(*labeled_trains))
+    labels = sp.concatenate(
+        [sp.zeros(st.size, dtype=int) + i for i, st in enumerate(trains)])
+    trains = spq.concatenate([st.view(dtype=pq.Quantity) for st in trains])
+    sorted_indices = sp.argsort(trains)
+    return trains[sorted_indices], labels[sorted_indices]
 
 
 def cs_dist(
@@ -578,7 +579,6 @@ def victor_purpura_dist(trains, q=1.0 * pq.Hz, kernel=None, sort=True):
         (len(trains), len(trains)), compute, kernel.is_symmetric())
 
 
-#@profile
 def _victor_purpura_dist_for_trial_pair(a, b, kernel):
     if a.size <= 0 or b.size <= 0:
         return max(a.size, b.size)
@@ -705,55 +705,84 @@ def _victor_purpura_multiunit_dist_for_trial_pair(
     # It constructs a matrix cost[i, j_1, ... j_L] containing the minimal cost
     # when only considering the first i spikes of the merged spikes of a and
     # j_w spikes of the spike trains of b (the reference given above denotes
-    # this matrix with G).
+    # this matrix with G). In this implementation the only the one submatrix
+    # for one specific i is stored as in each step only i-1 and i will be
+    # accessed. That saves some memory.
 
-    # The algorithm is not asymmetric, swap a and b if that will save us time.
+    # Initialization of various variables needed by the algorithm. Also swap
+    # a and b if it will save time as the algorithm is not symmetric.
     a_num_spikes = [st.size for st in a]
     b_num_spikes = [st.size for st in b]
-    complexity_same = sp.sum(a_num_spikes) * sp.prod(b_num_spikes)
+    a_num_total_spikes = sp.sum(a_num_spikes)
+
+    complexity_same = a_num_total_spikes * sp.prod(b_num_spikes)
     complexity_swapped = sp.prod(a_num_spikes) * sp.sum(b_num_spikes)
     if complexity_swapped < complexity_same:
         a, b = b, a
         a_num_spikes, b_num_spikes = b_num_spikes, a_num_spikes
+        a_num_total_spikes = sp.sum(a_num_spikes)
+
+    if a_num_total_spikes <= 0:
+        return sp.sum(b_num_spikes)
+
+    b_dims = tuple(sp.asarray(b_num_spikes) + 1)
+
+    cost = sp.asfarray(sp.sum(sp.indices(b_dims), axis=0))
 
     a_merged = _merge_trains_and_label_spikes(a)
-    b_dims = sp.asarray(b_num_spikes) + 1
-    cost = sp.empty((sp.sum(a_num_spikes) + 1,) + tuple(b_dims))
-    cost[(sp.s_[:],) + len(b) * (0,)] = sp.arange(cost.shape[0])
-    cost[0, ...] = sp.sum(sp.indices(b_dims), axis=0)
+    b_strides = sp.cumprod((b_dims + (1,))[::-1])[:-1]
+    flat_b_indices = sp.arange(cost.size)
+    b_indices = sp.vstack(sp.unravel_index(flat_b_indices, b_dims))
+    flat_neighbor_indices = sp.maximum(
+        0, sp.atleast_2d(flat_b_indices).T - b_strides[::-1])
+    invalid_neighbors = b_indices.T == 0
 
-    for a_idx in xrange(1, cost.shape[0]):
-        a_spike_time = a_merged[a_idx - 1][0]
-        a_spike_label = a_merged[a_idx - 1][1]
+    b_train_mat = sp.empty((len(b), sp.amax(b_num_spikes))) * b[0].units
+    for i, st in enumerate(b):
+        b_train_mat[i, :st.size] = st.rescale(b[0].units)
+        b_train_mat[i, st.size:] = sp.nan * b[0].units
 
-        b_idx_iter = sp.ndindex(*b_dims)
-        b_idx_iter.next()  # cost[:, 0, ..., 0] has already been initialized
-        for b_idx in b_idx_iter:
-            # Generate set of indices
-            # {(j_1, ..., j_w - 1, ... j_L) | 1 <= w <= L}
-            # and determine the calculated cost for each element.
-            b_origin_indices = [
-                tuple(sp.atleast_1d(sp.squeeze(idx))) for idx in sp.split(
-                    sp.asarray(b_idx) - sp.eye(len(b_idx)), len(b_idx), axis=1)]
-            invalid_origin_indices = sp.asarray(b_idx) == 0
-            origin_costs = cost[[a_idx - 1] + b_origin_indices]
-            origin_costs[invalid_origin_indices] = sp.inf
+    reassignment_costs = sp.empty((a_merged[0].size,) + b_train_mat.shape)
+    reassignment_costs.fill(reassignment_cost)
+    reassignment_costs[sp.arange(a_merged[1].size), a_merged[1], :] = 0.0
+    k = 1 - 2 * kernel(sp.atleast_2d(
+        a_merged[0]).T - b_train_mat.flatten()).simplified.reshape(
+            (a_merged[0].size,) + b_train_mat.shape) + reassignment_costs
 
-            b_spike_label = sp.argmin(origin_costs)
-            b_spike_time = b[b_spike_label][b_idx[b_spike_label] - 1]
-            cost_shift = origin_costs[b_spike_label] + \
-                2 - 2 * kernel(a_spike_time - b_spike_time).simplified + \
-                reassignment_cost * (a_spike_label != b_spike_label)
+    decreasing_sequence = flat_b_indices[::-1]
 
-            cost_delete_in_a = cost[(a_idx - 1,) + b_idx] + 1
-            if sp.all(invalid_origin_indices):
-                cost_delete_in_b = sp.inf
-            else:
-                cost_delete_in_b = sp.amin(
-                    cost[[a_idx] + b_origin_indices]
-                    [sp.logical_not(invalid_origin_indices) != 0]) + 1
+    # Do the actual calculations.
+    for a_idx in xrange(1, a_num_total_spikes + 1):
+        base_costs = cost.flat[flat_neighbor_indices]
+        base_costs[invalid_neighbors, :] = sp.inf
+        min_base_cost_labels = sp.argmin(base_costs, axis=1)
+        cost_all_possible_shifts = k[a_idx - 1, min_base_cost_labels, :] + \
+            sp.atleast_2d(base_costs[flat_b_indices, min_base_cost_labels]).T
+        cost_shift = cost_all_possible_shifts[
+            sp.arange(cost_all_possible_shifts.shape[0]),
+            b_indices[min_base_cost_labels, flat_b_indices] - 1]
 
-            cost[(a_idx,) + b_idx] = min(
-                cost_delete_in_a, cost_delete_in_b, cost_shift)
+        cost_delete_in_a = cost.flat[flat_b_indices]
+
+        # cost_shift is dimensionless, but there is a bug in quantities with
+        # the minimum function:
+        # <https://github.com/python-quantities/python-quantities/issues/52>
+        # The explicit request for the magnitude circumvents this problem.
+        cost.flat = sp.minimum(cost_delete_in_a, cost_shift.magnitude) + 1
+        cost.flat[0] = sp.inf
+
+        # Minimum with cost for deleting in b
+        # The calculation order is somewhat different from the order one would
+        # expect from the naive algorithm. This implementation, however,
+        # optimizes the use of the CPU cache giving a considerable speed
+        # improvement.
+        for dim_size, stride in zip(b_dims[::-1], b_strides):
+            for i in xrange(stride):
+                segment_size = dim_size * stride
+                for j in xrange(i, cost.size, segment_size):
+                    s = sp.s_[j:j + segment_size:stride]
+                    seq = decreasing_sequence[-cost.flat[s].size:]
+                    cost.flat[s] = sp.minimum.accumulate(
+                        cost.flat[s] + seq) - seq
 
     return cost.flat[-1]
