@@ -12,35 +12,6 @@ import tools
 default_kernel_area_fraction = 0.99999
 
 
-def _searchsorted_pairwise(a, b):
-    """ Find indices for both of the two sequences where elements from one
-    sequence should be inserted into the other sequence to maintain order.
-
-    If values in `a` and `b` are equal, the values in `b` will always be
-    considered as smaller.
-
-    :param sequence a: A sorted sequence.
-    :param sequence b: A sorted sequence.
-    :returns: The indices for insertion of `a` into `b` and for insertion of `b`
-        into `a`
-    :rtype: Tuple of arrays.
-    """
-
-    idx_a = sp.empty(len(a), dtype=int)
-    idx_b = sp.empty(len(b), dtype=int)
-    i = j = 0
-    while i < len(a) and j < len(b):
-        if a[i] < b[j]:
-            idx_a[i] = j - 1
-            i += 1
-        elif a[i] >= b[j]:
-            idx_b[j] = i - 1
-            j += 1
-    idx_a[i:] = j - 1
-    idx_b[j:] = i - 1
-    return idx_a, idx_b
-
-
 class Kernel(object):
     """ Base class for kernels. """
 
