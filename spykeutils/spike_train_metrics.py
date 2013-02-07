@@ -705,7 +705,9 @@ def _victor_purpura_multiunit_dist_for_trial_pair(
     # It constructs a matrix cost[i, j_1, ... j_L] containing the minimal cost
     # when only considering the first i spikes of the merged spikes of a and
     # j_w spikes of the spike trains of b (the reference given above denotes
-    # this matrix with G).
+    # this matrix with G). In this implementation the only the one submatrix
+    # for one specific i is stored as in each step only i-1 and i will be
+    # accessed. That saves some memory.
 
     # Initialization of various variables needed by the algorithm. Also swap
     # a and b if it will save time as the algorithm is not symmetric.
@@ -770,6 +772,10 @@ def _victor_purpura_multiunit_dist_for_trial_pair(
         cost.flat[0] = sp.inf
 
         # Minimum with cost for deleting in b
+        # The calculation order is somewhat different from the order one would
+        # expect from the naive algorithm. This implementation, however,
+        # optimizes the use of the CPU cache giving a considerable speed
+        # improvement.
         for dim_size, stride in zip(b_dims[::-1], b_strides):
             for i in xrange(stride):
                 segment_size = dim_size * stride
