@@ -14,6 +14,7 @@ import tempfile
 
 
 tau = 5.0 * pq.ms
+sampling_rate = 1000 * pq.Hz
 
 
 def trains_as_multiunits(trains):
@@ -22,10 +23,16 @@ def trains_as_multiunits(trains):
 
 
 metrics = {
+    'cs': ('Cauchy-Schwarz distance',
+           lambda trains: stm.cs_dist(
+               trains, sigproc.CausalDecayingExpKernel(tau), sampling_rate)),
     'es': ('event synchronization',
            lambda trains: stm.event_synchronization(trains, tau, sort=False)),
     'hm': ('Hunter-Milton similarity measure',
            lambda trains: stm.hunter_milton_similarity(trains, tau)),
+    'norm': ('norm distance',
+             lambda trains: stm.norm_dist(
+                 trains, sigproc.CausalDecayingExpKernel(tau), sampling_rate)),
     'ss': ('Schreiber et al. similarity measure',
            lambda trains: stm.schreiber_similarity(
                trains, sigproc.GaussianKernel(tau), sort=False)),
