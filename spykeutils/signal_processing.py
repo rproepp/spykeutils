@@ -316,8 +316,8 @@ class LaplacianKernel(SymmetricKernel):
             for v in vectors:
                 v.sort()
 
-        sizes = [v.size for v in vectors]
-        max_size = max(sizes)
+        sizes = sp.asarray([v.size for v in vectors])
+        max_size = sizes.max()
         mat = sp.empty((len(vectors), max_size)) * vectors[0].units
         for i, v in enumerate(vectors):
             if v.size > 0:
@@ -327,19 +327,18 @@ class LaplacianKernel(SymmetricKernel):
         inv_exp_vecs = 1.0 / exp_vecs
         exp_diffs = [sp.outer(v, iv) for v, iv in zip(exp_vecs, inv_exp_vecs)]
 
-        markage = [sp.empty(v.size) for v in vectors]
-        for u in xrange(len(markage)):
-            if markage[u].size <= 0:
+        markage = sp.zeros(mat.shape)
+        for u in xrange(len(vectors)):
+            if sizes[u] <= 0:
                 continue
-            markage[u][0] = 0
-            for i in xrange(1, markage[u].size):
-                markage[u][i] = (
-                    (markage[u][i - 1] + 1.0) * exp_diffs[u][i - 1, i])
+            markage[u, 0] = 0
+            for i in xrange(1, sizes[u]):
+                markage[u, i] = (
+                    (markage[u, i - 1] + 1.0) * exp_diffs[u][i - 1, i])
 
         # Same vector terms
         D = sp.zeros((len(vectors), len(vectors)))
-        for u in xrange(D.shape[0]):
-            D[u, u] = markage[u].size + 2.0 * sp.sum(markage[u])
+        D[sp.diag_indices_from(D)] = sizes + 2.0 * sp.sum(markage, axis=1)
 
         # Cross vector terms
         for u in xrange(D.shape[0]):
