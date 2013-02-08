@@ -12,35 +12,6 @@ import tools
 default_kernel_area_fraction = 0.99999
 
 
-def _searchsorted_pairwise(a, b):
-    """ Find indices for both of the two sequences where elements from one
-    sequence should be inserted into the other sequence to maintain order.
-
-    If values in `a` and `b` are equal, the values in `b` will always be
-    considered as smaller.
-
-    :param sequence a: A sorted sequence.
-    :param sequence b: A sorted sequence.
-    :returns: The indices for insertion of `a` into `b` and for insertion of `b`
-        into `a`
-    :rtype: Tuple of arrays.
-    """
-
-    idx_a = sp.empty(len(a))
-    idx_b = sp.empty(len(b))
-    i = j = 0
-    while i < len(a) and j < len(b):
-        if a[i] < b[j]:
-            idx_a[i] = j - 1
-            i += 1
-        elif a[i] >= b[j]:
-            idx_b[j] = i - 1
-            j += 1
-    idx_a[i:] = j - 1
-    idx_b[j:] = i - 1
-    return idx_a, idx_b
-
-
 class Kernel(object):
     """ Base class for kernels. """
 
@@ -290,6 +261,71 @@ class LaplacianKernel(SymmetricKernel):
 
     def boundary_enclosing_at_least(self, fraction):
         return -self.kernel_size * sp.log(1.0 - fraction)
+
+    def summed_dist_matrix(self, vectors, presorted=False):
+        # This implementation is based on
+        #
+        # Houghton, C., & Kreuz, T. (2012). On the efficient calculation of van
+        # Rossum distances. Network: Computation in Neural Systems, 23(1-2),
+        # 48-58.
+        #
+        # Note that the cited paper contains some errors: In formula (9) the
+        # left side of the equation should be divided by two and in the last
+        # sum in this equation it should say `j|v_i >= u_i` instead of
+        # `j|v_i > u_i`. Also, in equation (11) it should say `j|u_i >= v_i`
+        # instead of `j|u_i > v_i`.
+        #
+        # Given N vectors with n entries on average the run-time complexity is
+        # O(N^2 * n). O(N^2 + N * n) memory will be needed.
+
+        if len(vectors) <= 0:
+            return sp.zeros((0, 0))
+
+        if not presorted:
+            vectors = [v.copy() for v in vectors]
+            for v in vectors:
+                v.sort()
+
+        sizes = sp.asarray([v.size for v in vectors])
+        values = sp.empty((len(vectors), max(1, sizes.max())))
+        values.fill(sp.nan)
+        for i, v in enumerate(vectors):
+            if v.size > 0:
+                values[i, :v.size] = \
+                    (v / self.kernel_size * pq.dimensionless).simplified
+
+        exp_diffs = sp.exp(values[:, :-1] - values[:, 1:])
+        markage = sp.zeros(values.shape)
+        for u in xrange(len(vectors)):
+            markage[u, 0] = 0
+            for i in xrange(sizes[u] - 1):
+                markage[u, i + 1] = (markage[u, i] + 1.0) * exp_diffs[u, i]
+
+        # Same vector terms
+        D = sp.empty((len(vectors), len(vectors)))
+        D[sp.diag_indices_from(D)] = sizes + 2.0 * sp.sum(markage, axis=1)
+
+        # Cross vector terms
+        for u in xrange(D.shape[0]):
+            all_ks = sp.searchsorted(values[u], values, 'left') - 1
+            for v in xrange(u):
+                js = sp.searchsorted(values[v], values[u], 'right') - 1
+                ks = all_ks[v]
+                slice_j = sp.s_[sp.searchsorted(js, 0):sizes[u]]
+                slice_k = sp.s_[sp.searchsorted(ks, 0):sizes[v]]
+                D[u, v] = sp.sum(
+                    sp.exp(values[v][js[slice_j]] - values[u][slice_j]) *
+                    (1.0 + markage[v][js[slice_j]]))
+                D[u, v] += sp.sum(
+                    sp.exp(values[u][ks[slice_k]] - values[v][slice_k]) *
+                    (1.0 + markage[u][ks[slice_k]]))
+                D[v, u] = D[u, v]
+
+        if self.normalize:
+            normalization = self.normalization_factor(self.kernel_size)
+        else:
+            normalization = 1.0
+        return normalization * D
 
 
 class RectangularKernel(SymmetricKernel):
