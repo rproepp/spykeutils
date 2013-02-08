@@ -287,18 +287,13 @@ class LaplacianKernel(SymmetricKernel):
                 v.sort()
 
         sizes = sp.asarray([v.size for v in vectors])
-        values = sp.empty((len(vectors), max(1, sizes.max()))) * \
-            vectors[0].units
+        values = sp.empty((len(vectors), max(1, sizes.max())))
         values.fill(sp.nan)
         for i, v in enumerate(vectors):
             if v.size > 0:
-                values[i, :v.size] = v
+                values[i, :v.size] = (v / self.kernel_size).simplified
 
-        exp_vecs = sp.ascontiguousarray(
-            sp.exp((values / self.kernel_size).simplified))
-        inv_exp_vecs = 1.0 / exp_vecs
-
-        exp_diffs = exp_vecs[:, :-1] * inv_exp_vecs[:, 1:]
+        exp_diffs = sp.exp(values[:, :-1] - values[:, 1:])
         markage = sp.zeros(values.shape)
         for u in xrange(len(vectors)):
             markage[u, 0] = 0
@@ -318,10 +313,10 @@ class LaplacianKernel(SymmetricKernel):
                 slice_j = sp.s_[sp.searchsorted(js, 0):sizes[u]]
                 slice_k = sp.s_[sp.searchsorted(ks, 0):sizes[v]]
                 D[u, v] = sp.sum(
-                    inv_exp_vecs[u][slice_j] * exp_vecs[v][js[slice_j]] *
+                    sp.exp(values[v][js[slice_j]] - values[u][slice_j]) *
                     (1.0 + markage[v][js[slice_j]]))
                 D[u, v] += sp.sum(
-                    inv_exp_vecs[v][slice_k] * exp_vecs[u][ks[slice_k]] *
+                    sp.exp(values[u][ks[slice_k]] - values[v][slice_k]) *
                     (1.0 + markage[u][ks[slice_k]]))
                 D[v, u] = D[u, v]
 
