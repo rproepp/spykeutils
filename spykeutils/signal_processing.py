@@ -291,7 +291,8 @@ class LaplacianKernel(SymmetricKernel):
         values.fill(sp.nan)
         for i, v in enumerate(vectors):
             if v.size > 0:
-                values[i, :v.size] = (v / self.kernel_size).simplified
+                values[i, :v.size] = \
+                    (v / self.kernel_size * pq.dimensionless).simplified
 
         exp_diffs = sp.exp(values[:, :-1] - values[:, 1:])
         markage = sp.zeros(values.shape)
