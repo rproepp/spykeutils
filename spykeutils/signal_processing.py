@@ -238,7 +238,6 @@ class GaussianKernel(SymmetricKernel):
             scipy.special.erfinv(fraction + scipy.special.erf(0.0))
 
 
-#@profile
 class LaplacianKernel(SymmetricKernel):
     r""" Unnormalized: :math:`K(t) = \exp(-|\frac{t}{\tau}|)` with kernel size
     :math:`\tau`.
@@ -277,7 +276,7 @@ class LaplacianKernel(SymmetricKernel):
         # instead of `j|u_i > v_i`.
         #
         # Given N vectors with n entries on average the run-time complexity is
-        # O(N^2 * n). O(N^2 + N * n^2) memory will be needed.
+        # O(N^2 * n). O(N^2 + N * n) memory will be needed.
 
         if len(vectors) <= 0:
             return sp.zeros((0, 0))
@@ -288,40 +287,42 @@ class LaplacianKernel(SymmetricKernel):
                 v.sort()
 
         sizes = sp.asarray([v.size for v in vectors])
-        max_size = sizes.max()
-        mat = sp.empty((len(vectors), max_size)) * vectors[0].units
+        values = sp.empty((len(vectors), max(1, sizes.max()))) * \
+            vectors[0].units
+        values.fill(sp.nan)
         for i, v in enumerate(vectors):
             if v.size > 0:
-                mat[i, :v.size] = v
+                values[i, :v.size] = v
 
-        exp_vecs = sp.exp((mat / self.kernel_size).simplified)
+        exp_vecs = sp.ascontiguousarray(
+            sp.exp((values / self.kernel_size).simplified))
         inv_exp_vecs = 1.0 / exp_vecs
-        exp_diffs = [sp.outer(v, iv) for v, iv in zip(exp_vecs, inv_exp_vecs)]
 
-        markage = sp.zeros(mat.shape)
+        exp_diffs = exp_vecs[:, :-1] * inv_exp_vecs[:, 1:]
+        markage = sp.zeros(values.shape)
         for u in xrange(len(vectors)):
-            if sizes[u] <= 0:
-                continue
             markage[u, 0] = 0
-            for i in xrange(1, sizes[u]):
-                markage[u, i] = (
-                    (markage[u, i - 1] + 1.0) * exp_diffs[u][i - 1, i])
+            for i in xrange(sizes[u] - 1):
+                markage[u, i + 1] = (markage[u, i] + 1.0) * exp_diffs[u, i]
 
         # Same vector terms
-        D = sp.zeros((len(vectors), len(vectors)))
+        D = sp.empty((len(vectors), len(vectors)))
         D[sp.diag_indices_from(D)] = sizes + 2.0 * sp.sum(markage, axis=1)
 
         # Cross vector terms
         for u in xrange(D.shape[0]):
-            for v in xrange(u + 1, D.shape[1]):
-                js = sp.searchsorted(vectors[v], vectors[u], 'right') - 1
-                ks = sp.searchsorted(vectors[u], vectors[v], 'left') - 1
-                start_j = sp.searchsorted(js, 0)
-                start_k = sp.searchsorted(ks, 0)
-                D[u, v] += sp.sum(inv_exp_vecs[u][start_j:js.size] * exp_vecs[v][js[start_j:]] *
-                            (1.0 + markage[v][js[start_j:]]))
-                D[u, v] += sp.sum(inv_exp_vecs[v][start_k:ks.size] * exp_vecs[u][ks[start_k:]] *
-                            (1.0 + markage[u][ks[start_k:]]))
+            all_ks = sp.searchsorted(values[u], values, 'left') - 1
+            for v in xrange(u):
+                js = sp.searchsorted(values[v], values[u], 'right') - 1
+                ks = all_ks[v]
+                slice_j = sp.s_[sp.searchsorted(js, 0):sizes[u]]
+                slice_k = sp.s_[sp.searchsorted(ks, 0):sizes[v]]
+                D[u, v] = sp.sum(
+                    inv_exp_vecs[u][slice_j] * exp_vecs[v][js[slice_j]] *
+                    (1.0 + markage[v][js[slice_j]]))
+                D[u, v] += sp.sum(
+                    inv_exp_vecs[v][slice_k] * exp_vecs[u][ks[slice_k]] *
+                    (1.0 + markage[u][ks[slice_k]]))
                 D[v, u] = D[u, v]
 
         if self.normalize:
