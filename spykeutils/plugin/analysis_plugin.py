@@ -9,7 +9,8 @@ import gui_data
 
 class HashEntry(tables.IsDescription):
     hash = tables.StringCol(32)
-    filename = tables.StringCol(992) # 1024-32 -> long filenames are possible
+    filename = tables.StringCol(992)  # 1024-32 -> long filenames are possible
+
 
 class AnalysisPlugin(gui_data.DataSet):
     """ Base class for Analysis plugins. Inherit this class to create a
@@ -61,7 +62,7 @@ class AnalysisPlugin(gui_data.DataSet):
         """
         return 'Prototype Plugin'
 
-    def get_title(self): # Override guidata.DataSet.get_title()
+    def get_title(self):  # Override guidata.DataSet.get_title()
         return self.get_name()
 
     def start(self, current, selections):
@@ -114,10 +115,9 @@ class AnalysisPlugin(gui_data.DataSet):
         :param dict parameters: A dictionary of all configuration
             parameters.
         """
-        for n,v in parameters.iteritems():
+        for n, v in parameters.iteritems():
             if hasattr(self, '_' + n):
                 setattr(self, '_' + n, v)
-
 
     def _get_hash(self, selections, params, use_guiparams):
         """ Return hash and the three strings used for it
@@ -138,8 +138,7 @@ class AnalysisPlugin(gui_data.DataSet):
         hash_string = guidata_string + selection_string + param_string
         md5.update(hash_string)
 
-        return md5.hexdigest(), guidata_string, selection_string, \
-               param_string
+        return md5.hexdigest(), guidata_string, selection_string, param_string
 
     def save(self, name, selections, params=None, save_guiparams=True):
         """ Return a HDF5 file object with parameters already stored.
@@ -176,8 +175,8 @@ class AnalysisPlugin(gui_data.DataSet):
                 params[n] = unicode(v)
 
         # Create parameter hash
-        hash_, guidata_string, selection_string, param_string =\
-        self._get_hash(selections, params, save_guiparams)
+        hash_, guidata_string, selection_string, param_string = \
+            self._get_hash(selections, params, save_guiparams)
 
         # File name is current time stamp
         time_stamp = time.strftime("%Y%m%d-%H%M%S")
@@ -198,7 +197,7 @@ class AnalysisPlugin(gui_data.DataSet):
         # Save guidata parameters
         paramgroup = h5.createGroup('/', 'guiparams')
         guiparams = self.get_parameters()
-        for p,v in guiparams.iteritems():
+        for p, v in guiparams.iteritems():
             t = type(v)
             if t == int or t == float:
                 h5.setNodeAttr(paramgroup, p, v)
@@ -210,7 +209,7 @@ class AnalysisPlugin(gui_data.DataSet):
 
         # Save additional parameters provided by plugin
         paramgroup = h5.createGroup('/', 'userparams')
-        for p,v in params.iteritems():
+        for p, v in params.iteritems():
             t = type(v)
             if t == int or t == float:
                 h5.setNodeAttr(paramgroup, p, v)
@@ -336,10 +335,10 @@ class AnalysisPlugin(gui_data.DataSet):
         hashfile_name = os.path.join(name, 'hash.h5')
         hash_file = tables.openFile(hashfile_name, mode='w')
         table = hash_file.createTable('/', 'lookup_table', HashEntry,
-            title='Hash lookup')
+                                      title='Hash lookup')
 
         # Loop through files and write hashes
-        file_names = [os.path.join(name,f) for f in os.listdir(name)]
+        file_names = [os.path.join(name, f) for f in os.listdir(name)]
         entry = table.row
         for fn in file_names:
             if not fn.endswith('.h5') or fn == 'hash.h5':
@@ -351,8 +350,8 @@ class AnalysisPlugin(gui_data.DataSet):
                     entry['hash'] = file_hash
                     entry['filename'] = fn
                     entry.append()
-            except Exception:
-                pass # Not a valid data file, no problem
+            except:
+                pass  # Not a valid data file, no problem
 
         hash_file.close()
 
@@ -395,8 +394,8 @@ class AnalysisPlugin(gui_data.DataSet):
         if not os.path.exists(hashfile_name):
             try:
                 cls._create_hash_lookup_file(name)
-            except Exception:
-                return [os.path.join(name,f) for f in os.listdir(name)
+            except:
+                return [os.path.join(name, f) for f in os.listdir(name)
                         if f.endswith('.h5') and not f == 'hash.h5']
 
         hash_file = tables.openFile(hashfile_name, mode='r')
@@ -413,8 +412,8 @@ class AnalysisPlugin(gui_data.DataSet):
                 hash_file.close()
                 try:
                     cls._create_hash_lookup_file(name)
-                except Exception:
-                    return [os.path.join(name,f) for f in os.listdir(name)
+                except:
+                    return [os.path.join(name, f) for f in os.listdir(name)
                             if f.endswith('.h5') and not f == 'hash.h5']
                 return cls._get_hash_file_names(dataname, hash_, True)
 
