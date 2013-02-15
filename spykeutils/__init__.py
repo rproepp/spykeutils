@@ -37,6 +37,14 @@
     :show-inheritance:
     :undoc-members:
 
+:mod:`sklearn_bindings` Module
+------------------------------
+
+.. automodule:: spykeutiles.sklearn_bindings
+    :members:
+    :show-inheritance:
+    :undoc-members:
+
 :mod:`spike_train_generation` Module
 ------------------------------------
 
