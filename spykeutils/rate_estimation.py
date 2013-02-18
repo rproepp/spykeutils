@@ -20,7 +20,7 @@ def binned_spike_trains(trains, bin_size, start=0*pq.ms, stop=sp.inf * pq.s):
 
     .. deprecated:: 0.3.0
 
-    Use :func:`.signal_processing.bin_spike_trains` instead.
+    Use :func:`.tools.bin_spike_trains` instead.
 
     :param dict trains: A sequence of `SpikeTrain` lists.
     :param bin_size: The desired bin size (as a time quantity).
@@ -39,7 +39,7 @@ def binned_spike_trains(trains, bin_size, start=0*pq.ms, stop=sp.inf * pq.s):
     """
 
     start, stop = tools.minimum_spike_train_interval(trains, start, stop)
-    return sigproc.bin_spike_trains(trains, 1.0 / bin_size, start, stop)
+    return tools.bin_spike_trains(trains, 1.0 / bin_size, start, stop)
 
 
 def psth(
@@ -70,7 +70,7 @@ def psth(
         raise SpykeException('No spike trains for PSTH!')
 
     start, stop = tools.minimum_spike_train_interval(trains, start, stop)
-    binned, bins = sigproc.bin_spike_trains(trains, 1.0 / bin_size, start, stop)
+    binned, bins = tools.bin_spike_trains(trains, 1.0 / bin_size, start, stop)
 
     cumulative = {}
     time_multiplier = 1.0 / float(bin_size.rescale(pq.s))
@@ -313,7 +313,7 @@ def optimal_gauss_kernel_size(train, optimize_steps, progress=None):
 
     sampling_rate = 1024 / (x.t_stop - x.t_start)
     dt = float(1.0 / sampling_rate)
-    y_hist, _ = sigproc.bin_spike_trains(x, sampling_rate)
+    y_hist, _ = tools.bin_spike_trains(x, sampling_rate)
     y_hist =  sp.asfarray(y_hist) / N / dt
     for step in optimize_steps:
         s = float(step)
