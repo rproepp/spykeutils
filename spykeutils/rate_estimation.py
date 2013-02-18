@@ -10,6 +10,7 @@ import quantities as pq
 import neo
 from progress_indicator import ProgressIndicator
 import signal_processing as sigproc
+import tools
 from . import SpykeException
 
 
