@@ -51,6 +51,18 @@ class Test_binned_spike_trains(ut.TestCase):
         assert_array_almost_equal(
             expectedBins, actualBins.rescale(expectedBins.units))
 
+    def test_handles_bin_size_which_is_not_divisor_of_duration(self):
+        a = arange_spikes(5 * pq.s)
+        bin_size = 1300.0 * pq.ms
+        expected = {0: [sp.array([1, 1, 1])]}
+        expectedBins = sp.array([0.0, 1.3, 2.6, 3.9]) * pq.s
+        actual, actualBins = re.binned_spike_trains({0: [a]}, bin_size)
+        self.assertEqual(len(expected), len(actual))
+        self.assertEqual(len(expected[0]), len(actual[0]))
+        assert_array_equal(expected[0][0], actual[0][0])
+        assert_array_almost_equal(
+            expectedBins, actualBins.rescale(expectedBins.units))
+
 
 if __name__ == '__main__':
     ut.main()

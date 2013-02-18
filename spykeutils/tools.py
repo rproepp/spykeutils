@@ -55,9 +55,8 @@ def bin_spike_trains(trains, sampling_rate, t_start=None, t_stop=None):
     t_start = t_start.rescale(t_stop.units)
 
     duration = t_stop - t_start
-    num_bins = (sampling_rate * duration).simplified + 1
-    bins = spq.linspace(t_start.magnitude, t_stop.magnitude, num_bins) * \
-        t_stop.units
+    num_bins = (sampling_rate * duration).simplified
+    bins = sp.arange(num_bins + 1) * (duration / num_bins) + t_start
     return apply_to_dict(_bin_single_spike_train, trains, bins), bins
 
 
