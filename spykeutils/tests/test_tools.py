@@ -49,7 +49,8 @@ class Test_apply_to_dict(ut.TestCase):
 class Test_bin_spike_trains(ut.TestCase):
     def test_bins_spike_train_using_its_properties(self):
         a = neo.SpikeTrain(
-            sp.array([1.0]) * pq.s, t_start=0.5 * pq.s, t_stop=1.5 * pq.s)
+            sp.array([1000.0]) * pq.ms, t_start=500.0 * pq.ms,
+            t_stop=1500.0 * pq.ms)
         sampling_rate = 4.0 * pq.Hz
         expected = {0: [sp.array([0, 0, 1, 0])]}
         expectedBins = sp.array([0.5, 0.75, 1.0, 1.25, 1.5]) * pq.s
