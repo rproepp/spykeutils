@@ -17,8 +17,8 @@ class Test_binned_spike_trains(ut.TestCase):
         a = neo.SpikeTrain(
             sp.array([1.0]) * pq.s, t_start=0.5 * pq.s, t_stop=1.5 * pq.s)
         bin_size = 250.0 * pq.ms
-        expected = {0: [sp.array([0, 0, 1, 0])]}
-        expectedBins = sp.array([0.5, 0.75, 1.0, 1.25, 1.5]) * pq.s
+        expected = {0: [sp.array([0, 0, 1])]}
+        expectedBins = sp.array([0.5, 0.75, 1.0, 1.25]) * pq.s
         actual, actualBins = re.binned_spike_trains({0: [a]}, bin_size)
         self.assertEqual(len(expected), len(actual))
         self.assertEqual(len(expected[0]), len(actual[0]))
@@ -32,8 +32,8 @@ class Test_binned_spike_trains(ut.TestCase):
         bin_size = 250.0 * pq.ms
         t_start = 0.5 * pq.s
         t_stop = 1.5 * pq.s
-        expected = {0: [sp.array([0, 0, 1, 0])]}
-        expectedBins = sp.array([0.5, 0.75, 1.0, 1.25, 1.5]) * pq.s
+        expected = {0: [sp.array([0, 0, 1])]}
+        expectedBins = sp.array([0.5, 0.75, 1.0, 1.25]) * pq.s
         actual, actualBins = re.binned_spike_trains(
             {0: [a]}, bin_size, start=t_start, stop=t_stop)
         self.assertEqual(len(expected), len(actual))
@@ -46,7 +46,7 @@ class Test_binned_spike_trains(ut.TestCase):
         a = arange_spikes(5 * pq.s)
         b = arange_spikes(3 * pq.s, 15 * pq.s)
         bin_size = 250.0 * pq.ms
-        expectedBins = sp.arange(3.0, 5.1, 0.25) * pq.s
+        expectedBins = sp.arange(3.0, 4.9, 0.25) * pq.s
         actual, actualBins = re.binned_spike_trains({0: [a, b]}, bin_size)
         assert_array_almost_equal(
             expectedBins, actualBins.rescale(expectedBins.units))

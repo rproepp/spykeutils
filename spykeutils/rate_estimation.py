@@ -39,7 +39,8 @@ def binned_spike_trains(trains, bin_size, start=0*pq.ms, stop=sp.inf * pq.s):
     """
 
     start, stop = tools.minimum_spike_train_interval(trains, start, stop)
-    return tools.bin_spike_trains(trains, 1.0 / bin_size, start, stop)
+    hist, bins = tools.bin_spike_trains(trains, 1.0 / bin_size, start, stop)
+    return tools.apply_to_dict(lambda st: st[:-1], hist), bins[:-1]
 
 
 def psth(
