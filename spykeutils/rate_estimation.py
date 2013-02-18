@@ -14,7 +14,7 @@ import tools
 from . import SpykeException
 
 
-def binned_spike_trains(trains, bin_size, start=0*pq.ms, stop=sp.inf * pq.s):
+def binned_spike_trains(trains, bin_size, start=0*pq.ms, stop=None):
     """ Return dictionary of binned rates for a dictionary of
     SpikeTrain lists.
 
@@ -37,6 +37,8 @@ def binned_spike_trains(trains, bin_size, start=0*pq.ms, stop=sp.inf * pq.s):
         of spike train counts and the bin borders.
     :rtype: dict, Quantity 1D
     """
+    if stop is None:
+        stop = sp.inf * pq.ms
 
     start, stop = tools.minimum_spike_train_interval(trains, start, stop)
     hist, bins = tools.bin_spike_trains(trains, 1.0 / bin_size, start, stop)
