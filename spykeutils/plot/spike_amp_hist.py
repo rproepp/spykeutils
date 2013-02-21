@@ -48,15 +48,16 @@ def spike_amplitude_histogram(trains, num_bins, uniform_y_scale=True,
 
     win = PlotDialog(toolbar=True, wintitle="Spike Amplitude Histogram")
     for c in xrange(num_channels):
-        pW = BaseImageWidget(win, yreverse=False,
-            lock_aspect_ratio=False)
+        pW = BaseImageWidget(
+            win, yreverse=False, lock_aspect_ratio=False)
         plot = pW.plot
-        img = make.image(sp.log(hist[:,:,0]+1),ydata=[down[c],up[c]],
-            interpolation='nearest')
+        img = make.image(sp.log(hist[:, :, c] + 1),
+                         ydata=[down[c], up[c]],
+                         interpolation='nearest')
         plot.add_item(img)
         plot.set_axis_title(plot.Y_LEFT, 'Amplitude')
         plot.set_axis_unit(plot.Y_LEFT, unit.dimensionality.string)
-        win.add_plot_widget(pW, c, column=c%columns)
+        win.add_plot_widget(pW, c, column=c % columns)
 
     progress.done()
     win.add_custom_image_tools()

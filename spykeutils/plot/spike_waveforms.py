@@ -51,7 +51,7 @@ def spikes(spikes, axes_style, anti_alias=False, time_unit=pq.ms,
     channels = range(ref_spike.waveform.shape[1])
 
     plot = None
-    if axes_style == 1: # Separate channel plots
+    if axes_style == 1:  # Separate channel plots
         for c in channels:
             pW = BaseCurveWidget(win)
             plot = pW.plot
@@ -65,21 +65,21 @@ def spikes(spikes, axes_style, anti_alias=False, time_unit=pq.ms,
                                              'waveform or sampling rate!')
                     x = (sp.arange(s.waveform.shape[0]) /
                          s.sampling_rate).rescale(time_unit)
-                    curve = make.curve(x, s.waveform[:, c].rescale(ref_units),
+                    curve = make.curve(
+                        x, s.waveform[:, c].rescale(ref_units),
                         title=u.name, color=color)
                     plot.add_item(curve)
                     progress.step()
             win.add_plot_widget(pW, c)
 
-
         helper.make_window_legend(win, indices, True)
-    else: # Only one plot needed
+    else:  # Only one plot needed
         pW = BaseCurveWidget(win)
         plot = pW.plot
         plot.set_antialiasing(anti_alias)
         legend_items = []
 
-        if axes_style == 3: # Horizontal split
+        if axes_style == 3:  # Horizontal split
             offset = 0 * time_unit
             for c in channels:
                 for u in indices:
@@ -92,29 +92,37 @@ def spikes(spikes, axes_style, anti_alias=False, time_unit=pq.ms,
                                                  'waveform or sampling rate!')
                         x = (sp.arange(s.waveform.shape[0]) /
                              s.sampling_rate).rescale(time_unit)
-                        curve = make.curve(x + offset,
+                        curve = make.curve(
+                            x + offset,
                             s.waveform[:, c].rescale(ref_units), u.name,
                             color=color)
-                        if c == channels[0] and first_wave == True:
-                            legend_items.append(curve)
+                        if c == channels[0] and first_wave:
+                            legend_curve = make.curve(
+                                sp.array([0]), sp.array([0]), u.name,
+                                color=color, linewidth=2)
+                            legend_items.append(legend_curve)
+                            plot.add_item(legend_curve)
                         first_wave = False
                         plot.add_item(curve)
                         progress.step()
                 offset += x[-1]
                 if c != channels[-1]:
-                    plot.add_item(make.marker((offset, 0), lambda x,y: '',
-                        movable=False, markerstyle='|', color='k',
-                        linestyle='-', linewidth=1))
-        else: # Vertical split
+                    plot.add_item(
+                        make.marker((offset, 0), lambda x, y: '',
+                                    movable=False, markerstyle='|',
+                                    color='k', linestyle='-', linewidth=1))
+        else:  # Vertical split
             channels.reverse()
             # Find plot y offset
             maxY = []
             minY = []
             for i, c in enumerate(channels):
-                maxY.append(max(max(s.waveform[:, c].max() for s in d)
-                    for d in spikes.itervalues()))
-                minY.append(min(min(s.waveform[:, c].min() for s in d)
-                    for d in spikes.itervalues()))
+                maxY.append(
+                    max(max(s.waveform[:, c].max() for s in d)
+                        for d in spikes.itervalues()))
+                minY.append(
+                    min(min(s.waveform[:, c].min() for s in d)
+                        for d in spikes.itervalues()))
 
             maxOffset = 0 * ref_units
             for i in range(1, len(channels)):
@@ -134,11 +142,16 @@ def spikes(spikes, axes_style, anti_alias=False, time_unit=pq.ms,
                                                  'waveform or sampling rate!')
                         x = (sp.arange(s.waveform.shape[0]) /
                              s.sampling_rate).rescale(time_unit)
-                        curve = make.curve(x,
+                        curve = make.curve(
+                            x,
                             s.waveform[:, c].rescale(ref_units) + offset,
                             u.name, color=color)
-                        if c == channels[0] and first_wave == True:
-                            legend_items.append(curve)
+                        if c == channels[0] and first_wave:
+                            legend_curve = make.curve(
+                                sp.array([0]), sp.array([0]), u.name,
+                                color=color, linewidth=2)
+                            legend_items.append(legend_curve)
+                            plot.add_item(legend_curve)
                         first_wave = False
                         plot.add_item(curve)
                         progress.step()
