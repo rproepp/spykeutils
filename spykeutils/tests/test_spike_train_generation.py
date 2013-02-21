@@ -44,11 +44,6 @@ class CommonSpikeTrainGeneratorTests(object):
         self.assertEqual(t_start, st.t_start)
         self.assertEqual(t_stop, st.t_stop)
 
-
-class Test_gen_homogeneous_poisson(ut.TestCase, CommonSpikeTrainGeneratorTests):
-    def invoke_gen_func(self, rate, **kwargs):
-        return stg.gen_homogeneous_poisson(rate, **kwargs)
-
     def test_num_spikes_limited_by_max_spike(self):
         max_spikes = 10
 
@@ -61,6 +56,11 @@ class Test_gen_homogeneous_poisson(ut.TestCase, CommonSpikeTrainGeneratorTests):
         self.assertTrue(
             max_spikes >= self.invoke_gen_func(
                 self.lowRate, t_stop=10000 * pq.s, max_spikes=max_spikes).size)
+
+
+class Test_gen_homogeneous_poisson(ut.TestCase, CommonSpikeTrainGeneratorTests):
+    def invoke_gen_func(self, rate, **kwargs):
+        return stg.gen_homogeneous_poisson(rate, **kwargs)
 
 
 class Test_gen_inhomogeneous_poisson(

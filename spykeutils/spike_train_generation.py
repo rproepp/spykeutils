@@ -64,7 +64,7 @@ def gen_homogeneous_poisson(
 
 
 def gen_inhomogeneous_poisson(
-        modulation, max_rate, t_start=0 * pq.s, t_stop=None):
+        modulation, max_rate, t_start=0 * pq.s, t_stop=None, max_spikes=None):
     """ Generate an inhomogeneous Poisson spike train. The length is controlled
     with `t_stop` and `max_spikes`. Either one or both of these arguments have
     to be given.
@@ -90,5 +90,5 @@ def gen_inhomogeneous_poisson(
     :rtype: :class:`neo.core.SpikeTrain`
     """
 
-    st = gen_homogeneous_poisson(max_rate, t_start, t_stop)
+    st = gen_homogeneous_poisson(max_rate, t_start, t_stop, max_spikes)
     return st[numpy.random.rand(st.size) < modulation(st)]
