@@ -99,6 +99,8 @@ def ISI(trains, bin_size, cut_off, bar_plot=False, unit=pq.ms):
     else:
         plot.set_antialiasing(True)
 
+    return win
+
 
 if __name__ == '__main__':
     import guidata

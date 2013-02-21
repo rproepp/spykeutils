@@ -11,13 +11,14 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys, os
+import sys
+import os
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.insert(0, os.path.abspath(
-    os.path.join(os.pardir,os.pardir)))
+    os.path.join(os.pardir, os.pardir)))
 
 # -- Mocking modules for Read the Docs compatibility ---------------------------
 try:
@@ -28,7 +29,7 @@ try:
 except ImportError:
     from mock import MagicMock
 
-    MOCK_MODULES = ['neo', 'numpy', 'tables','guiqwt', 'guiqwt.builder',
+    MOCK_MODULES = ['neo', 'numpy', 'tables', 'guiqwt', 'guiqwt.builder',
                     'guiqwt.baseplot', 'guiqwt.plot', 'guiqwt.curve',
                     'guiqwt.image', 'guiqwt.tools', 'guiqwt.signals',
                     'guiqwt.config', 'guiqwt.events',
@@ -42,16 +43,20 @@ except ImportError:
     # Needed for spykeutils.plot.Dialog.PlotDialog
     class QDialog:
         pass
+
     class PlotManager:
         pass
+
     sys.modules['PyQt4.QtGui'].QDialog = QDialog
     sys.modules['guiqwt.plot'].PlotManager = PlotManager
 
     # Needed for spykeutils.plot.guiqwt_tools
     class CommandTool:
         pass
+
     class InteractiveTool:
         pass
+
     sys.modules['guiqwt.tools'].CommandTool = CommandTool
     sys.modules['guiqwt.tools'].InteractiveTool = InteractiveTool
 
@@ -220,8 +225,8 @@ htmlhelp_basename = 'spykeutilsdoc'
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'spykeutils.tex', u'spykeutils Documentation',
-   u'Robert Pröpper', 'manual'),
+    ('index', 'spykeutils.tex', u'spykeutils Documentation',
+     u'Robert Pröpper', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -247,6 +252,7 @@ latex_documents = [
 # If false, no module index is generated.
 #latex_domain_indices = True
 
+
 # -- Add additional features ---------------------------------------------------
 def setup(app):
     app.add_javascript('copybutton.js')
@@ -267,4 +273,5 @@ intersphinx_mapping = {'python': ('http://docs.python.org/', None),
                        'scipy': ('http://docs.scipy.org/doc/scipy/reference/', None),
                        'quantities': ('http://packages.python.org/quantities/', None),
                        'guiqwt': ('http://packages.python.org/guiqwt/', None),
-                       'guidata': ('http://packages.python.org/guidata/', None)}
+                       'guidata': ('http://packages.python.org/guidata/', None),
+                       'sklearn': ('http://scikit-learn.org/stable/', None)}

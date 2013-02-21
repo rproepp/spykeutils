@@ -11,19 +11,21 @@ try:
 except AttributeError:
     _fromUtf8 = lambda s: s
 
+from PyQt4.QtGui import QColor
 from guiqwt.baseplot import BasePlot
 from guiqwt.curve import CurvePlot
 from guiqwt.image import ImagePlot
 from guiqwt.plot import PlotManager
+from guiqwt.shapes import Marker
+from guiqwt.curve import CurveItem
 from guiqwt.tools import (SelectTool, RectZoomTool, BasePlotMenuTool,
                           DeleteItemTool, ItemListPanelTool,
                           AntiAliasingTool, AxisScaleTool, DisplayCoordsTool,
-                          ExportItemDataTool, EditItemDataTool,
-                          ItemCenterTool, SignalStatsTool, ColormapTool,
-                          ReverseYAxisTool, AspectRatioTool, ContrastPanelTool,
-                          XCSPanelTool, YCSPanelTool, CrossSectionTool,
-                          AverageCrossSectionTool, SaveAsTool, PrintTool,
-                          CopyToClipboardTool)
+                          ExportItemDataTool, ItemCenterTool, SignalStatsTool,
+                          ColormapTool, ReverseYAxisTool, AspectRatioTool,
+                          ContrastPanelTool, XCSPanelTool, YCSPanelTool,
+                          CrossSectionTool, AverageCrossSectionTool,
+                          SaveAsTool, PrintTool, CopyToClipboardTool)
 from guiqwt.signals import SIG_PLOT_AXIS_CHANGED
 from guidata.configtools import get_icon
 
@@ -139,8 +141,9 @@ class PlotDialog(QDialog, PlotManager):
             self.set_default_tool(t)
         self.add_tool(BasePlotMenuTool, "item")
         self.add_tool(ExportItemDataTool)
-        try:
+        try: # Old versions of guiqwt and spyderlib do not support this
             import spyderlib.widgets.objecteditor
+            from guiqwt.tools import EditItemDataTool
             self.add_tool(EditItemDataTool)
         except ImportError:
             pass
@@ -186,8 +189,9 @@ class PlotDialog(QDialog, PlotManager):
             self.set_default_tool(t)
         self.add_tool(BasePlotMenuTool, "item")
         self.add_tool(ExportItemDataTool)
-        try:
-            import spyderlib.widgets.objecteditor  # analysis:ignore
+        try: # Old versions of guiqwt and spyderlib do not support this
+            import spyderlib.widgets.objecteditor
+            from guiqwt.tools import EditItemDataTool
             self.add_tool(EditItemDataTool)
         except ImportError:
             pass
@@ -289,6 +293,48 @@ class PlotDialog(QDialog, PlotManager):
             self.synchronize_axis(BasePlot.Y_LEFT)
         else:
             self.unsynchronize_axis(BasePlot.Y_LEFT)
+
+    def replace_colors(self, replace_list):
+        """ Replace colors of items in all plots.
+
+            This can be useful when changing the background color to black
+            and black items should be drawn in white:
+            ``replace_colors([('#000000', '#ffffff']))``
+
+        :param list replace_list: A list of tuples of Qt color names. The
+            first color in each tuple is replaced by the second color.
+        """
+        for plot in self.plots.itervalues():
+            for i in plot.get_items():
+                if isinstance(i, CurveItem):
+                    pen = i.pen()
+                elif isinstance(i, Marker):
+                    pen = i.linePen()
+                else:
+                    continue
+                for color in replace_list:
+                    c1 = QColor(color[0])
+                    c2 = QColor(color[1])
+                    if pen.color() != c1:
+                        continue
+                    pen.setColor(c2)
+                    break
+                if isinstance(i, CurveItem):
+                    i.setPen(pen)
+                elif isinstance(i, Marker):
+                    i.setLinePen(pen)
+            plot.replot()
+
+
+    def set_background_color(self, color):
+        """ Set the background color for all plots.
+
+        :param str color: A Qt color name (e.g. '#ff0000')
+        """
+        for p in self.plots.itervalues():
+            p.setCanvasBackground(QColor(color))
+            p.replot()
+
         
     def add_unit_color(self, color, name='Unit color:'):
         """ Create a small legend on top of the window with only one entry.

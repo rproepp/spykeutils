@@ -17,10 +17,10 @@ import helper
 @helper.needs_qt
 def cross_correlogram(trains, bin_size, max_lag=500*pq.ms, border_correction=True,
                       unit=pq.ms, progress=None):
-    """ Create (cross-)correlograms from a dictionary of SpikeTrain
+    """ Create (cross-)correlograms from a dictionary of spike train
     lists for different units.
 
-    :param dict trains: Dictionary of SpikeTrain lists.
+    :param dict trains: Dictionary of :class:`neo.core.SpikeTrain` lists.
     :param bin_size: Bin size (time).
     :type bin_size: Quantity scalar
     :param max_lag: Maximum time lag for which spikes are considered
@@ -94,4 +94,4 @@ def cross_correlogram(trains, bin_size, max_lag=500*pq.ms, border_correction=Tru
     win.add_x_synchronization_option(True, range(len(crlgs)))
     win.add_y_synchronization_option(False, range(len(crlgs)))
 
-    return True
+    return win

@@ -238,7 +238,7 @@ class NeoDataProvider(DataProvider):
         return [self._active_block(b) for b in self.blocks()]
 
     def spike_trains(self):
-        """ Return a list of SpikeTrain objects.
+        """ Return a list of :class:`neo.core.SpikeTrain` objects.
         """
         trains = []
         units = self.units()
@@ -252,7 +252,7 @@ class NeoDataProvider(DataProvider):
 
     def spike_trains_by_unit(self):
         """ Return a dictionary (indexed by Unit) of lists of
-        SpikeTrain objects.
+        :class:`neo.core.SpikeTrain` objects.
         """
         trains = OrderedDict()
         segments = self.segments()
@@ -272,7 +272,7 @@ class NeoDataProvider(DataProvider):
 
     def spike_trains_by_segment(self):
         """ Return a dictionary (indexed by Segment) of lists of
-        SpikeTrain objects.
+        :class:`neo.core.SpikeTrain` objects.
         """
         trains = OrderedDict()
         units = self.units()
@@ -292,7 +292,7 @@ class NeoDataProvider(DataProvider):
 
     def spike_trains_by_unit_and_segment(self):
         """ Return a dictionary (indexed by Unit) of dictionaries
-        (indexed by Segment) of SpikeTrain objects.
+        (indexed by Segment) of :class:`neo.core.SpikeTrain` objects.
         """
         trains = OrderedDict()
         segments = self.segments()
@@ -320,7 +320,7 @@ class NeoDataProvider(DataProvider):
         return trains
 
     def spikes(self):
-        """ Return a list of Spike objects.
+        """ Return a list of :class:`neo.core.Spike` objects.
         """
         spikes = []
         units = self.units()
@@ -334,7 +334,7 @@ class NeoDataProvider(DataProvider):
 
     def spikes_by_unit(self):
         """ Return a dictionary (indexed by Unit) of lists of
-        Spike objects.
+        :class:`neo.core.Spike` objects.
         """
         spikes = OrderedDict()
         segments = self.segments()
@@ -354,7 +354,7 @@ class NeoDataProvider(DataProvider):
 
     def spikes_by_segment(self):
         """ Return a dictionary (indexed by Segment) of lists of
-        Spike objects.
+        :class:`neo.core.Spike` objects.
         """
         spikes = OrderedDict()
         units = self.units()
@@ -374,7 +374,7 @@ class NeoDataProvider(DataProvider):
 
     def spikes_by_unit_and_segment(self):
         """ Return a dictionary (indexed by Unit) of dictionaries
-        (indexed by Segment) of Spike lists.
+        (indexed by Segment) of :class:`neo.core.Spike` lists.
         """
         spikes = OrderedDict()
         segments = self.segments()
@@ -486,12 +486,12 @@ class NeoDataProvider(DataProvider):
         return ret
 
     def num_analog_signals(self, mode=1):
-        """ Return the number of AnalogSignal objects.
+        """ Return the number of :class:`neo.core.AnalogSignal` objects.
         """
         return len(self.analog_signals(mode))
 
     def analog_signals(self, mode=1):
-        """ Return a list of AnalogSignal objects.
+        """ Return a list of :class:`neo.core.AnalogSignal` objects.
         """
         signals = []
         channels = self.recording_channels()
@@ -515,7 +515,7 @@ class NeoDataProvider(DataProvider):
 
     def analog_signals_by_segment(self, mode=1):
         """ Return a dictionary (indexed by Segment) of lists of
-        AnalogSignal objects.
+        :class:`neo.core.AnalogSignal` objects.
         """
         signals = OrderedDict()
         channels = self.recording_channels()
@@ -551,7 +551,7 @@ class NeoDataProvider(DataProvider):
 
     def analog_signals_by_channel(self, mode=1):
         """ Return a dictionary (indexed by RecordingChannel) of lists
-        of AnalogSignal objects.
+        of :class:`neo.core.AnalogSignal` objects.
         """
         signals = OrderedDict()
         channels = self.recording_channels()
@@ -593,7 +593,8 @@ class NeoDataProvider(DataProvider):
 
     def analog_signals_by_channel_and_segment(self, mode=1):
         """ Return a dictionary (indexed by RecordingChannel) of
-        dictionaries (indexed by Segment) of AnalogSignal lists.
+        dictionaries (indexed by Segment) of :class:`neo.core.AnalogSignal`
+        lists.
         """
         signals = OrderedDict()
         channels = self.recording_channels()
@@ -646,7 +647,7 @@ class NeoDataProvider(DataProvider):
         return len(self.analog_signal_arrays())
 
     def analog_signal_arrays(self):
-        """ Return a list of AnalogSignalArray objects.
+        """ Return a list of :class:`neo.core.AnalogSignalArray` objects.
         """
         signals = []
         channelgroups = self.recording_channel_groups()
@@ -662,7 +663,7 @@ class NeoDataProvider(DataProvider):
 
     def analog_signal_arrays_by_segment(self):
         """ Return a dictionary (indexed by Segment) of lists of
-        AnalogSignalArray objects.
+        :class:`neo.core.AnalogSignalArray` objects.
         """
         signals = OrderedDict()
         channelgroups = self.recording_channel_groups()
@@ -683,7 +684,7 @@ class NeoDataProvider(DataProvider):
 
     def analog_signal_arrays_by_channelgroup(self):
         """ Return a dictionary (indexed by RecordingChannelGroup) of
-        lists of AnalogSignalArray objects.
+        lists of :class:`neo.core.AnalogSignalArray` objects.
         """
         signals = OrderedDict()
         segments = self.segments()
@@ -704,7 +705,8 @@ class NeoDataProvider(DataProvider):
 
     def analog_signal_arrays_by_channelgroup_and_segment(self):
         """ Return a dictionary (indexed by RecordingChannelGroup) of
-        dictionaries (indexed by Segment) of AnalogSignalArray lists.
+        dictionaries (indexed by Segment) of
+        :class:`neo.core.AnalogSignalArray` lists.
         """
         signals = OrderedDict()
         segments = self.segments()

@@ -26,7 +26,7 @@ def sde(trains, events=None, start=0*pq.ms, stop=None,
     The spike density estimations give an estimate of the instantaneous
     rate. Optionally finds optimal kernel size for given data.
 
-    :param dict trains: A dictionary of SpikeTrain lists.
+    :param dict trains: A dictionary of :class:`neo.core.SpikeTrain` lists.
     :param dict events: A dictionary (with the same indices as ``trains``)
         of Event objects or lists of Event objects. In case of lists,
         the first event in the list will be used for alignment. The events
@@ -64,6 +64,14 @@ def sde(trains, events=None, start=0*pq.ms, stop=None,
     """
     if not progress:
         progress = ProgressIndicator()
+
+        # Catch old API call to remain compatible and make Debian happy.
+        # Can be removed in 0.3.0
+        if isinstance(kernel_function, pq.Quantity):
+            if isinstance(unit, ProgressIndicator):
+                progress = unit
+            unit = kernel_function
+            kernel_function = None
 
     start.units = unit
     if stop:
@@ -130,3 +138,5 @@ def sde(trains, events=None, start=0*pq.ms, stop=None,
     win.add_custom_curve_tools()
     win.add_legend_option([l], True)
     win.show()
+
+    return win

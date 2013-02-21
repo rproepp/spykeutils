@@ -80,6 +80,8 @@ def raster(trains, units=None, show_lines=True, events=None, epochs=None):
     win.add_custom_curve_tools()
     win.show()
 
+    return win
+
 if __name__ == '__main__':
     import guidata
     import quantities as pq

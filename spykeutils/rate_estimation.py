@@ -16,13 +16,13 @@ from . import SpykeException
 
 def binned_spike_trains(trains, bin_size, start=0*pq.ms, stop=None):
     """ Return dictionary of binned rates for a dictionary of
-    SpikeTrain lists.
+    spike train lists.
 
     .. deprecated:: 0.3.0
 
     Use :func:`.tools.bin_spike_trains` instead.
 
-    :param dict trains: A sequence of `SpikeTrain` lists.
+    :param dict trains: A dictionary of :class:`neo.core.SpikeTrain` lists.
     :param bin_size: The desired bin size (as a time quantity).
     :type bin_size: Quantity scalar
     :type start: The desired time for the start of the first bin.
@@ -49,9 +49,10 @@ def psth(
         trains, bin_size, rate_correction=True, start=0*pq.ms,
         stop=sp.inf * pq.s):
     """ Return dictionary of peri stimulus time histograms for a dictionary
-    of SpikeTrain lists.
+    of spike train lists.
 
-    :param dict trains: A dictionary of lists of SpikeTrain objects.
+    :param dict trains: A dictionary of lists of :class:`neo.core.SpikeTrain`
+        objects.
     :param bin_size: The desired bin size (as a time quantity).
     :type bin_size: Quantity scalar
     :param bool rate_correction: Determines if a rates (``True``) or
@@ -91,7 +92,7 @@ def aligned_spike_trains(trains, events, copy=True):
     """ Return a list of spike trains aligned to an event (the event will
     be time 0 on the returned trains).
 
-    :param dict trains: A list of SpikeTrain objects.
+    :param list trains: A list of :class:`neo.core.SpikeTrain` objects.
     :param dict events: A dictionary of Event objects, indexed by segment.
         These events (in case of lists, always the first element in the list)
         will be used to align the spike trains and will be at time 0 for
@@ -134,8 +135,9 @@ def minimum_spike_train_interval(trains):
 
     Use :func:`.tools.minimum_spike_train_interval` instead.
 
-    :param dict trains: A dictionary of sequences of SpikeTrain
-        objects.
+    :param dict trains: A dictionary of sequences of
+        :class:`neo.core.SpikeTrain` objects.
+    :returns: Maximum shared start time and minimum shared stop time.
     :rtype: Quantity scalar, Quantity scalar
     """
     t_start = -sp.inf * pq.s
@@ -167,7 +169,7 @@ def spike_density_estimation(trains, start=0*pq.ms, stop=None,
                              kernel_size=100*pq.ms, optimize_steps=None,
                              progress=None):
     """ Create a spike density estimation from a dictionary of
-    lists of SpikeTrain objects.
+    lists of spike trains.
 
     The spike density estimations give an estimate of the instantaneous
     rate. The density estimation is evaluated at 1024 equally spaced
@@ -175,7 +177,7 @@ def spike_density_estimation(trains, start=0*pq.ms, stop=None,
     optimal kernel size for given data using the algorithm from
     (Shimazaki, Shinomoto. Journal of Computational Neuroscience. 2010).
 
-    :param dict trains: A dictionary of SpikeTrain lists.
+    :param dict trains: A dictionary of :class:`neo.core.SpikeTrain` lists.
     :param start: The desired time for the start of the estimation. It
         will be recalculated if there are spike trains which start later
         than this time. This parameter can be negative (which could be
@@ -268,9 +270,10 @@ def spike_density_estimation(trains, start=0*pq.ms, stop=None,
 def collapsed_spike_trains(trains):
     """ Return a superposition of a list of spike trains.
 
-    :param iterable trains: A list of SpikeTrain objects
-    :returns: A SpikeTrain object containing all spikes of the given
-        SpikeTrain objects.
+    :param iterable trains: A list of :class:`neo.core.SpikeTrain` objects
+    :returns: A spike train object containing all spikes of the given
+        spike trains.
+    :rtype: :class:`neo.core.SpikeTrain`
     """
     if not trains:
         return neo.SpikeTrain([], 0)
@@ -287,7 +290,7 @@ def collapsed_spike_trains(trains):
 
 def optimal_gauss_kernel_size(train, optimize_steps, progress=None):
     """ Return the optimal kernel size for a spike density estimation
-    of a SpikeTrain for a gaussian kernel. This function takes a single
+    of a spike train for a gaussian kernel. This function takes a single
     spike train, which can be a superposition of multiple spike trains
     (created with :func:`collapsed_spike_trains`) that should be included
     in a spike density estimation.
@@ -295,8 +298,9 @@ def optimal_gauss_kernel_size(train, optimize_steps, progress=None):
     Implements the algorithm from
     (Shimazaki, Shinomoto. Journal of Computational Neuroscience. 2010).
 
-    :param SpikeTrain train: The spike train for which the kernel
+    :param train: The spike train for which the kernel
         size should be optimized.
+    :type train: :class:`neo.core.SpikeTrain`
     :param optimize_steps: Array of kernel sizes to try (the best of
         these sizes will be returned).
     :type optimize_steps: Quantity 1D

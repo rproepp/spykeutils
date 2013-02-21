@@ -33,12 +33,13 @@ if __name__ == "__main__":
         packages=find_packages(),
         install_requires=['scipy', 'quantities', 'neo>=0.2.1,<0.3.0'],
         extras_require = {
-            'plot':  ['guiqwt'],
-            'plugin': ['tables']
+            'plot':  ['guiqwt>=2.1.4'],
+            'plugin': ['tables'],
+            'quality_estimation': ['scikit-learn>=0.11']
         },
         entry_points = {
             'console_scripts':
-                ['spyke-plugin = spykeutils.plugin.start_plugin:main']
+                ['spykeplugin = spykeutils.plugin.startplugin:main']
         },
         author='Robert Pröpper',
         maintainer='Robert Pröpper',

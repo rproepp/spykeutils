@@ -163,3 +163,5 @@ def spikes(spikes, axes_style, anti_alias=False, time_unit=pq.ms,
     if len(channels) == 1 or axes_style > 1:
         plot.set_axis_title(BasePlot.Y_LEFT, 'Voltage')
         plot.set_axis_unit(BasePlot.Y_LEFT, ref_units.dimensionality.string)
+
+    return win
