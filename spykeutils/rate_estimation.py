@@ -314,14 +314,14 @@ def optimal_gauss_kernel_size(train, optimize_steps, progress=None):
     N = len(train)
     C = {}
 
-    sampling_rate = 1024 / (x.t_stop - x.t_start)
+    sampling_rate = 1024.0 / (x.t_stop - x.t_start)
     dt = float(1.0 / sampling_rate)
-    y_hist, _ = tools.bin_spike_trains(x, sampling_rate)
-    y_hist =  sp.asfarray(y_hist) / N / dt
+    y_hist = tools.bin_spike_trains({0: [x]}, sampling_rate)[0][0][0]
+    y_hist = sp.asfarray(y_hist) / N / dt
     for step in optimize_steps:
         s = float(step)
         yh = sigproc.smooth(
-            y_hist, sigproc.GaussianKernel(step), sampling_rate, num_bins=2048,
+            y_hist, sigproc.GaussianKernel(2 * step), sampling_rate, num_bins=2048,
             ensure_unit_area=True) * optimize_steps.units
 
         # Equation from Matlab code, 7/2012
@@ -332,4 +332,4 @@ def optimal_gauss_kernel_size(train, optimize_steps, progress=None):
         progress.step()
 
     # Return kernel size with smallest cost
-    return min(C, key=C.get)*train.units
+    return min(C, key=C.get)*optimize_steps.units
