@@ -456,7 +456,8 @@ def variance_explained(spikes, means=None, noise=None):
         Means for units that are not in this dictionary will be estimated
         using the spikes.
         Default: None - means will be estimated from given spikes.
-    :param quantity noise: The known noise levels per channel of the
+    :type noise: Quantity 1D
+    :param noise: The known noise levels (as variance) per channel of the
         original data. This should be estimated from the signal periods
         that do not contain spikes, otherwise the explained variance
         could be overestimated. If None, the estimate of explained variance
