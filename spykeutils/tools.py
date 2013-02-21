@@ -25,7 +25,7 @@ def apply_to_dict(fn, dictionary, *args):
 
 
 def bin_spike_trains(trains, sampling_rate, t_start=None, t_stop=None):
-    """ Creates a binned representation of a spike train.
+    """ Creates binned representations of a spike trains.
 
     :param dict trains: A dictionary of sequences of
         :class:`neo.core.SpikeTrain` objects.
