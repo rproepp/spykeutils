@@ -104,7 +104,7 @@ def event_synchronization(
     Calculates the event synchronization.
 
     Let :math:`d(x|y)` be the count of spikes in :math:`y` which occur shortly
-    before an event in :math:`x` with a time difference of less then
+    before an event in :math:`x` with a time difference of less than
     :math:`\\tau`. Moreover, let :math:`n_x` and :math:`n_y` be the number of
     total spikes in the spike trains :math:`x` and :math:`y`. The event
     synchrony is then defined as :math:`Q_T = \\frac{d(x|y)
