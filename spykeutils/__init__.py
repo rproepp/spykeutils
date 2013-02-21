@@ -29,6 +29,28 @@
     :members:
     :exclude-members: binned_spike_trains, psth, spike_density_estimation
 
+:mod:`signal_processing` Module
+-------------------------------
+
+.. automodule:: spykeutils.signal_processing
+    :members:
+    :show-inheritance:
+    :undoc-members:
+
+:mod:`spike_train_generation` Module
+------------------------------------
+
+.. automodule:: spykeutils.spike_train_generation
+    :members:
+    :undoc-members:
+
+:mod:`spike_train_metrics` Module
+------------------------------------
+
+.. automodule:: spykeutils.spike_train_metrics
+    :members:
+    :undoc-members:
+
 :mod:`sorting_quality_assesment` Module
 ---------------------------------------
 
@@ -43,9 +65,16 @@
 .. automodule:: spykeutils.stationarity
     :members:
     :exclude-members: spike_amplitude_histogram
+
+:mod:`tools` Module
+------------------------
+
+.. automodule:: spykeutils.tools
+    :members:
 """
 
 __version__ = '0.2.2'
+
 
 class SpykeException(Exception):
     """ Exception thrown when a function in spykeutils encounters a
