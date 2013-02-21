@@ -40,7 +40,7 @@
 :mod:`sklearn_bindings` Module
 ------------------------------
 
-.. automodule:: spykeutiles.sklearn_bindings
+.. automodule:: spykeutils.sklearn_bindings
     :members:
     :show-inheritance:
     :undoc-members:
