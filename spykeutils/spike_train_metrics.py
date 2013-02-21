@@ -783,6 +783,8 @@ def _victor_purpura_multiunit_dist_for_trial_pair(
         # expect from the naive algorithm. This implementation, however,
         # optimizes the use of the CPU cache giving a considerable speed
         # improvement.
+        # Basically this codes calculates the values of a row of elements for
+        # each dimension of cost.
         for dim_size, stride in zip(b_dims[::-1], b_strides):
             for i in xrange(stride):
                 segment_size = dim_size * stride
