@@ -24,14 +24,14 @@ class _MarkerName:
 def _needs_qt(function):
     @functools.wraps(function)
     def inner(*args, **kwargs):
-        app = None
         if not QApplication.instance():
-            app = QApplication([])
+            _needs_qt.app = QApplication([])
         ret = function(*args, **kwargs)
-        if app:
-            app.exec_()
+        if _needs_qt.app:
+            _needs_qt.app.exec_()
         return ret
     return inner
+_needs_qt.app = None
 
 # Make need_qt decorator preserve signature if decorator package is available
 try:
