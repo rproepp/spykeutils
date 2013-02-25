@@ -19,6 +19,7 @@ Contents:
    examples
    apidoc/spykeutils
    changelog
+   acknowledgements
 
 Indices and tables
 ==================

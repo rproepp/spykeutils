@@ -39,7 +39,7 @@ this package can not be used.
     :show-inheritance:
 """
 
-from interspike_intervals import ISI
+from interspike_intervals import isi
 from dialog import PlotDialog
 from rasterplot import raster
 from correlogram import cross_correlogram

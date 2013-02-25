@@ -1,5 +1,5 @@
 """
-.. autofunction:: ISI(trains, bin_size, cut_off, bar_plot=False, unit=ms)
+.. autofunction:: isi(trains, bin_size, cut_off, bar_plot=False, unit=ms)
 """
 import scipy as sp
 
@@ -16,7 +16,7 @@ import helper
 
 
 @helper.needs_qt
-def ISI(trains, bin_size, cut_off, bar_plot=False, unit=pq.ms):
+def isi(trains, bin_size, cut_off, bar_plot=False, unit=pq.ms):
     """ Create a plot dialog with an interspike interval histogram.
 
     :param dict trains: Dictionary with lists of spike trains indexed by
@@ -37,7 +37,7 @@ def ISI(trains, bin_size, cut_off, bar_plot=False, unit=pq.ms):
     win = PlotDialog(toolbar=True, wintitle=win_title)
     bin_size.rescale(unit)
     cut_off.rescale(unit)
-    bins = sp.arange(0*unit, cut_off, bin_size) * unit
+    bins = sp.arange(0 * unit, cut_off, bin_size) * unit
 
     pW = BaseCurveWidget(win)
     plot = pW.plot
@@ -46,9 +46,7 @@ def ISI(trains, bin_size, cut_off, bar_plot=False, unit=pq.ms):
         u = trains.keys()[0]
         if 'unique_id' in u.annotations:
             color = helper.get_color(u.annotations['unique_id'])
-        else:
-            color = helper.get_color(hash(u))
-        win.add_unit_color(color)
+            win.add_unit_color(color)
     for u, train_list in trains.iteritems():
         intervals = []
         for t in train_list:
@@ -67,14 +65,14 @@ def ISI(trains, bin_size, cut_off, bar_plot=False, unit=pq.ms):
             color = 'k'
 
         if not bar_plot:
-            curve = make.curve(bins, isi, name,
-                color=color)
+            curve = make.curve(bins, isi, name, color=color)
             legend_items.append(curve)
             plot.add_item(curve)
         else:
             show_isi = list(isi)
             show_isi.insert(0, show_isi[0])
-            curve = make.curve(bins, show_isi, name, color='k',
+            curve = make.curve(
+                bins, show_isi, name, color='k',
                 curvestyle="Steps", shade=1.0)
             plot.add_item(curve)
             break
@@ -92,7 +90,7 @@ def ISI(trains, bin_size, cut_off, bar_plot=False, unit=pq.ms):
     win.add_custom_curve_tools()
     win.show()
 
-    if bar_plot: # Rescale Bar ISI
+    if bar_plot:  # Rescale Bar ISI
         scale = plot.axisScaleDiv(BasePlot.Y_LEFT)
         plot.setAxisScale(BasePlot.Y_LEFT, 0, scale.upperBound())
         plot.set_antialiasing(False)
@@ -100,23 +98,3 @@ def ISI(trains, bin_size, cut_off, bar_plot=False, unit=pq.ms):
         plot.set_antialiasing(True)
 
     return win
-
-
-if __name__ == '__main__':
-    import guidata
-    app = guidata.qapplication()
-
-    unit1 = neo.Unit('Unit 1')
-    unit1.annotate(unique_id=1)
-    unit2 = neo.Unit('Unit 2')
-    unit2.annotate(unique_id=2)
-
-    samples = pq.UnitQuantity('samples', pq.s/32000.0, symbol='samples')
-    #noinspection PyArgumentList
-    train1 = neo.SpikeTrain(sp.arange(50)*10+sp.rand(50)*10, units='ms', t_stop=1000)
-    train1.unit = unit1
-    train2 = neo.SpikeTrain(sp.arange(20)*20*32, units=samples, t_stop=320000)
-    train2.unit = unit2
-
-    ISI({unit1:[train1], unit2:[train2]}, 1, 25, False)
-    app.exec_()

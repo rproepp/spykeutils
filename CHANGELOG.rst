@@ -1,3 +1,8 @@
+* Added implementations for various spike train metrics.
+* Added explained variance function to spike sorting quality assessment.
+* Improved legends for plots involving colored lines.
+* Renamed plot.ISI to plot.isi for consistency
+
 Version 0.2.1
 -------------
 * Added "Home" and "Pan" tools for plots (useful when no middle mouse button

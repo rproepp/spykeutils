@@ -16,9 +16,9 @@ import helper
 
 
 @helper.needs_qt
-def psth(trains, events=None, start=0*pq.ms, stop=None, bin_size=100*pq.ms,
-         rate_correction=True, bar_plot=False, unit=pq.ms,
-         progress=None):
+def psth(trains, events=None, start=0 * pq.ms, stop=None,
+         bin_size=100 * pq.ms, rate_correction=True, bar_plot=False,
+         unit=pq.ms, progress=None):
     """ Create a peri stimulus time histogram.
 
     The peri stimulus time histogram gives an estimate of the instantaneous
@@ -55,7 +55,7 @@ def psth(trains, events=None, start=0*pq.ms, stop=None, bin_size=100*pq.ms,
 
     if bar_plot:
         k = trains.keys()[0]
-        trains = {k:trains[k]}
+        trains = {k: trains[k]}
 
     # Align spike trains
     for u in trains:
@@ -63,8 +63,9 @@ def psth(trains, events=None, start=0*pq.ms, stop=None, bin_size=100*pq.ms,
             trains[u] = rate_estimation.aligned_spike_trains(
                 trains[u], events)
 
-    rates, bins = rate_estimation.psth(trains, bin_size, start=start,
-        stop=stop, rate_correction=rate_correction)
+    rates, bins = rate_estimation.psth(
+        trains, bin_size, start=start, stop=stop,
+        rate_correction=rate_correction)
 
     if not psth:
         raise SpykeException('No spike trains for PSTH!')
@@ -86,14 +87,16 @@ def psth(trains, events=None, start=0*pq.ms, stop=None, bin_size=100*pq.ms,
             name = 'Unknown'
 
         if not bar_plot:
-            curve = make.curve(bins, r, name,
+            curve = make.curve(
+                bins, r, name,
                 color=helper.get_object_color(i))
             legend_items.append(curve)
             plot.add_item(curve)
         else:
             show_rates = list(r)
             show_rates.insert(0, show_rates[0])
-            curve = make.curve(bins, show_rates, name, color='k',
+            curve = make.curve(
+                bins, show_rates, name, color='k',
                 curvestyle="Steps", shade=1.0)
             plot.add_item(curve)
             break
@@ -110,13 +113,13 @@ def psth(trains, events=None, start=0*pq.ms, stop=None, bin_size=100*pq.ms,
     else:
         plot.set_axis_title(BasePlot.Y_LEFT, 'Rate')
         plot.set_axis_unit(BasePlot.Y_LEFT, 'Hz')
-    plot.set_axis_title(BasePlot.X_BOTTOM, 'Interval length')
+    plot.set_axis_title(BasePlot.X_BOTTOM, 'Time')
     plot.set_axis_unit(BasePlot.X_BOTTOM, unit.dimensionality.string)
     win.add_custom_curve_tools()
     progress.done()
     win.show()
 
-    if bar_plot: # Rescale Bar plot
+    if bar_plot:  # Rescale Bar plot
         scale = plot.axisScaleDiv(BasePlot.Y_LEFT)
         plot.setAxisScale(BasePlot.Y_LEFT, 0, scale.upperBound())
         plot.set_antialiasing(False)

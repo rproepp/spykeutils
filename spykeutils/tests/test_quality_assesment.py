@@ -10,7 +10,7 @@ from neo.test.tools import assert_arrays_equal
 import spykeutils.sorting_quality_assesment as qa
 
 
-class TestQualityAssessment(ut.TestCase):
+class TestRefractoryPeriod(ut.TestCase):
     def test_refperiod_violations_empty(self):
         num, d = qa.get_refperiod_violations({}, 1 * pq.ms)
         self.assertEqual(num, 0)
@@ -46,7 +46,9 @@ class TestQualityAssessment(ut.TestCase):
         self.assertAlmostEqual(r[2], 0.5)
         self.assertAlmostEqual(r[3], 1.0)
 
-    def test_overlap_1_cluster(self):
+
+class TestClusterOverlap(ut.TestCase):
+    def test_1_cluster(self):
         # One cluster cannot have overlaps...
         cluster1 = sp.randn(8, 100)
         clusterList1 = [cluster1[:, i]
@@ -56,7 +58,7 @@ class TestQualityAssessment(ut.TestCase):
         self.assertEqual(total[1][1], 0.0)
         self.assertEqual(pair, {})
 
-    def test_overlap_equal_clusters_white(self):
+    def test_equal_clusters_white(self):
         cluster1 = sp.randn(40, 1000)
         cluster2 = sp.randn(40, 1000)
         clusterList1 = [cluster1[:, i]
@@ -76,7 +78,7 @@ class TestQualityAssessment(ut.TestCase):
         self.assertAlmostEqual(pair[2][1][0], 0.5)
         self.assertAlmostEqual(pair[2][1][1], 0.5)
 
-    def test_overlap_equal_clusters_estimate_mean(self):
+    def test_equal_clusters_estimate_mean(self):
         # Smaller dimensionality and more data for reliable estimates
         cluster1 = sp.randn(8, 100000)
         cluster2 = sp.randn(8, 100000)
@@ -96,7 +98,7 @@ class TestQualityAssessment(ut.TestCase):
         self.assertAlmostEqual(pair[2][1][0], 0.5, 3)
         self.assertAlmostEqual(pair[2][1][1], 0.5, 3)
 
-    def test_overlap_equal_clusters_estimate_all(self):
+    def test_equal_clusters_estimate_all(self):
         # Smaller dimensionality and more data for reliable estimates
         cluster1 = sp.randn(8, 100000)
         cluster2 = sp.randn(8, 100000)
@@ -115,7 +117,7 @@ class TestQualityAssessment(ut.TestCase):
         self.assertAlmostEqual(pair[2][1][0], 0.5, 2)
         self.assertAlmostEqual(pair[2][1][1], 0.5, 2)
 
-    def test_overlap_unequal_clusters(self):
+    def test_unequal_clusters(self):
         cluster1 = sp.randn(40, 1000)
         cluster2 = sp.randn(40, 2000)
         clusterList1 = [cluster1[:, i]
@@ -162,7 +164,7 @@ class TestQualityAssessment(ut.TestCase):
         self.assertGreater(pair[2][1][0], 0.0)
         self.assertGreater(pair[2][1][1], 0.0)
 
-    def test_overlap_3_clusters_estimate_means(self):
+    def test_3_clusters_estimate_means(self):
         cluster1 = sp.randn(20, 10000)
         cluster2 = sp.randn(20, 20000)
         cluster3 = sp.randn(20, 10000)
@@ -206,7 +208,7 @@ class TestQualityAssessment(ut.TestCase):
         self.assertGreater(pair[3][2][0], 0.0)
         self.assertGreater(pair[3][2][1], 0.0)
 
-    def test_overlap_spike_objects(self):
+    def test_spike_objects(self):
         dimension = 40
         offset = sp.zeros((dimension, 1))
         offset[0] = 4
@@ -250,7 +252,9 @@ class TestQualityAssessment(ut.TestCase):
                 self.assertAlmostEqual(pair[i][j][0], pair_s[i][j][0])
                 self.assertAlmostEqual(pair[i][j][1], pair_s[i][j][1])
 
-    def test_variance_explained_trains(self):
+
+class TestVarianceExplained(ut.TestCase):
+    def test_trains(self):
         trains = {}
         trains[0] = neo.SpikeTrain(
             sp.zeros(2) * pq.ms, 0 * pq.ms,
@@ -264,7 +268,7 @@ class TestQualityAssessment(ut.TestCase):
         self.assertAlmostEqual(exp[1][0], 1)
         self.assertAlmostEqual(exp[1][1], 0.75)
 
-    def test_variance_explained_spikes(self):
+    def test_spikes(self):
         trains = {}
         trains[0] = [neo.Spike(0 * pq.ms, waveform=[[-1, -2], [1, 2]] * pq.mV),
                      neo.Spike(0 * pq.ms, waveform=[[-1, -2], [1, 2]] * pq.mV)]
@@ -277,7 +281,7 @@ class TestQualityAssessment(ut.TestCase):
         self.assertAlmostEqual(exp[0][0], 1)
         self.assertAlmostEqual(exp[0][1], 0.75)
 
-    def test_variance_explained_noise(self):
+    def test_noise(self):
         trains = {}
         trains[0] = neo.SpikeTrain(
             sp.zeros(2) * pq.ms, 0 * pq.ms,
