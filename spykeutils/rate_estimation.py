@@ -14,7 +14,7 @@ import tools
 from . import SpykeException
 
 
-def binned_spike_trains(trains, bin_size, start=0*pq.ms, stop=None):
+def binned_spike_trains(trains, bin_size, start=0 * pq.ms, stop=None):
     """ Return dictionary of binned rates for a dictionary of
     spike train lists.
 
@@ -46,7 +46,7 @@ def binned_spike_trains(trains, bin_size, start=0*pq.ms, stop=None):
 
 
 def psth(
-        trains, bin_size, rate_correction=True, start=0*pq.ms,
+        trains, bin_size, rate_correction=True, start=0 * pq.ms,
         stop=sp.inf * pq.s):
     """ Return dictionary of peri stimulus time histograms for a dictionary
     of spike train lists.
@@ -164,9 +164,9 @@ def gauss_kernel(x, kernel_size):
         sigproc.GaussianKernel.evaluate(x, kernel_size)
 
 
-def spike_density_estimation(trains, start=0*pq.ms, stop=None,
+def spike_density_estimation(trains, start=0 * pq.ms, stop=None,
                              kernel=sigproc.GaussianKernel(100 * pq.ms),
-                             kernel_size=100*pq.ms, optimize_steps=None,
+                             kernel_size=100 * pq.ms, optimize_steps=None,
                              progress=None):
     """ Create a spike density estimation from a dictionary of
     lists of spike trains.
@@ -235,23 +235,23 @@ def spike_density_estimation(trains, start=0*pq.ms, stop=None,
     eval_points = bins[:-1] + (bins[1] - bins[0]) / 2
 
     if optimize_steps is None or len(optimize_steps) < 1:
-        kernel_size = {u:kernel_size for u in trains}
+        kernel_size = {u: kernel_size for u in trains}
     else:
         # Find optimal kernel size for all spike train sets
-        progress.set_ticks(len(optimize_steps)*len(trains))
+        progress.set_ticks(len(optimize_steps) * len(trains))
         progress.set_status('Calculating optimal kernel size')
         kernel_size = {}
-        for u,t in trains.iteritems():
+        for u, t in trains.iteritems():
             c = collapsed_spike_trains(t)
             kernel_size[u] = optimal_gauss_kernel_size(
-                c.time_slice(start,stop), optimize_steps, progress)
+                c.time_slice(start, stop), optimize_steps, progress)
 
     progress.set_ticks(len(trains))
     progress.set_status('Creating spike density plot')
 
     # Calculate KDEs
     kde = {}
-    for u,t in trains.iteritems():
+    for u, t in trains.iteritems():
         # Collapse spike trains
         collapsed = collapsed_spike_trains(t).rescale(units)
         scaled_kernel = sigproc.as_kernel_of_size(kernel, kernel_size[u])
@@ -285,7 +285,7 @@ def collapsed_spike_trains(trains):
     for t in trains:
         collapsed.extend(sp.asarray(t.rescale(stop.units)))
 
-    return neo.SpikeTrain(collapsed*stop.units, t_stop=stop, t_start=start)
+    return neo.SpikeTrain(collapsed * stop.units, t_stop=stop, t_start=start)
 
 
 def optimal_gauss_kernel_size(train, optimize_steps, progress=None):
@@ -329,11 +329,11 @@ def optimal_gauss_kernel_size(train, optimize_steps, progress=None):
             ensure_unit_area=True) * optimize_steps.units
 
         # Equation from Matlab code, 7/2012
-        c = (sp.sum(yh**2) * dt -
+        c = (sp.sum(yh ** 2) * dt -
              2 * sp.sum(yh * y_hist) * dt +
              2 * 1 / sp.sqrt(2 * sp.pi) / s / N)
         C[s] = c * N * N
         progress.step()
 
     # Return kernel size with smallest cost
-    return min(C, key=C.get)*optimize_steps.units
+    return min(C, key=C.get) * optimize_steps.units

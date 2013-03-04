@@ -44,7 +44,6 @@ def bin_spike_trains(trains, sampling_rate, t_start=None, t_stop=None):
         of spike train counts and the bin borders.
     :rtype: dict, Quantity 1D with time units
     """
-
     if t_start is None or t_stop is None:
         max_start, max_stop = maximum_spike_train_interval(trains)
         if t_start is None:
