@@ -7,7 +7,6 @@ from guiqwt.builder import make
 from guiqwt.baseplot import BasePlot
 from guiqwt.plot import BaseCurveWidget
 
-import neo
 import quantities as pq
 
 from .. import SpykeException
