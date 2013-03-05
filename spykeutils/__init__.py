@@ -36,6 +36,7 @@
     :members:
     :show-inheritance:
     :undoc-members:
+    :exclude-members: CausalDecayingExpKernel, LaplacianKernel, GaussianKernel, RectangularKernel, TriangularKernel
 
 :mod:`spike_train_generation` Module
 ------------------------------------

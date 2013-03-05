@@ -29,14 +29,12 @@ try:
 except ImportError:
     from mock import MagicMock
 
-    MOCK_MODULES = ['neo', 'numpy', 'tables', 'guiqwt', 'guiqwt.builder',
+    MOCK_MODULES = ['tables', 'guiqwt', 'guiqwt.builder',
                     'guiqwt.baseplot', 'guiqwt.plot', 'guiqwt.curve',
                     'guiqwt.image', 'guiqwt.tools', 'guiqwt.signals',
                     'guiqwt.config', 'guiqwt.events', 'guiqwt.shapes',
                     'PyQt4', 'PyQt4.QtCore', 'PyQt4.QtGui',
-                    'guidata', 'guidata.configtools', 'guidata.qthelpers',
-                    'quantities', 'scipy', 'scipy.spatial', 'scipy.signal',
-                    'scipy.spatial.distance', 'numpy.random']
+                    'guidata', 'guidata.configtools', 'guidata.qthelpers']
     for mod_name in MOCK_MODULES:
         sys.modules[mod_name] = MagicMock()
 

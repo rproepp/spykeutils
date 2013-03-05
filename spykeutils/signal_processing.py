@@ -1,5 +1,23 @@
 """
-.. data:: default_kernel_area_fraction
+.. autoclass:: CausalDecayingExpKernel(kernel_size=1.0 * pq.s, normalize=True)
+    :members:
+    :undoc-members:
+
+.. autoclass:: LaplacianKernel(kernel_size=1.0 * pq.s, normalize=True)
+    :members:
+    :undoc-members:
+
+.. autoclass:: GaussianKernel(kernel_size=1.0 * pq.s, normalize=True)
+    :members:
+    :undoc-members:
+
+.. autoclass:: RectangularKernel(half_width=1.0 * pq.s, normalize=True)
+    :members:
+    :undoc-members:
+
+.. autoclass:: TriangularKernel(half_width=1.0 * pq.s, normalize=True)
+    :members:
+    :undoc-members:
 """
 
 import copy
@@ -13,7 +31,7 @@ default_kernel_area_fraction = 0.99999
 
 
 class Kernel(object):
-    """ Base class for kernels. """
+    """ Base class for kernels.  """
 
     def __init__(self, kernel_size, normalize):
         """
