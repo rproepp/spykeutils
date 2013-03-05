@@ -1,25 +1,3 @@
-"""
-.. autoclass:: CausalDecayingExpKernel(kernel_size=1.0 * pq.s, normalize=True)
-    :members:
-    :undoc-members:
-
-.. autoclass:: LaplacianKernel(kernel_size=1.0 * pq.s, normalize=True)
-    :members:
-    :undoc-members:
-
-.. autoclass:: GaussianKernel(kernel_size=1.0 * pq.s, normalize=True)
-    :members:
-    :undoc-members:
-
-.. autoclass:: RectangularKernel(half_width=1.0 * pq.s, normalize=True)
-    :members:
-    :undoc-members:
-
-.. autoclass:: TriangularKernel(half_width=1.0 * pq.s, normalize=True)
-    :members:
-    :undoc-members:
-"""
-
 import copy
 import quantities as pq
 import scipy as sp

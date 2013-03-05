@@ -13,6 +13,7 @@
 --------------------------
 
 .. automodule:: spykeutils.correlations
+    :members:
 
 :mod:`progress_indicator` Module
 --------------------------------
@@ -27,7 +28,6 @@
 
 .. automodule:: spykeutils.rate_estimation
     :members:
-    :exclude-members: binned_spike_trains, psth, spike_density_estimation
 
 :mod:`signal_processing` Module
 -------------------------------
@@ -36,7 +36,6 @@
     :members:
     :show-inheritance:
     :undoc-members:
-    :exclude-members: CausalDecayingExpKernel, LaplacianKernel, GaussianKernel, RectangularKernel, TriangularKernel
 
 :mod:`spike_train_generation` Module
 ------------------------------------
@@ -65,7 +64,6 @@
 
 .. automodule:: spykeutils.stationarity
     :members:
-    :exclude-members: spike_amplitude_histogram
 
 :mod:`tools` Module
 ------------------------

@@ -1,7 +1,3 @@
-"""
-.. autofunction:: cross_correlogram(trains, bin_size, max_lag=500 ms, border_correction=True, unit=ms, progress=None)
-"""
-
 from guiqwt.builder import make
 from guiqwt.baseplot import BasePlot
 from guiqwt.plot import BaseCurveWidget

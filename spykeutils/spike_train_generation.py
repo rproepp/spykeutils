@@ -1,4 +1,3 @@
-
 import neo
 import numpy.random
 import quantities as pq

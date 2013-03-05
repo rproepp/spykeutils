@@ -1,7 +1,3 @@
-"""
-.. autofunction:: spikes(spikes, axes_style, anti_alias=False, time_unit=ms, progress=None)
-"""
-
 import scipy as sp
 import quantities as pq
 
@@ -45,8 +41,9 @@ def spikes(spikes, axes_style, anti_alias=False, time_unit=pq.ms,
     indices = spikes.keys()
     ref_spike = spikes[spikes.keys()[0]][0]
     if ref_spike.waveform is None:
-        raise SpykeException('Cannot create waveform plot: At least one spike '
-                             'has no waveform or sampling rate!')
+        raise SpykeException(
+            'Cannot create waveform plot: At least one spike '
+            'has no waveform or sampling rate!')
     ref_units = ref_spike.waveform.units
     channels = range(ref_spike.waveform.shape[1])
 
@@ -60,9 +57,10 @@ def spikes(spikes, axes_style, anti_alias=False, time_unit=pq.ms,
                 color = helper.get_object_color(u)
                 for s in spikes[u]:
                     if s.waveform is None or s.sampling_rate is None:
-                        raise SpykeException('Cannot create waveform plot: '
-                                             'At least one spike has no '
-                                             'waveform or sampling rate!')
+                        raise SpykeException(
+                            'Cannot create waveform plot: '
+                            'At least one spike has no '
+                            'waveform or sampling rate!')
                     x = (sp.arange(s.waveform.shape[0]) /
                          s.sampling_rate).rescale(time_unit)
                     curve = make.curve(
@@ -87,9 +85,10 @@ def spikes(spikes, axes_style, anti_alias=False, time_unit=pq.ms,
                     color = helper.get_object_color(u)
                     for s in spikes[u]:
                         if s.waveform is None or s.sampling_rate is None:
-                            raise SpykeException('Cannot create waveform plot: '
-                                                 'At least one spike has no '
-                                                 'waveform or sampling rate!')
+                            raise SpykeException(
+                                'Cannot create waveform plot: '
+                                'At least one spike has no '
+                                'waveform or sampling rate!')
                         x = (sp.arange(s.waveform.shape[0]) /
                              s.sampling_rate).rescale(time_unit)
                         curve = make.curve(
@@ -137,9 +136,10 @@ def spikes(spikes, axes_style, anti_alias=False, time_unit=pq.ms,
                     color = helper.get_object_color(u)
                     for s in spikes[u]:
                         if s.waveform is None or s.sampling_rate is None:
-                            raise SpykeException('Cannot create waveform plot: '
-                                                 'At least one spike has no '
-                                                 'waveform or sampling rate!')
+                            raise SpykeException(
+                                'Cannot create waveform plot: '
+                                'At least one spike has no '
+                                'waveform or sampling rate!')
                         x = (sp.arange(s.waveform.shape[0]) /
                              s.sampling_rate).rescale(time_unit)
                         curve = make.curve(

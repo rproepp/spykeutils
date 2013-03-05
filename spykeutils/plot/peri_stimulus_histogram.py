@@ -1,6 +1,3 @@
-"""
-.. autofunction:: psth(trains, events=None, start=0 ms, stop=None, bin_size=100 ms, rate_correction=True, bar_plot=False, unit=ms, progress=None)
-"""
 import scipy as sp
 import quantities as pq
 

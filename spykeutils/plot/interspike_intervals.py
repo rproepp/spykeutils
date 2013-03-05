@@ -1,6 +1,3 @@
-"""
-.. autofunction:: isi(trains, bin_size, cut_off, bar_plot=False, unit=ms)
-"""
 import scipy as sp
 
 from guiqwt.builder import make

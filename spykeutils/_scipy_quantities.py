@@ -1,4 +1,3 @@
-
 import scipy as sp
 import quantities as pq
 

@@ -1,6 +1,3 @@
-"""
-.. autofunction:: correlogram(trains, bin_size, max_lag=500 ms, border_correction=True, unit=ms, progress=None)
-"""
 import scipy as sp
 from collections import OrderedDict
 

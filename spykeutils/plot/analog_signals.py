@@ -1,6 +1,3 @@
-"""
-.. autofunction:: signals(signals, events=None, epochs=None, spike_trains=None, spikes=None, use_subplots=True, time_unit=s, y_unit=None, progress=None)
-"""
 from __future__ import division
 
 import scipy as sp

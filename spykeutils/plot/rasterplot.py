@@ -1,6 +1,3 @@
-"""
-.. autofunction:: raster(trains, units=None, show_lines=True, events=None, epochs=None)
-"""
 import scipy as sp
 
 from guiqwt.builder import make

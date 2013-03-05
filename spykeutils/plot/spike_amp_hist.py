@@ -1,6 +1,3 @@
-"""
-.. autofunction:: spike_amplitude_histogram(trains, num_bins, uniform_y_scale=True, unit=uV, progress=None)
-"""
 import scipy as sp
 import quantities as pq
 

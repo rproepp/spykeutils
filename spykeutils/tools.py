@@ -1,4 +1,3 @@
-
 import neo
 import quantities as pq
 import scipy as sp

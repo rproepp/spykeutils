@@ -1,8 +1,3 @@
-"""
-.. autofunction:: binned_spike_trains(trains, bin_size, start=0 ms, stop=None)
-.. autofunction:: psth(trains, bin_size, rate_correction=True, start=0 ms, stop=None)
-.. autofunction:: spike_density_estimation(trains, start=0 ms, stop=None, evaluation_points=None, kernel=gauss_kernel, kernel_size=100 ms, optimize_steps=None, progress=None)
-"""
 from __future__ import division
 
 import scipy as sp
