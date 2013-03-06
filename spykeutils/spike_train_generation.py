@@ -6,7 +6,8 @@ import _scipy_quantities as spq
 
 
 def gen_homogeneous_poisson(
-        rate, t_start=0 * pq.s, t_stop=None, max_spikes=None):
+        rate, t_start=0 * pq.s, t_stop=None, max_spikes=None,
+        refractory=0 * pq.s):
     """ Generate a homogeneous Poisson spike train. The length is controlled
     with `t_stop` and `max_spikes`. Either one or both of these arguments have
     to be given.
@@ -63,7 +64,8 @@ def gen_homogeneous_poisson(
 
 
 def gen_inhomogeneous_poisson(
-        modulation, max_rate, t_start=0 * pq.s, t_stop=None, max_spikes=None):
+        modulation, max_rate, t_start=0 * pq.s, t_stop=None, max_spikes=None,
+        refractory=0 * pq.s):
     """ Generate an inhomogeneous Poisson spike train. The length is controlled
     with `t_stop` and `max_spikes`. Either one or both of these arguments have
     to be given.
