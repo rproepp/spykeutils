@@ -196,13 +196,14 @@ class AnalysisPlugin(gui_data.DataSet):
 
         # Save guidata parameters
         paramgroup = h5.createGroup('/', 'guiparams')
-        guiparams = self.get_parameters()
-        for p, v in guiparams.iteritems():
-            t = type(v)
-            if t == int or t == float:
-                h5.setNodeAttr(paramgroup, p, v)
-            else:
-                h5.setNodeAttr(paramgroup, p, json.dumps(v))
+        if save_guiparams:
+            guiparams = self.get_parameters()
+            for p, v in guiparams.iteritems():
+                t = type(v)
+                if t == int or t == float:
+                    h5.setNodeAttr(paramgroup, p, v)
+                else:
+                    h5.setNodeAttr(paramgroup, p, json.dumps(v))
 
         # Save selections the provided by plugin
         h5.setNodeAttr('/', 'selections', selection_string)
