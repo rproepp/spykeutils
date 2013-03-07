@@ -64,6 +64,11 @@ class CommonSpikeTrainGeneratorTests(object):
         self.assertGreater(
             sp.amax(sp.absolute(sp.diff(st.rescale(pq.s).magnitude))),
             refractory.rescale(pq.s).magnitude)
+        st = self.invoke_gen_func(
+            self.highRate, t_stop=10 * pq.s, refractory=refractory)
+        self.assertGreater(
+            sp.amax(sp.absolute(sp.diff(st.rescale(pq.s).magnitude))),
+            refractory.rescale(pq.s).magnitude)
 
 
 class Test_gen_homogeneous_poisson(ut.TestCase, CommonSpikeTrainGeneratorTests):

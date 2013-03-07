@@ -37,6 +37,8 @@ def gen_homogeneous_poisson(
         spike_times = sp.cumsum(numpy.random.exponential(
             rate ** -1, max_spikes)) * (rate.units ** -1).simplified
         spike_times += t_start
+        if refractory > 0:
+            spike_times += sp.arange(spike_times.size) * refractory
         if t_stop is not None:
             spike_times = spike_times[spike_times <= t_stop]
     else:
@@ -51,6 +53,8 @@ def gen_homogeneous_poisson(
                 (t_stop - last_spike) * rate).simplified) + 1
             train = sp.cumsum(numpy.random.exponential(scale, num_spikes)) * \
                 scale.units + last_spike
+            if refractory > 0:
+                train += sp.arange(train.size) * refractory
             if train.size > 0:
                 last_spike = train[-1]
                 if last_spike >= t_stop:
@@ -91,5 +95,6 @@ def gen_inhomogeneous_poisson(
     :rtype: :class:`neo.core.SpikeTrain`
     """
 
-    st = gen_homogeneous_poisson(max_rate, t_start, t_stop, max_spikes)
+    st = gen_homogeneous_poisson(
+        max_rate, t_start, t_stop, max_spikes, refractory)
     return st[numpy.random.rand(st.size) < modulation(st)]
