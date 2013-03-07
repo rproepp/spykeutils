@@ -25,6 +25,10 @@ def gen_homogeneous_poisson(
     :type t_stop: Quantity scalar
     :param max_spikes: Maximum number of spikes to generate. Fewer spikes might
         be generated in case `t_stop` is also set.
+    :param refractory: Absolute refractory period as time scalar. No spike will
+        follow another spike for the given duration. Afterwards the firing rate
+        will instantaneously be set to `rate` again.
+    :type refractory: Quantity scalar
 
     :returns: The generated spike train.
     :rtype: :class:`neo.core.SpikeTrain`
@@ -90,6 +94,10 @@ def gen_inhomogeneous_poisson(
         the number of generated spikes is controlled by `max_spikes` and
         `t_stop` will be equal to the last generated spike.
     :type t_stop: Quantity scalar
+    :param refractory: Absolute refractory period as time scalar. No spike will
+        follow another spike for the given duration. Afterwards the firing rate
+        will instantaneously be set to `rate` again.
+    :type refractory: Quantity scalar
 
     :returns: The generated spike train.
     :rtype: :class:`neo.core.SpikeTrain`
