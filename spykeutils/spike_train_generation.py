@@ -6,7 +6,8 @@ import _scipy_quantities as spq
 
 
 def gen_homogeneous_poisson(
-        rate, t_start=0 * pq.s, t_stop=None, max_spikes=None):
+        rate, t_start=0 * pq.s, t_stop=None, max_spikes=None,
+        refractory=0 * pq.s):
     """ Generate a homogeneous Poisson spike train. The length is controlled
     with `t_stop` and `max_spikes`. Either one or both of these arguments have
     to be given.
@@ -24,6 +25,10 @@ def gen_homogeneous_poisson(
     :type t_stop: Quantity scalar
     :param max_spikes: Maximum number of spikes to generate. Fewer spikes might
         be generated in case `t_stop` is also set.
+    :param refractory: Absolute refractory period as time scalar. No spike will
+        follow another spike for the given duration. Afterwards the firing rate
+        will instantaneously be set to `rate` again.
+    :type refractory: Quantity scalar
 
     :returns: The generated spike train.
     :rtype: :class:`neo.core.SpikeTrain`
@@ -36,6 +41,8 @@ def gen_homogeneous_poisson(
         spike_times = sp.cumsum(numpy.random.exponential(
             rate ** -1, max_spikes)) * (rate.units ** -1).simplified
         spike_times += t_start
+        if refractory > 0:
+            spike_times += sp.arange(spike_times.size) * refractory
         if t_stop is not None:
             spike_times = spike_times[spike_times <= t_stop]
     else:
@@ -50,6 +57,8 @@ def gen_homogeneous_poisson(
                 (t_stop - last_spike) * rate).simplified) + 1
             train = sp.cumsum(numpy.random.exponential(scale, num_spikes)) * \
                 scale.units + last_spike
+            if refractory > 0:
+                train += sp.arange(train.size) * refractory
             if train.size > 0:
                 last_spike = train[-1]
                 if last_spike >= t_stop:
@@ -63,7 +72,8 @@ def gen_homogeneous_poisson(
 
 
 def gen_inhomogeneous_poisson(
-        modulation, max_rate, t_start=0 * pq.s, t_stop=None, max_spikes=None):
+        modulation, max_rate, t_start=0 * pq.s, t_stop=None, max_spikes=None,
+        refractory=0 * pq.s):
     """ Generate an inhomogeneous Poisson spike train. The length is controlled
     with `t_stop` and `max_spikes`. Either one or both of these arguments have
     to be given.
@@ -84,10 +94,15 @@ def gen_inhomogeneous_poisson(
         the number of generated spikes is controlled by `max_spikes` and
         `t_stop` will be equal to the last generated spike.
     :type t_stop: Quantity scalar
+    :param refractory: Absolute refractory period as time scalar. No spike will
+        follow another spike for the given duration. Afterwards the firing rate
+        will instantaneously be set to `rate` again.
+    :type refractory: Quantity scalar
 
     :returns: The generated spike train.
     :rtype: :class:`neo.core.SpikeTrain`
     """
 
-    st = gen_homogeneous_poisson(max_rate, t_start, t_stop, max_spikes)
+    st = gen_homogeneous_poisson(
+        max_rate, t_start, t_stop, max_spikes, refractory)
     return st[numpy.random.rand(st.size) < modulation(st)]
