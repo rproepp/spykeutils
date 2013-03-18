@@ -2,6 +2,7 @@ import os
 import sys
 from copy import copy
 from collections import OrderedDict
+import traceback
 
 import neo
 
@@ -36,6 +37,8 @@ class NeoDataProvider(DataProvider):
         io, blocks = cls._load_neo_file(filename, lazy)
         if io and hasattr(io, 'close'):
             io.close()
+        if blocks is None:
+            return None
         return blocks[index]
 
     @classmethod
@@ -93,10 +96,17 @@ class NeoDataProvider(DataProvider):
                             cls.block_indices[b] = i
                         cls.loaded_blocks[filename] = blocks
                         return n_io, blocks
-                    except Exception:
-                        sys.stderr.write('Load error with ' + str(io) +
-                                         ' for file ' + filename + '\n')
-                        raise
+                    except Exception, e:
+                        sys.stderr.write(
+                            'Load error for file "%s":\n' % filename)
+                        tb = sys.exc_info()[2]
+                        while not ('self' in tb.tb_frame.f_locals and
+                                   tb.tb_frame.f_locals['self'] == n_io):
+                            if tb.tb_next is not None:
+                                tb = tb.tb_next
+                            else:
+                                break
+                        traceback.print_exception(type(e), e, tb)
                         continue
         return None, None
 
