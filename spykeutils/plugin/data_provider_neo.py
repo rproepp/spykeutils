@@ -75,21 +75,28 @@ class NeoDataProvider(DataProvider):
                         # Fix unicode problem with pyinstaller
                         if hasattr(sys, 'frozen'):
                             filename = filename.encode('UTF-8')
-                        n_io = io(filename=filename)
-                        blocks = n_io.read_all_blocks(lazy=lazy)
+
+                    n_io = io(filename=filename)
+
+                    try:
+                        if hasattr(io, 'read_all_blocks'):  # Neo 0.2.1
+                            blocks = n_io.read_all_blocks(lazy=lazy)
+                        else:
+                            content = n_io.read(lazy=lazy)
+                            if isinstance(content, neo.Block):  # Neo 0.2.1
+                                cls.block_indices[content] = 0
+                                cls.loaded_blocks[filename] = [content]
+                                return n_io, [content]
+                            blocks = content
+                        # Neo >= 0.3.0, read() returns a list of blocks
                         for i, b in enumerate(blocks):
                             cls.block_indices[b] = i
                         cls.loaded_blocks[filename] = blocks
                         return n_io, blocks
-                    try:
-                        n_io = io(filename=filename)
-                        block = n_io.read(lazy=lazy)
-                        cls.block_indices[block] = 0
-                        cls.loaded_blocks[filename] = [block]
-                        return n_io, [block]
                     except Exception:
-                        sys.stderr.write('Load error with '+str(io)+
-                                         ' for file '+filename+'\n')
+                        sys.stderr.write('Load error with ' + str(io) +
+                                         ' for file ' + filename + '\n')
+                        raise
                         continue
         return None, None
 
@@ -150,10 +157,10 @@ class NeoDataProvider(DataProvider):
         selected_units = viewer.neo_units()
         for u in selected_units:
             segment_indices[u] = len(segment_list)
-            rcg_id = None if u.recordingchannelgroup is None\
-            else u.recordingchannelgroup.units.index(u)
-            rcg = rcg_indices[u.recordingchannelgroup]\
-            if u.recordingchannelgroup else None
+            rcg_id = None if u.recordingchannelgroup is None \
+                else u.recordingchannelgroup.units.index(u)
+            rcg = rcg_indices[u.recordingchannelgroup] \
+                if u.recordingchannelgroup else None
             unit_list.append([rcg_id, rcg])
         data['units'] = unit_list
 
@@ -174,13 +181,13 @@ class NeoDataProvider(DataProvider):
                 segment = copy(s)
                 segment.analogsignals = [sig for sig in s.analogsignals
                                          if sig.recordingchannel
-                in selected_channels]
-                segment.analogsignalarrays =\
-                [asa for asa in s.analogsignalarrays
-                 if asa.recordingchannelgroup in selected_rcgs]
-                segment.irregularlysampledsignals =\
-                [iss for iss in s.irregularlysampledsignals
-                 if iss.recordingchannel in selected_channels]
+                                         in selected_channels]
+                segment.analogsignalarrays = \
+                    [asa for asa in s.analogsignalarrays
+                     if asa.recordingchannelgroup in selected_rcgs]
+                segment.irregularlysampledsignals = \
+                    [iss for iss in s.irregularlysampledsignals
+                     if iss.recordingchannel in selected_channels]
                 segment.spikes = [sp for sp in s.spikes
                                   if sp.unit in selected_units]
                 segment.spiketrains = [st for st in s.spiketrains
@@ -192,9 +199,9 @@ class NeoDataProvider(DataProvider):
         for old_rcg in old.recordingchannelgroups:
             if old_rcg in selected_rcgs:
                 rcg = copy(old_rcg)
-                rcg.analogsignalarrays =\
-                [asa for asa in old_rcg.analogsignalarrays
-                 if asa.segment in selected_segments]
+                rcg.analogsignalarrays = \
+                    [asa for asa in old_rcg.analogsignalarrays
+                     if asa.segment in selected_segments]
 
                 rcg.recordingchannels = []
                 for c in old_rcg.recordingchannels:
@@ -203,10 +210,10 @@ class NeoDataProvider(DataProvider):
                     channel = copy(c)
                     channel.analogsignals = [sig for sig in c.analogsignals
                                              if sig.segment
-                    in selected_segments]
-                    channel.irregularlysampledsignals =\
-                    [iss for iss in c.irregularlysampledsignals
-                     if iss.segment in selected_segments]
+                                             in selected_segments]
+                    channel.irregularlysampledsignals = \
+                        [iss for iss in c.irregularlysampledsignals
+                         if iss.segment in selected_segments]
                     channel.recordingchannelgroups = copy(
                         c.recordingchannelgroups)
                     channel.recordingchannelgroups.insert(
@@ -244,7 +251,7 @@ class NeoDataProvider(DataProvider):
         units = self.units()
         for s in self.segments():
             trains.extend([t for t in s.spiketrains if t.unit in units or
-                                                       t.unit is None])
+                           t.unit is None])
         for u in self.units():
             trains.extend([t for t in u.spiketrains if t.segment is None])
 
@@ -258,7 +265,7 @@ class NeoDataProvider(DataProvider):
         segments = self.segments()
         for u in self.units():
             st = [t for t in u.spiketrains if t.segment in segments or
-                                                  t.segment is None]
+                  t.segment is None]
             if st:
                 trains[u] = st
 
@@ -278,7 +285,7 @@ class NeoDataProvider(DataProvider):
         units = self.units()
         for s in self.segments():
             st = [t for t in s.spiketrains if t.unit in units or
-                                              t.unit is None]
+                  t.unit is None]
             if st:
                 trains[s] = st
 
@@ -326,7 +333,7 @@ class NeoDataProvider(DataProvider):
         units = self.units()
         for s in self.segments():
             spikes.extend([t for t in s.spikes if t.unit in units or
-                                                  t.unit is None])
+                           t.unit is None])
         for u in self.units():
             spikes.extend([t for t in u.spikes if t.segment is None])
 
@@ -340,7 +347,7 @@ class NeoDataProvider(DataProvider):
         segments = self.segments()
         for u in self.units():
             sp = [t for t in u.spikes if t.segment in segments or
-                                         t.segment is None]
+                  t.segment is None]
             if sp:
                 spikes[u] = sp
 
@@ -360,7 +367,7 @@ class NeoDataProvider(DataProvider):
         units = self.units()
         for s in self.segments():
             sp = [t for t in s.spikes if t.unit in units or
-                                         t.unit is None]
+                  t.unit is None]
             if sp:
                 spikes[s] = sp
 
@@ -401,7 +408,7 @@ class NeoDataProvider(DataProvider):
 
         return spikes
 
-    def events(self, include_array_events = True):
+    def events_by_segment(self, include_array_events=True):
         """ Return a dictionary (indexed by Segment) of lists of
         Event objects.
         """
@@ -416,7 +423,7 @@ class NeoDataProvider(DataProvider):
                     ret[s].extend(convert.event_array_to_events(a))
         return ret
 
-    def labeled_events(self, label, include_array_events = True):
+    def labeled_events_by_segment(self, label, include_array_events=True):
         """ Return a dictionary (indexed by Segment) of lists of Event
         objects with the given label.
         """
@@ -433,7 +440,7 @@ class NeoDataProvider(DataProvider):
                     ret[s].extend((e for e in events if e.label == label))
         return ret
 
-    def event_arrays(self):
+    def event_arrays_by_segment(self):
         """ Return a dictionary (indexed by Segment) of lists of
         EventArray objects.
         """
@@ -443,7 +450,7 @@ class NeoDataProvider(DataProvider):
                 ret[s] = s.eventarrays
         return ret
 
-    def epochs(self, include_array_epochs = True):
+    def epochs_by_segment(self, include_array_epochs=True):
         """ Return a dictionary (indexed by Segment) of lists of
         Epoch objects.
         """
@@ -458,7 +465,7 @@ class NeoDataProvider(DataProvider):
                     ret[s].extend(convert.epoch_array_to_epochs(a))
         return ret
 
-    def labeled_epochs(self, label, include_array_epochs = True):
+    def labeled_epochs_by_segment(self, label, include_array_epochs=True):
         """ Return a dictionary (indexed by Segment) of lists of Epoch
         objects with the given label.
         """
@@ -475,7 +482,7 @@ class NeoDataProvider(DataProvider):
                     ret[s].extend((e for e in epochs if e.label == label))
         return ret
 
-    def epoch_arrays(self):
+    def epoch_arrays_by_segment(self):
         """ Return a dictionary (indexed by Segment) of lists of
         EpochArray objects.
         """
@@ -499,16 +506,16 @@ class NeoDataProvider(DataProvider):
         if mode == 1 or mode == 3:
             for s in self.segments():
                 signals.extend([t for t in s.analogsignals
-                               if t.recordingchannel in channels or
-                                  t.recordingchannel is None])
+                                if t.recordingchannel in channels or
+                                t.recordingchannel is None])
             for u in self.recording_channels():
                 signals.extend([t for t in u.analogsignals
                                 if t.segment is None])
         if mode > 1:
             for sa in self.analog_signal_arrays():
                 for sig in convert.analog_signal_array_to_analog_signals(sa):
-                    if sig.recordingchannel is None or \
-                        sig.recordingchannel in channels:
+                    if (sig.recordingchannel is None or
+                            sig.recordingchannel in channels):
                         signals.append(sig)
 
         return signals
@@ -524,7 +531,7 @@ class NeoDataProvider(DataProvider):
             for s in self.segments():
                 sig = [t for t in s.analogsignals
                        if t.recordingchannel in channels or
-                          t.recordingchannel is None]
+                       t.recordingchannel is None]
                 if sig:
                     signals[s] = sig
 
@@ -537,12 +544,12 @@ class NeoDataProvider(DataProvider):
 
         if mode > 1:
             for o, sa_list in \
-                self.analog_signal_arrays_by_segment().iteritems():
+                    self.analog_signal_arrays_by_segment().iteritems():
                 for sa in sa_list:
                     for sig in \
-                        convert.analog_signal_array_to_analog_signals(sa):
+                            convert.analog_signal_array_to_analog_signals(sa):
                         if sig.recordingchannel is None or \
-                            sig.recordingchannel in channels:
+                                sig.recordingchannel in channels:
                             if o not in signals:
                                 signals[o] = []
                             signals[o].append(sig)
@@ -561,7 +568,7 @@ class NeoDataProvider(DataProvider):
             for c in channels:
                 sig = [t for t in c.analogsignals
                        if t.segment in segments or
-                          t.segment is None]
+                       t.segment is None]
                 if sig:
                     signals[c] = sig
 
@@ -574,10 +581,10 @@ class NeoDataProvider(DataProvider):
 
         if mode > 1:
             for o, sa_list in \
-                self.analog_signal_arrays_by_channelgroup().iteritems():
+                    self.analog_signal_arrays_by_channelgroup().iteritems():
                 for sa in sa_list:
                     for sig in \
-                        convert.analog_signal_array_to_analog_signals(sa):
+                            convert.analog_signal_array_to_analog_signals(sa):
                         if sig.recordingchannel is None:
                             if self.no_channel not in signals:
                                 signals[self.no_channel] = [sig]
@@ -624,11 +631,11 @@ class NeoDataProvider(DataProvider):
                 signals[self.no_channel] = nonesignals
 
         if mode > 1:
-            for cg, inner in self.analog_signal_arrays_by_channelgroup_and_segment().iteritems():
+            sigs = self.analog_signal_arrays_by_channelgroup_and_segment()
+            for cg, inner in sigs.iteritems():
                 for seg, sa_list in inner.iteritems():
                     for sa in sa_list:
-                        for sig in \
-                            convert.analog_signal_array_to_analog_signals(sa):
+                        for sig in convert.analog_signal_array_to_analog_signals(sa):
                             chan = sig.recordingchannel
                             if chan not in channels:
                                 continue
@@ -637,7 +644,6 @@ class NeoDataProvider(DataProvider):
                             if seg not in signals[chan]:
                                 signals[chan][seg] = []
                             signals[chan][seg].append(sig)
-
 
         return signals
 

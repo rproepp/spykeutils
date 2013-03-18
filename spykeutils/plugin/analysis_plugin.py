@@ -50,8 +50,6 @@ class AnalysisPlugin(gui_data.DataSet):
 
     def __init__(self):
         super(AnalysisPlugin, self).__init__()
-        self.__current = None
-        self.__selections = None
 
     def get_name(self):
         """ Return the name of an analysis. Override to specify analysis
