@@ -502,11 +502,6 @@ class NeoDataProvider(DataProvider):
                 ret[s] = s.epocharrays
         return ret
 
-    def num_analog_signals(self, mode=1):
-        """ Return the number of :class:`neo.core.AnalogSignal` objects.
-        """
-        return len(self.analog_signals(mode))
-
     def analog_signals(self, mode=1):
         """ Return a list of :class:`neo.core.AnalogSignal` objects.
         """
@@ -539,9 +534,12 @@ class NeoDataProvider(DataProvider):
 
         if mode == 1 or mode == 3:
             for s in self.segments():
-                sig = [t for t in s.analogsignals
-                       if t.recordingchannel in channels or
-                       t.recordingchannel is None]
+                sig = []
+                for c in channels:
+                    sig.extend([t for t in c.analogsignals
+                                if t.segment == s])
+                sig.extend([t for t in s.analogsignals
+                            if t.recordingchannel is None])
                 if sig:
                     signals[s] = sig
 
@@ -657,11 +655,6 @@ class NeoDataProvider(DataProvider):
 
         return signals
 
-    def num_analog_signal_arrays(self):
-        """ Return the number of AnalogSignalArray objects.
-        """
-        return len(self.analog_signal_arrays())
-
     def analog_signal_arrays(self):
         """ Return a list of :class:`neo.core.AnalogSignalArray` objects.
         """
@@ -684,8 +677,12 @@ class NeoDataProvider(DataProvider):
         signals = OrderedDict()
         channelgroups = self.recording_channel_groups()
         for s in self.segments():
-            sa = [t for t in s.analogsignalarrays
-                  if t.recordingchannelgroup in channelgroups]
+            sa = []
+            for c in channelgroups:
+                sa.extend([t for t in c.analogsignalarrays
+                            if t.segment == s])
+            sa.extend([t for t in s.analogsignalarrays
+                        if t.recordingchannel is None])
             if sa:
                 signals[s] = sa
 
