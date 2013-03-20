@@ -16,8 +16,8 @@ import helper
 
 @helper.needs_qt
 def signals(signals, events=None, epochs=None, spike_trains=None,
-           spikes=None, show_waveforms=True, use_subplots=True,
-           time_unit=pq.s, y_unit=None, progress=None):
+            spikes=None, show_waveforms=True, use_subplots=True,
+            time_unit=pq.s, y_unit=None, progress=None):
     """ Create a plot from a list of analog signals.
 
     :param list signals: The list of :class:`neo.core.AnalogSignal` objects
@@ -82,6 +82,18 @@ def signals(signals, events=None, epochs=None, spike_trains=None,
 
     channels = range(len(signals))
 
+    channel_indices = []
+    for s in signals:
+        if not s.recordingchannel:
+            channel_indices.append(-1)
+        channel_indices.append(s.recordingchannel.index)
+
+    # Heuristic: If multiple channels have the same index, use channel order
+    # as index for spike waveforms
+    nonindices = max(0, channel_indices.count(-1) - 1)
+    if len(set(channel_indices)) != len(channel_indices) - nonindices:
+        channel_indices = range(len(signals))
+
     progress.set_ticks((len(spike_trains) + len(spikes) + 1) * len(channels))
 
     offset = 0 * signals[0].units
@@ -108,7 +120,8 @@ def signals(signals, events=None, epochs=None, spike_trains=None,
                 plot.add_item(make.curve(x, signals[c]))
             helper.add_events(plot, events, x.units)
 
-            _add_spike_waveforms(plot, spikes, x.units, c, offset, progress)
+            _add_spike_waveforms(
+                plot, spikes, x.units, channel_indices[c], offset, progress)
 
             for train in spike_trains:
                 color = helper.get_object_color(train.unit)
@@ -116,8 +129,8 @@ def signals(signals, events=None, epochs=None, spike_trains=None,
                 progress.step()
 
             win.add_plot_widget(pW, c)
-            plot.set_axis_unit(BasePlot.Y_LEFT,
-                signals[c].dimensionality.string)
+            plot.set_axis_unit(
+                BasePlot.Y_LEFT, signals[c].dimensionality.string)
             progress.step()
 
         plot.set_axis_title(BasePlot.X_BOTTOM, 'Time')
@@ -145,11 +158,12 @@ def signals(signals, events=None, epochs=None, spike_trains=None,
             x.units = time_unit
 
             if y_unit is not None:
-                plot.add_item(make.curve(x,
-                    (signals[c] + offset).rescale(y_unit)))
+                plot.add_item(
+                    make.curve(x, (signals[c] + offset).rescale(y_unit)))
             else:
                 plot.add_item(make.curve(x, signals[c] + offset))
-            _add_spike_waveforms(plot, spikes, x.units, c, offset, progress)
+            _add_spike_waveforms(
+                plot, spikes, x.units, channel_indices[c], offset, progress)
             offset += max_offset
             progress.step()
 
@@ -187,19 +201,22 @@ def _add_spike_waveforms(plot, spikes, x_units, channel, offset, progress):
     for spike in spikes:
         if spike.waveform is None:
             continue
+        if channel < 0 or spike.waveform.shape[1] <= channel:
+            continue
 
         color = helper.get_object_color(spike.unit)
         if spike.left_sweep:
             lsweep = spike.left_sweep
         else:
             lsweep = 0.0 * pq.ms
-        start = (spike.time-lsweep).rescale(x_units)
+        start = (spike.time - lsweep).rescale(x_units)
         stop = (spike.waveform.shape[0] / spike.sampling_rate +
                 spike.time - lsweep).rescale(x_units)
-        spike_x = sp.arange(start, stop,
+        spike_x = sp.arange(
+            start, stop,
             (1.0 / spike.sampling_rate).rescale(x_units)) * x_units
 
-        plot.add_item(make.curve(spike_x,
-            spike.waveform[:, channel] + offset,
-            color=color, linewidth=2))
+        plot.add_item(
+            make.curve(spike_x, spike.waveform[:, channel] + offset,
+                       color=color, linewidth=2))
         progress.step()
