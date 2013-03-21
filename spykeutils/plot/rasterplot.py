@@ -1,10 +1,7 @@
-import scipy as sp
-
 from guiqwt.builder import make
 from guiqwt.baseplot import BasePlot
 from guiqwt.plot import BaseCurveWidget
 
-import neo
 import quantities as pq
 
 from .. import SpykeException
@@ -13,13 +10,12 @@ import helper
 
 
 @helper.needs_qt
-def raster(trains, units=None, show_lines=True, events=None, epochs=None):
+def raster(trains, time_unit=pq.ms, show_lines=True, events=None, epochs=None):
     """ Create a new plotting window with a rasterplot of spiketrains.
 
         :param dict trains: Dictionary of spike trains indexed by a
             Neo object (Unit or Segment).
-        :param Quantity units: Unit of X-Axis. If None, milliseconds are
-            used.
+        :param Quantity time_unit: Unit of X-Axis.
         :param bool show_lines: Determines if a horizontal line will be shown
             for each spike train.
         :param sequence events: A sequence of neo `Event` objects that will
@@ -29,8 +25,8 @@ def raster(trains, units=None, show_lines=True, events=None, epochs=None):
     if not trains:
         raise SpykeException('No spike trains for rasterplot')
 
-    if not units:
-        units = pq.ms
+    if not time_unit:
+        time_unit = pq.ms
 
     win_title = 'Spike Trains'
     win = PlotDialog(toolbar=True, wintitle=win_title, major_grid=False)
@@ -45,25 +41,25 @@ def raster(trains, units=None, show_lines=True, events=None, epochs=None):
 
     offset = len(trains)
     legend_items = []
-    for u, t in sorted(trains.iteritems(), key=lambda (u,v):u.name):
+    for u, t in sorted(trains.iteritems(), key=lambda (u, v): u.name):
         color = helper.get_object_color(u)
 
         train = helper.add_spikes(plot, t, color, 2, 21, offset,
-            u.name, units)
+            u.name, time_unit)
 
         if u.name:
             legend_items.append(train)
         if show_lines:
             plot.add_item(make.curve(
-                [t.t_start.rescale(units), t.t_stop.rescale(units)],
+                [t.t_start.rescale(time_unit), t.t_stop.rescale(time_unit)],
                 [offset, offset], color='k'))
         offset -= 1
 
-    helper.add_epochs(plot, epochs, units)
-    helper.add_events(plot, events, units)
+    helper.add_epochs(plot, epochs, time_unit)
+    helper.add_events(plot, events, time_unit)
 
     plot.set_axis_title(BasePlot.X_BOTTOM, 'Time')
-    plot.set_axis_unit(BasePlot.X_BOTTOM, units.dimensionality.string)
+    plot.set_axis_unit(BasePlot.X_BOTTOM, time_unit.dimensionality.string)
 
     win.add_plot_widget(pW, 0)
 
@@ -78,21 +74,3 @@ def raster(trains, units=None, show_lines=True, events=None, epochs=None):
     win.show()
 
     return win
-
-if __name__ == '__main__':
-    import guidata
-    import quantities as pq
-    app = guidata.qapplication()
-
-    unit1 = neo.Unit('Unit 1')
-    unit1.annotate(unique_id=1)
-    unit2 = neo.Unit('Unit 2')
-    unit2.annotate(unique_id=2)
-
-    train1 = neo.SpikeTrain(sp.arange(50)*2, units='s', t_stop=100)
-    train1.unit = unit1
-    train2 = neo.SpikeTrain(sp.arange(21)*5000, units='ms', t_stop=100000)
-    train2.unit = unit2
-
-    raster({unit1:train1, unit2:train2}, pq.s)
-    app.exec_()

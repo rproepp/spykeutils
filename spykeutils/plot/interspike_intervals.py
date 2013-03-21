@@ -12,7 +12,7 @@ import helper
 
 
 @helper.needs_qt
-def isi(trains, bin_size, cut_off, bar_plot=False, unit=pq.ms):
+def isi(trains, bin_size, cut_off, bar_plot=False, time_unit=pq.ms):
     """ Create a plot dialog with an interspike interval histogram.
 
     :param dict trains: Dictionary with lists of spike trains indexed by
@@ -23,16 +23,16 @@ def isi(trains, bin_size, cut_off, bar_plot=False, unit=pq.ms):
     :type bin_size: Quantity scalar
     :param bool bar_plot: If ``True``, create a bar ISI histogram for each
         index in ``trains``. Else, create a line ISI histogram.
-    :param Quantity unit: Unit of X-Axis. If None, milliseconds are used.
+    :param Quantity time_unit: Unit of X-Axis.
     """
     if not trains:
         raise SpykeException('No spike trains for ISI histogram')
 
     win_title = 'ISI Histogram | Bin size: ' + str(bin_size)
     win = PlotDialog(toolbar=True, wintitle=win_title)
-    bin_size = bin_size.rescale(unit)
-    cut_off = cut_off.rescale(unit)
-    bins = sp.arange(0 * unit, cut_off, bin_size) * unit
+    bin_size = bin_size.rescale(time_unit)
+    cut_off = cut_off.rescale(time_unit)
+    bins = sp.arange(0 * time_unit, cut_off, bin_size) * time_unit
 
     legends = []
     if bar_plot:
@@ -43,7 +43,7 @@ def isi(trains, bin_size, cut_off, bar_plot=False, unit=pq.ms):
             plot = pW.plot
             intervals = []
             for t in train_list:
-                t = t.rescale(unit)
+                t = t.rescale(time_unit)
                 sTrain = sp.asarray(t)
                 sTrain.sort()
                 intervals.extend(sp.diff(sTrain))
@@ -80,7 +80,7 @@ def isi(trains, bin_size, cut_off, bar_plot=False, unit=pq.ms):
             if ind >= len(trains) - columns:
                 plot.set_axis_title(BasePlot.X_BOTTOM, 'Interval length')
                 plot.set_axis_unit(
-                    BasePlot.X_BOTTOM, unit.dimensionality.string)
+                    BasePlot.X_BOTTOM, time_unit.dimensionality.string)
 
             win.add_plot_widget(pW, ind, column=ind % columns)
             ind += 1
@@ -92,7 +92,7 @@ def isi(trains, bin_size, cut_off, bar_plot=False, unit=pq.ms):
         for i, train_list in trains.iteritems():
             intervals = []
             for t in train_list:
-                t = t.rescale(unit)
+                t = t.rescale(time_unit)
                 sTrain = sp.asarray(t)
                 sTrain.sort()
                 intervals.extend(sp.diff(sTrain))
@@ -117,7 +117,7 @@ def isi(trains, bin_size, cut_off, bar_plot=False, unit=pq.ms):
         plot.set_antialiasing(True)
         plot.set_axis_title(BasePlot.Y_LEFT, 'Number of intervals')
         plot.set_axis_title(BasePlot.X_BOTTOM, 'Interval length')
-        plot.set_axis_unit(BasePlot.X_BOTTOM, unit.dimensionality.string)
+        plot.set_axis_unit(BasePlot.X_BOTTOM, time_unit.dimensionality.string)
 
     win.add_custom_curve_tools()
     win.add_legend_option(legends, True)

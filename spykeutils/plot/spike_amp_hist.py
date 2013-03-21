@@ -13,7 +13,7 @@ from dialog import PlotDialog
 
 @helper.needs_qt
 def spike_amplitude_histogram(trains, num_bins, uniform_y_scale=True,
-                              unit=pq.uV, progress=None):
+                              x_unit=pq.uV, progress=None):
     """ Create a spike amplitude histogram.
 
     This plot is useful to assess the drift in spike amplitude over a longer
@@ -28,7 +28,7 @@ def spike_amplitude_histogram(trains, num_bins, uniform_y_scale=True,
     :param bool uniform_y_scale: If True, the histogram for each channel
         will use the same bins. Otherwise, the minimum bin range is computed
         separately for each channel.
-    :param Quantity unit: Unit of Y-Axis.
+    :param Quantity x_unit: Unit of Y-Axis.
     :param progress: Set this parameter to report progress.
     :type progress: :class:`spykeutils.progress_indicator.ProgressIndicator`
     :return:
@@ -38,7 +38,7 @@ def spike_amplitude_histogram(trains, num_bins, uniform_y_scale=True,
     if not progress:
         progress = ProgressIndicator()
 
-    hist, down, up = sah(trains, num_bins, uniform_y_scale, unit, progress)
+    hist, down, up = sah(trains, num_bins, uniform_y_scale, x_unit, progress)
     num_channels = len(down)
 
     columns = int(round(sp.sqrt(num_channels)))
@@ -53,7 +53,7 @@ def spike_amplitude_histogram(trains, num_bins, uniform_y_scale=True,
                          interpolation='nearest')
         plot.add_item(img)
         plot.set_axis_title(plot.Y_LEFT, 'Amplitude')
-        plot.set_axis_unit(plot.Y_LEFT, unit.dimensionality.string)
+        plot.set_axis_unit(plot.Y_LEFT, x_unit.dimensionality.string)
         win.add_plot_widget(pW, c, column=c % columns)
 
     progress.done()
