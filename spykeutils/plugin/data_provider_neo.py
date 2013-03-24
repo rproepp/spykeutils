@@ -418,7 +418,7 @@ class NeoDataProvider(DataProvider):
 
         return spikes
 
-    def events_by_segment(self, include_array_events=True):
+    def events(self, include_array_events=True):
         """ Return a dictionary (indexed by Segment) of lists of
         Event objects.
         """
@@ -433,7 +433,7 @@ class NeoDataProvider(DataProvider):
                     ret[s].extend(convert.event_array_to_events(a))
         return ret
 
-    def labeled_events_by_segment(self, label, include_array_events=True):
+    def labeled_events(self, label, include_array_events=True):
         """ Return a dictionary (indexed by Segment) of lists of Event
         objects with the given label.
         """
@@ -450,7 +450,7 @@ class NeoDataProvider(DataProvider):
                     ret[s].extend((e for e in events if e.label == label))
         return ret
 
-    def event_arrays_by_segment(self):
+    def event_arrays(self):
         """ Return a dictionary (indexed by Segment) of lists of
         EventArray objects.
         """
@@ -460,7 +460,7 @@ class NeoDataProvider(DataProvider):
                 ret[s] = s.eventarrays
         return ret
 
-    def epochs_by_segment(self, include_array_epochs=True):
+    def epochs(self, include_array_epochs=True):
         """ Return a dictionary (indexed by Segment) of lists of
         Epoch objects.
         """
@@ -475,7 +475,7 @@ class NeoDataProvider(DataProvider):
                     ret[s].extend(convert.epoch_array_to_epochs(a))
         return ret
 
-    def labeled_epochs_by_segment(self, label, include_array_epochs=True):
+    def labeled_epochs(self, label, include_array_epochs=True):
         """ Return a dictionary (indexed by Segment) of lists of Epoch
         objects with the given label.
         """
@@ -492,7 +492,7 @@ class NeoDataProvider(DataProvider):
                     ret[s].extend((e for e in epochs if e.label == label))
         return ret
 
-    def epoch_arrays_by_segment(self):
+    def epoch_arrays(self):
         """ Return a dictionary (indexed by Segment) of lists of
         EpochArray objects.
         """
@@ -501,11 +501,6 @@ class NeoDataProvider(DataProvider):
             if s.epocharrays:
                 ret[s] = s.epocharrays
         return ret
-
-    def num_analog_signals(self, mode=1):
-        """ Return the number of :class:`neo.core.AnalogSignal` objects.
-        """
-        return len(self.analog_signals(mode))
 
     def analog_signals(self, mode=1):
         """ Return a list of :class:`neo.core.AnalogSignal` objects.
@@ -539,9 +534,12 @@ class NeoDataProvider(DataProvider):
 
         if mode == 1 or mode == 3:
             for s in self.segments():
-                sig = [t for t in s.analogsignals
-                       if t.recordingchannel in channels or
-                       t.recordingchannel is None]
+                sig = []
+                for c in channels:
+                    sig.extend([t for t in c.analogsignals
+                                if t.segment == s])
+                sig.extend([t for t in s.analogsignals
+                            if t.recordingchannel is None])
                 if sig:
                     signals[s] = sig
 
@@ -657,11 +655,6 @@ class NeoDataProvider(DataProvider):
 
         return signals
 
-    def num_analog_signal_arrays(self):
-        """ Return the number of AnalogSignalArray objects.
-        """
-        return len(self.analog_signal_arrays())
-
     def analog_signal_arrays(self):
         """ Return a list of :class:`neo.core.AnalogSignalArray` objects.
         """
@@ -684,8 +677,12 @@ class NeoDataProvider(DataProvider):
         signals = OrderedDict()
         channelgroups = self.recording_channel_groups()
         for s in self.segments():
-            sa = [t for t in s.analogsignalarrays
-                  if t.recordingchannelgroup in channelgroups]
+            sa = []
+            for c in channelgroups:
+                sa.extend([t for t in c.analogsignalarrays
+                            if t.segment == s])
+            sa.extend([t for t in s.analogsignalarrays
+                        if t.recordingchannel is None])
             if sa:
                 signals[s] = sa
 

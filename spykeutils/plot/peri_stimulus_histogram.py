@@ -15,7 +15,7 @@ import helper
 @helper.needs_qt
 def psth(trains, events=None, start=0 * pq.ms, stop=None,
          bin_size=100 * pq.ms, rate_correction=True, bar_plot=False,
-         unit=pq.ms, progress=None):
+         time_unit=pq.ms, progress=None):
     """ Create a peri stimulus time histogram.
 
     The peri stimulus time histogram gives an estimate of the instantaneous
@@ -41,7 +41,7 @@ def psth(trains, events=None, start=0 * pq.ms, stop=None,
     :param bool bar_plot: Determines if a bar plot (``True``) or a line
         plot (``False``) will be created. In case of a bar plot, one plot
         for each index in ``trains`` will be created.
-    :param Quantity unit: Unit of X-Axis.
+    :param Quantity time_unit: Unit of X-Axis.
     :param progress: Set this parameter to report progress.
     :type progress: :class:`spykeutils.progress_indicator.ProgressIndicator`
     """
@@ -59,13 +59,13 @@ def psth(trains, events=None, start=0 * pq.ms, stop=None,
     rates, bins = rate_estimation.psth(
         trains, bin_size, start=start, stop=stop,
         rate_correction=rate_correction)
-    bins = bins.rescale(unit)
+    bins = bins.rescale(time_unit)
 
     if not psth:
         raise SpykeException('No spike trains for PSTH!')
 
     win_title = 'PSTH | Bin size %.2f %s' % (bin_size,
-                                             unit.dimensionality.string)
+                                             time_unit.dimensionality.string)
     win = PlotDialog(toolbar=True, wintitle=win_title)
 
     legends = []
@@ -110,7 +110,7 @@ def psth(trains, events=None, start=0 * pq.ms, stop=None,
             if ind >= len(trains) - columns:
                 plot.set_axis_title(BasePlot.X_BOTTOM, 'Time')
                 plot.set_axis_unit(
-                    BasePlot.X_BOTTOM, unit.dimensionality.string)
+                    BasePlot.X_BOTTOM, time_unit.dimensionality.string)
 
             win.add_plot_widget(pW, ind, column=ind % columns)
             ind += 1
@@ -144,7 +144,7 @@ def psth(trains, events=None, start=0 * pq.ms, stop=None,
             plot.set_axis_title(BasePlot.Y_LEFT, 'Rate')
             plot.set_axis_unit(BasePlot.Y_LEFT, 'Hz')
         plot.set_axis_title(BasePlot.X_BOTTOM, 'Time')
-        plot.set_axis_unit(BasePlot.X_BOTTOM, unit.dimensionality.string)
+        plot.set_axis_unit(BasePlot.X_BOTTOM, time_unit.dimensionality.string)
         plot.set_antialiasing(True)
 
     win.add_custom_curve_tools()
