@@ -502,13 +502,13 @@ class NeoDataProvider(DataProvider):
                 ret[s] = s.epocharrays
         return ret
 
-    def analog_signals(self, mode=1):
+    def analog_signals(self, conversion_mode=1):
         """ Return a list of :class:`neo.core.AnalogSignal` objects.
         """
         signals = []
         channels = self.recording_channels()
 
-        if mode == 1 or mode == 3:
+        if conversion_mode == 1 or conversion_mode == 3:
             for s in self.segments():
                 signals.extend([t for t in s.analogsignals
                                 if t.recordingchannel in channels or
@@ -516,7 +516,7 @@ class NeoDataProvider(DataProvider):
             for u in self.recording_channels():
                 signals.extend([t for t in u.analogsignals
                                 if t.segment is None])
-        if mode > 1:
+        if conversion_mode > 1:
             for sa in self.analog_signal_arrays():
                 for sig in convert.analog_signal_array_to_analog_signals(sa):
                     if (sig.recordingchannel is None or
@@ -525,14 +525,14 @@ class NeoDataProvider(DataProvider):
 
         return signals
 
-    def analog_signals_by_segment(self, mode=1):
+    def analog_signals_by_segment(self, conversion_mode=1):
         """ Return a dictionary (indexed by Segment) of lists of
         :class:`neo.core.AnalogSignal` objects.
         """
         signals = OrderedDict()
         channels = self.recording_channels()
 
-        if mode == 1 or mode == 3:
+        if conversion_mode == 1 or conversion_mode == 3:
             for s in self.segments():
                 sig = []
                 for c in channels:
@@ -550,7 +550,7 @@ class NeoDataProvider(DataProvider):
             if nonesignals:
                 signals[self.no_segment] = nonesignals
 
-        if mode > 1:
+        if conversion_mode > 1:
             for o, sa_list in \
                     self.analog_signal_arrays_by_segment().iteritems():
                 for sa in sa_list:
@@ -564,14 +564,14 @@ class NeoDataProvider(DataProvider):
 
         return signals
 
-    def analog_signals_by_channel(self, mode=1):
+    def analog_signals_by_channel(self, conversion_mode=1):
         """ Return a dictionary (indexed by RecordingChannel) of lists
         of :class:`neo.core.AnalogSignal` objects.
         """
         signals = OrderedDict()
         channels = self.recording_channels()
 
-        if mode == 1 or mode == 3:
+        if conversion_mode == 1 or conversion_mode == 3:
             segments = self.segments()
             for c in channels:
                 sig = [t for t in c.analogsignals
@@ -587,7 +587,7 @@ class NeoDataProvider(DataProvider):
             if nonesignals:
                 signals[self.no_channel] = nonesignals
 
-        if mode > 1:
+        if conversion_mode > 1:
             for o, sa_list in \
                     self.analog_signal_arrays_by_channelgroup().iteritems():
                 for sa in sa_list:
@@ -606,7 +606,7 @@ class NeoDataProvider(DataProvider):
 
         return signals
 
-    def analog_signals_by_channel_and_segment(self, mode=1):
+    def analog_signals_by_channel_and_segment(self, conversion_mode=1):
         """ Return a dictionary (indexed by RecordingChannel) of
         dictionaries (indexed by Segment) of :class:`neo.core.AnalogSignal`
         lists.
@@ -614,7 +614,7 @@ class NeoDataProvider(DataProvider):
         signals = OrderedDict()
         channels = self.recording_channels()
 
-        if mode == 1 or mode == 3:
+        if conversion_mode == 1 or conversion_mode == 3:
             segments = self.segments()
             for c in channels:
                 for s in segments:
@@ -638,7 +638,7 @@ class NeoDataProvider(DataProvider):
             if nonesignals:
                 signals[self.no_channel] = nonesignals
 
-        if mode > 1:
+        if conversion_mode > 1:
             sigs = self.analog_signal_arrays_by_channelgroup_and_segment()
             for cg, inner in sigs.iteritems():
                 for seg, sa_list in inner.iteritems():
