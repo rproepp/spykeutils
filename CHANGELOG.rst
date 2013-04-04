@@ -1,4 +1,6 @@
 * Added implementations for various spike train metrics.
+* Added tools module with various utility functions, e.g. binning
+  spike trains or removing objects from Neo hierarchies.
 * Added explained variance function to spike sorting quality assessment.
 * Improved legends for plots involving colored lines.
 * Renamed plot.ISI to plot.isi for consistency

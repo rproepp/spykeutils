@@ -1,4 +1,5 @@
 import neo
+import neo.description
 import quantities as pq
 import scipy as sp
 import _scipy_quantities as spq
@@ -12,8 +13,8 @@ def apply_to_dict(fn, dictionary, *args):
         :class:`neo.core.SpikeTrain` as first argument.
     :param dict dictionary: Dictionary of sequences of
         :class:`neo.core.SpikeTrain` objects to apply the function to.
-    :param args: Additional arguments which will be passed to `fn`.
-    :returns: A new dictionary with the same keys as `dictionary`.
+    :param args: Additional arguments which will be passed to ``fn``.
+    :returns: A new dictionary with the same keys as ``dictionary``.
     :rtype: dict
     """
 
@@ -32,11 +33,11 @@ def bin_spike_trains(trains, sampling_rate, t_start=None, t_stop=None):
         the spike trains as inverse time scalar.
     :type sampling_rate: Quantity scalar
     :type t_start: The desired time for the start of the first bin as time
-        scalar. It will be the minimum start time of all spike trains if `None`
-        is passed.
+        scalar. It will be the minimum start time of all spike trains if
+        ``None`` is passed.
     :type t_start: Quantity scalar
     :param t_stop: The desired time for the end of the last bin as time scalar.
-        It will be the maximum stop time of all spike trains if `None` is
+        It will be the maximum stop time of all spike trains if ``None`` is
         passed.
     :type t_stop: Quantity scalar
     :returns: A dictionary (with the same indices as ``trains``) of lists
@@ -71,13 +72,14 @@ def _bin_single_spike_train(train, bins):
     return sp.histogram(train.rescale(bins.units), bins)[0]
 
 
-def st_concatenate(trains):
+def concatenate_spike_trains(trains):
     """ Concatenates spike trains.
 
-    :param sequence trains: :class:`neo.core.SpikeTrain` objects to concatenate.
+    :param sequence trains: :class:`neo.core.SpikeTrain` objects to
+        concatenate.
     :returns: A spike train consisting of the concatenated spike trains. The
-        spikes will be in the order of the given spike trains and `t_start` and
-        `t_stop` will be set to the minimum and maximum value.
+        spikes will be in the order of the given spike trains and ``t_start``
+        and ``t_stop`` will be set to the minimum and maximum value.
     :rtype: :class:`neo.core.SpikeTrain`
     """
 
@@ -97,8 +99,8 @@ def minimum_spike_train_interval(
         :class:`neo.core.SpikeTrain` objects.
     :param t_start: Minimal starting time to return as time scalar.
     :param t_stop: Maximum end time to return as time scalar.
-    :returns: Maximum shared t_start time and minimum shared t_stop time as time
-        scalars.
+    :returns: Maximum shared t_start time and minimum shared t_stop time as
+        time scalars.
     :rtype: Quantity scalar, Quantity scalar
     """
     # Load data and find shortest spike train
@@ -119,8 +121,10 @@ def maximum_spike_train_interval(
 
     :param dict trains: A dictionary of sequences of
         :class:`neo.core.SpikeTrain` objects.
-    :param t_start: Maximum starting time to return as time scalar.
-    :param t_stop: Minimum end time to return as time scalar.
+    :param t_start: Maximum starting time to return.
+    :type t_start: Quantity scalar
+    :param t_stop: Minimum end time to return.
+    :type t_stop: Quantity scalar
     :returns: Minimum t_start time and maximum t_stop time as time scalars.
     :rtype: Quantity scalar, Quantity scalar
     """
@@ -130,3 +134,107 @@ def maximum_spike_train_interval(
             t_stop = max(t_stop, max((t.t_stop for t in st)))
 
     return t_start, t_stop
+
+
+def _handle_orphans(obj, remove):
+    """ Removes half-orphaned Spikes and SpikeTrains that occur when
+    removing an object upwards in the hierarchy.
+    """
+    if isinstance(obj, neo.Segment):
+        for s in obj.spikes:
+            if s.unit:
+                if not remove:
+                    s.segment = None
+                else:
+                    try:
+                        s.unit.spikes.remove(s)
+                    except ValueError:
+                        pass
+
+        for st in obj.spiketrains:
+            if st.unit:
+                if not remove:
+                    st.segment = None
+                else:
+                    try:
+                        st.unit.spiketrains.remove(st)
+                    except ValueError:
+                        pass
+    elif isinstance(obj, neo.Unit):
+        for s in obj.spikes:
+            if s.segment:
+                if not remove:
+                    s.unit = None
+                else:
+                    try:
+                        s.segment.spikes.remove(s)
+                    except ValueError:
+                        pass
+
+        for st in obj.spiketrains:
+            if st.segment:
+                if not remove:
+                    st.unit = None
+                else:
+                    try:
+                        st.segment.spiketrains.remove(st)
+                    except ValueError:
+                        pass
+    elif isinstance(obj, neo.RecordingChannelGroup):
+        for u in obj.units:
+            _handle_orphans(u, remove)
+
+
+def remove_from_hierarchy(obj, remove_half_orphans=True):
+    """ Removes a Neo object from the hierarchy it is embedded in. Mostly
+    downward links are removed (except for possible links in
+    :class:`neo.core.Spike` or :class:`neo.core.SpikeTrain` objects).
+    For example, when ``obj`` is a :class:`neo.core.Segment`, the link from
+    its parent :class:`neo.core.Block` will be severed. Also, all links to
+    the segment from its spikes and spike trains will be severed.
+
+    :param obj: The object to be removed.
+    :type obj: Neo object
+    :param bool remove_half_orphans: When True, :class:`neo.core.Spike`
+        and :class:`neo.core.SpikeTrain` belonging to a
+        :class:`neo.core.Segment` or :class:`neo.core.Unit` removed by
+        this function will be removed from the hierarchy as well, even
+        if they are still linked from a :class:`neo.core.Unit` or
+        :class:`neo.core.Segment`, respectively. In this case, their
+        links to the hierarchy defined by ``obj`` will be kept intact.
+    """
+    classname = type(obj).__name__
+
+    # Parent for arbitrary object
+    if classname in neo.description.many_to_one_relationship:
+        for n in neo.description.many_to_one_relationship[classname]:
+            p = getattr(obj, n.lower())
+            if p is None:
+                continue
+            l = getattr(p, classname.lower() + 's', ())
+            try:
+                l.remove(obj)
+            except ValueError:
+                pass
+
+    # Many-to-many relationships
+    if isinstance(obj, neo.RecordingChannel):
+        for rcg in obj.recordingchannelgroups:
+            try:
+                idx = rcg.recordingchannels.index(obj)
+                if rcg.channel_indexes.shape[0] == len(rcg.recordingchannels):
+                    rcg.channel_indexes = sp.delete(rcg.channel_indexes, idx)
+                if rcg.channel_names.shape[0] == len(rcg.recordingchannels):
+                    rcg.channel_names = sp.delete(rcg.channel_names, idx)
+                rcg.recordingchannels.remove(obj)
+            except ValueError:
+                pass
+
+    if isinstance(obj, neo.RecordingChannelGroup):
+        for rc in obj.recordingchannels:
+            try:
+                rc.recordingchannelgroups.remove(obj)
+            except ValueError:
+                pass
+
+    _handle_orphans(obj, remove_half_orphans)
