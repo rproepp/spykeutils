@@ -86,7 +86,8 @@ def signals(signals, events=None, epochs=None, spike_trains=None,
     for s in signals:
         if not s.recordingchannel:
             channel_indices.append(-1)
-        channel_indices.append(s.recordingchannel.index)
+        else:
+            channel_indices.append(s.recordingchannel.index)
 
     # Heuristic: If multiple channels have the same index, use channel order
     # as index for spike waveforms
