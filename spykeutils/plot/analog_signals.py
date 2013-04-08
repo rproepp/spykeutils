@@ -200,7 +200,7 @@ def signals(signals, events=None, epochs=None, spike_trains=None,
 
 def _add_spike_waveforms(plot, spikes, x_units, channel, offset, progress):
     for spike in spikes:
-        if spike.waveform is None:
+        if spike.waveform is None or not spike.sampling_rate:
             continue
         if channel < 0 or spike.waveform.shape[1] <= channel:
             continue
