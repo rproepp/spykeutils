@@ -55,21 +55,37 @@ class NeoDataProvider(DataProvider):
     @classmethod
     def _load_neo_file(cls, filename, lazy):
         """ Returns a NEO io object and a list of contained blocks for a
-            file name. This function also caches all loaded blocks
-            :Parameters:
-                filename : str
-                    The full path of the file (relative or absolute)
-                lazy : bool
-                    Determines if lazy mode is used for NEO io
+        file name. This function also caches all loaded blocks
+
+        :param str filename:
+            The full path of the file (relative or absolute).
+        :param bool lazy:
+            Determines if lazy mode is used for NEO io.
         """
         if os.path.isdir(filename):
             for io in neo.io.iolist:
                 if io.mode == 'dir':
-                    n_io = io(filename)
-                    block = n_io.read(lazy=lazy)
-                    cls.block_indices[block] = 0
-                    cls.loaded_blocks[filename] = [block]
-                    return n_io, [block]
+                    try:
+                        n_io = io(filename)
+                        block = n_io.read(lazy=lazy)
+                        if io == neo.TdtIO and not block.segments:
+                            # TdtIO can produce empty blocks for invalid dirs
+                            continue
+
+                        cls.block_indices[block] = 0
+                        cls.loaded_blocks[filename] = [block]
+                        return n_io, [block]
+                    except Exception, e:
+                        sys.stderr.write(
+                            'Load error for directory "%s":\n' % filename)
+                        tb = sys.exc_info()[2]
+                        while not ('self' in tb.tb_frame.f_locals and
+                                   tb.tb_frame.f_locals['self'] == n_io):
+                            if tb.tb_next is not None:
+                                tb = tb.tb_next
+                            else:
+                                break
+                        traceback.print_exception(type(e), e, tb)
         else:
             extension = filename.split('.')[-1]
             for io in neo.io.iolist:
@@ -107,7 +123,7 @@ class NeoDataProvider(DataProvider):
                             else:
                                 break
                         traceback.print_exception(type(e), e, tb)
-                        continue
+
         return None, None
 
     @staticmethod
