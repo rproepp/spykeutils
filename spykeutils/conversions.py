@@ -163,7 +163,8 @@ def event_array_to_events(event_array):
     """
     events = []
     for i, t in enumerate(event_array.times):
-        e = neo.Event(t, event_array.labels[i])
+        e = neo.Event(
+            t, event_array.labels[i] if i < len(event_array.labels) else '')
         e.segment = event_array.segment
         events.append(e)
     return events
@@ -185,7 +186,9 @@ def epoch_array_to_epochs(epoch_array):
     """
     periods = []
     for i, t in enumerate(epoch_array.times):
-        p = neo.Epoch(t, epoch_array.durations[i], epoch_array.labels[i])
+        p = neo.Epoch(
+            t, epoch_array.durations[i],
+            epoch_array.labels[i] if i < len(epoch_array.labels) else '')
         p.segment = epoch_array.segment
         periods.append(p)
     return periods
