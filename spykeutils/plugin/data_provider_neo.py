@@ -696,9 +696,9 @@ class NeoDataProvider(DataProvider):
             sa = []
             for c in channelgroups:
                 sa.extend([t for t in c.analogsignalarrays
-                            if t.segment == s])
+                           if t.segment == s])
             sa.extend([t for t in s.analogsignalarrays
-                        if t.recordingchannel is None])
+                       if t.recordingchannelgroup is None])
             if sa:
                 signals[s] = sa
 
