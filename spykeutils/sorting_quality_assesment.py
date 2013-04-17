@@ -228,7 +228,7 @@ def calculate_overlap_fp_fn(means, spikes):
         for s in spks:
             if isinstance(s, neo.Spike):
                 spikelist.append(
-                    sp.asarray(s.waveform.rescale(pq.uV)).reshape(-1))
+                    sp.asarray(s.waveform.rescale(pq.uV)).T.flatten())
             else:
                 spikelist.append(s)
         spike_arrays[u] = sp.asarray(spikelist).T
@@ -239,9 +239,9 @@ def calculate_overlap_fp_fn(means, spikes):
         mean = means[u]
         if isinstance(mean, neo.Spike):
             shaped_means[u] = sp.asarray(
-                mean.waveform.rescale(pq.uV)).reshape(-1)
+                mean.waveform.rescale(pq.uV)).T.flatten()
         else:
-            shaped_means[u] = means[u].reshape(-1)
+            shaped_means[u] = means[u].T.flatten()
 
     return _fast_overlap_whitened(spike_arrays, shaped_means)
 
@@ -269,6 +269,14 @@ def _pair_overlap(waves1, waves2, mean1, mean2, cov1, cov2):
             posterior2.mean(), posterior1.sum() / len(posterior2))
 
 
+def _object_has_size(obj, size):
+    """ Return if the object, which could be either a neo.Spike or ndarray,
+    has the given size. """
+    if isinstance(obj, neo.Spike):
+        return obj.waveform.size == size
+    return obj.size == size
+
+
 def overlap_fp_fn(spikes, means=None, covariances=None):
     """ Return dicts of tuples (False positive rate, false negative rate)
     indexed by unit. This function needs :mod:`sklearn` if
@@ -292,7 +300,7 @@ def overlap_fp_fn(spikes, means=None, covariances=None):
 
     :param dict spikes: Dictionary, indexed by unit, of lists of
         spike waveforms as :class:`neo.core.Spike` objects or numpy arrays.
-        If the waveforms have multiple channels, they will be reshaped
+        If the waveforms have multiple channels, they will be flattened
         automatically. All waveforms need to have the same number of samples.
     :param dict means: Dictionary, indexed by unit, of lists of
         spike waveforms as :class:`neo.core.Spike` objects or numpy arrays.
@@ -347,7 +355,7 @@ def overlap_fp_fn(spikes, means=None, covariances=None):
         for s in spks:
             if isinstance(s, neo.Spike):
                 spikelist.append(
-                    sp.asarray(s.waveform.rescale(pq.uV)).reshape(-1))
+                    sp.asarray(s.waveform.rescale(pq.uV)).T.flatten())
             else:
                 spikelist.append(s)
         spike_arrays[u] = sp.array(spikelist).T
@@ -365,18 +373,18 @@ def overlap_fp_fn(spikes, means=None, covariances=None):
     # Convert or calculate means and covariances
     shaped_means = {}
     covs = {}
-    if covariances == 'white':
+    if white:
         cov = sp.eye(dimensionality)
-        covs = {u: cov for u in units}
+        covariances = {u: cov for u in units}
 
     for u in units:
-        if u in means:
+        if u in means and _object_has_size(means[u], dimensionality):
             mean = means[u]
             if isinstance(mean, neo.Spike):
                 shaped_means[u] = sp.asarray(
-                    mean.waveform.rescale(pq.uV)).reshape(-1)
+                    mean.waveform.rescale(pq.uV)).T.flatten()
             else:
-                shaped_means[u] = means[u].reshape(-1)
+                shaped_means[u] = means[u].T.flatten()
         else:
             shaped_means[u] = spike_arrays[u].mean(axis=1)
 
@@ -471,13 +479,15 @@ def variance_explained(spikes, means=None, noise=None):
         together.
     """
     ret = {}
+    if means is None:
+        means = {}
     for u, spks in spikes.iteritems():
         train = spks
         if not isinstance(train, neo.SpikeTrain):
             train = spikes_to_spike_train(spks)
-        try:
+        if u in means and means[u].waveform.shape[0] == train.waveforms.shape[1]:
             spike = means[u]
-        except (KeyError, TypeError):
+        else:
             spike = neo.Spike(0)
             spike.waveform = sp.mean(train.waveforms, axis=0)
 

@@ -80,7 +80,7 @@ class AnalysisPlugin(gui_data.DataSet):
         configuration apart from guidata is needed.
         """
         if self._items:
-            self.edit()
+            return self.edit()
 
     def get_parameters(self):
         """ Return a dictionary of the configuration that can
