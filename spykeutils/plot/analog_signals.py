@@ -17,7 +17,7 @@ import helper
 @helper.needs_qt
 def signals(signals, events=None, epochs=None, spike_trains=None,
             spikes=None, show_waveforms=True, use_subplots=True,
-            time_unit=pq.s, y_unit=None, progress=None):
+            subplot_names=True, time_unit=pq.s, y_unit=None, progress=None):
     """ Create a plot from a list of analog signals.
 
     :param list signals: The list of :class:`neo.core.AnalogSignal` objects
@@ -37,6 +37,8 @@ def signals(signals, events=None, epochs=None, spike_trains=None,
         shown as waveforms (if available) or vertical lines.
     :param bool use_subplots: Determines if a separate subplot for is created
         each signal.
+    :param bool subplot_names: Only valid if ``use_subplots`` is True.
+        Determines if signal (or channel) names are shown for subplots.
     :param Quantity time_unit: The unit of the x axis.
     :param progress: Set this parameter to report progress.
     :type progress: :class:`spykeutils.progress_indicator.ProgressIndicator`
@@ -104,11 +106,13 @@ def signals(signals, events=None, epochs=None, spike_trains=None,
             pW = BaseCurveWidget(win)
             plot = pW.plot
 
-            if signals[c].name:
-                win.set_plot_title(plot, signals[c].name)
-            elif signals[c].recordingchannel:
-                if signals[c].recordingchannel.name:
-                    win.set_plot_title(plot, signals[c].recordingchannel.name)
+            if subplot_names:
+                if signals[c].name:
+                    win.set_plot_title(plot, signals[c].name)
+                elif signals[c].recordingchannel:
+                    if signals[c].recordingchannel.name:
+                        win.set_plot_title(
+                            plot, signals[c].recordingchannel.name)
 
             sample = (1 / signals[c].sampling_rate).simplified
             x = (sp.arange(signals[c].shape[0])) * sample + signals[c].t_start
