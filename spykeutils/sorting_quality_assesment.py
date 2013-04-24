@@ -11,6 +11,7 @@ import neo
 
 from progress_indicator import ProgressIndicator
 from . import SpykeException
+from conversions import spikes_to_spike_train
 
 
 def get_refperiod_violations(spike_trains, refperiod, progress=None):
@@ -31,7 +32,7 @@ def get_refperiod_violations(spike_trains, refperiod, progress=None):
           ``refperiod``) for each spike train.
     :rtype: int, dict """
     if type(refperiod) != pq.Quantity or \
-       refperiod.simplified.dimensionality != pq.s.dimensionality:
+            refperiod.simplified.dimensionality != pq.s.dimensionality:
         raise ValueError('refperiod must be a time quantity!')
 
     if not progress:
@@ -41,7 +42,7 @@ def get_refperiod_violations(spike_trains, refperiod, progress=None):
     violations = {}
     for u, tL in spike_trains.iteritems():
         violations[u] = []
-        for i,t in enumerate(tL):
+        for i, t in enumerate(tL):
             st = t.copy()
             st.sort()
             isi = sp.diff(st)
@@ -77,16 +78,16 @@ def calculate_refperiod_fp(num_spikes, refperiod, violations, total_time):
         that the generating processes are not independent.
     """
     if type(refperiod) != pq.Quantity or \
-       refperiod.simplified.dimensionality != pq.s.dimensionality:
+            refperiod.simplified.dimensionality != pq.s.dimensionality:
         raise ValueError('refperiod must be a time quantity!')
 
     fp = {}
     factor = total_time / (2 * refperiod)
-    for u,n in num_spikes.iteritems():
+    for u, n in num_spikes.iteritems():
         if n == 0:
             fp[u] = 0
             continue
-        zw = (violations[u] * factor / n**2).simplified
+        zw = (violations[u] * factor / n ** 2).simplified
 
         if zw > 0.25:
             fp[u] = 0.5 + sp.sqrt(0.25 - zw).imag
@@ -101,14 +102,14 @@ def _multi_norm(x, mean):
         at rows of x with high precision.
     """
     d = x.shape[1]
-    fac = (2*sp.pi) ** (-d/2.0)
+    fac = (2 * sp.pi) ** (-d / 2.0)
     y = cdist(x, sp.atleast_2d(mean), 'sqeuclidean') * -0.5
     return fac * sp.exp(sp.longdouble(y))
 
 
 def _fast_overlap_whitened(spike_arrays, means):
     units = spike_arrays.keys()
-    spikes = {u:spike_arrays[u].shape[1] for u in spike_arrays.iterkeys()}
+    spikes = {u: spike_arrays[u].shape[1] for u in spike_arrays.iterkeys()}
 
     prior = {}
     total_spikes = 0
@@ -136,20 +137,20 @@ def _fast_overlap_whitened(spike_arrays, means):
         posterior[u1] = {}
         for u2, mean in means.iteritems():
             llh = _multi_norm(spike_arrays[u1].T, mean)
-            posterior[u1][u2] = llh*prior[u2]
+            posterior[u1][u2] = llh * prior[u2]
 
     # Calculate pairwise false positives/negatives
-    singles = {u:{} for u in units}
+    singles = {u: {} for u in units}
     for i, u1 in enumerate(units):
         u1 = units[i]
-        for u2 in units[i+1:]:
+        for u2 in units[i + 1:]:
             f1 = sp.sum(posterior[u1][u2] /
                         (posterior[u1][u1] + posterior[u1][u2]),
-                dtype=sp.double)
+                        dtype=sp.double)
 
             f2 = sp.sum(posterior[u2][u1] /
                         (posterior[u2][u1] + posterior[u2][u2]),
-                dtype=sp.double)
+                        dtype=sp.double)
 
             singles[u1][u2] = (f1 / spikes[u1] if spikes[u1] else 0,
                                f2 / spikes[u1] if spikes[u1] else 0)
@@ -160,20 +161,20 @@ def _fast_overlap_whitened(spike_arrays, means):
     for u1 in units:
         numerator = posterior[u1][u1]
         normalizer = sum(posterior[u1][u2] for u2 in units)
-        false_positive[u1] = sp.sum((normalizer-numerator)/normalizer)
+        false_positive[u1] = sp.sum((normalizer - numerator) / normalizer)
 
         other_units = units[:]
         other_units.remove(u1)
         numerator = sp.vstack((posterior[u][u1] for u in other_units))
         normalizer = sp.vstack(sum(posterior[u][u2] for u2 in units) for u in other_units)
-        false_negative[u1] = sp.sum(numerator/normalizer)
+        false_negative[u1] = sp.sum(numerator / normalizer)
 
     # Prepare return values, convert sums to means
     totals = {}
-    for u,fp in false_positive.iteritems():
+    for u, fp in false_positive.iteritems():
         fn = false_negative[u]
         if not spikes[u]:
-            totals[u] = (0,0)
+            totals[u] = (0, 0)
         else:
             num = spikes[u]
             totals[u] = (fp / num, fn / num)
@@ -227,7 +228,7 @@ def calculate_overlap_fp_fn(means, spikes):
         for s in spks:
             if isinstance(s, neo.Spike):
                 spikelist.append(
-                    sp.asarray(s.waveform.rescale(pq.uV)).reshape(-1))
+                    sp.asarray(s.waveform.rescale(pq.uV)).T.flatten())
             else:
                 spikelist.append(s)
         spike_arrays[u] = sp.asarray(spikelist).T
@@ -238,9 +239,9 @@ def calculate_overlap_fp_fn(means, spikes):
         mean = means[u]
         if isinstance(mean, neo.Spike):
             shaped_means[u] = sp.asarray(
-                mean.waveform.rescale(pq.uV)).reshape(-1)
+                mean.waveform.rescale(pq.uV)).T.flatten()
         else:
-            shaped_means[u] = means[u].reshape(-1)
+            shaped_means[u] = means[u].T.flatten()
 
     return _fast_overlap_whitened(spike_arrays, shaped_means)
 
@@ -261,11 +262,19 @@ def _pair_overlap(waves1, waves2, mean1, mean2, cov1, cov2):
     mix.weights_ = weights
     mix.means_ = means
 
-    posterior1 = mix.predict_proba(waves1.T)[:,1]
-    posterior2 = mix.predict_proba(waves2.T)[:,0]
+    posterior1 = mix.predict_proba(waves1.T)[:, 1]
+    posterior2 = mix.predict_proba(waves2.T)[:, 0]
 
     return (posterior1.mean(), posterior2.sum() / len(posterior1),
             posterior2.mean(), posterior1.sum() / len(posterior2))
+
+
+def _object_has_size(obj, size):
+    """ Return if the object, which could be either a neo.Spike or ndarray,
+    has the given size. """
+    if isinstance(obj, neo.Spike):
+        return obj.waveform.size == size
+    return obj.size == size
 
 
 def overlap_fp_fn(spikes, means=None, covariances=None):
@@ -291,7 +300,7 @@ def overlap_fp_fn(spikes, means=None, covariances=None):
 
     :param dict spikes: Dictionary, indexed by unit, of lists of
         spike waveforms as :class:`neo.core.Spike` objects or numpy arrays.
-        If the waveforms have multiple channels, they will be reshaped
+        If the waveforms have multiple channels, they will be flattened
         automatically. All waveforms need to have the same number of samples.
     :param dict means: Dictionary, indexed by unit, of lists of
         spike waveforms as :class:`neo.core.Spike` objects or numpy arrays.
@@ -346,7 +355,7 @@ def overlap_fp_fn(spikes, means=None, covariances=None):
         for s in spks:
             if isinstance(s, neo.Spike):
                 spikelist.append(
-                    sp.asarray(s.waveform.rescale(pq.uV)).reshape(-1))
+                    sp.asarray(s.waveform.rescale(pq.uV)).T.flatten())
             else:
                 spikelist.append(s)
         spike_arrays[u] = sp.array(spikelist).T
@@ -364,18 +373,18 @@ def overlap_fp_fn(spikes, means=None, covariances=None):
     # Convert or calculate means and covariances
     shaped_means = {}
     covs = {}
-    if covariances == 'white':
+    if white:
         cov = sp.eye(dimensionality)
-        covs = {u:cov for u in units}
+        covariances = {u: cov for u in units}
 
     for u in units:
-        if u in means:
+        if u in means and _object_has_size(means[u], dimensionality):
             mean = means[u]
             if isinstance(mean, neo.Spike):
                 shaped_means[u] = sp.asarray(
-                    mean.waveform.rescale(pq.uV)).reshape(-1)
+                    mean.waveform.rescale(pq.uV)).T.flatten()
             else:
-                shaped_means[u] = means[u].reshape(-1)
+                shaped_means[u] = means[u].T.flatten()
         else:
             shaped_means[u] = spike_arrays[u].mean(axis=1)
 
@@ -389,19 +398,20 @@ def overlap_fp_fn(spikes, means=None, covariances=None):
             covs[u] = covariances[u]
 
     # Calculate pairwise false positives/negatives
-    singles = {u:{} for u in units}
+    singles = {u: {} for u in units}
     for i, u1 in enumerate(units):
         u1 = units[i]
-        for u2 in units[i+1:]:
-            error_rates = _pair_overlap(spike_arrays[u1], spike_arrays[u2],
-                shaped_means[u1], shaped_means[u2], covs[u1], covs[u2])
+        for u2 in units[i + 1:]:
+            error_rates = _pair_overlap(
+                spike_arrays[u1], spike_arrays[u2],
+                shaped_means[u1], shaped_means[u2],
+                covs[u1], covs[u2])
             singles[u1][u2] = error_rates[0:2]
             singles[u2][u1] = error_rates[2:4]
 
     # Calculate complete false positives/negatives
     import sklearn
-    mix = sklearn.mixture.GMM(n_components=2,
-        covariance_type='full')
+    mix = sklearn.mixture.GMM(n_components=2, covariance_type='full')
     mix_means = []
     mix_covars = []
     mix_weights = []
@@ -423,15 +433,71 @@ def overlap_fp_fn(spikes, means=None, covariances=None):
 
     for i, u in enumerate(units):
         posterior = mix.predict_proba(spike_arrays[u].T)
-        post_mean[i] = posterior[:,i].mean()
-        post_sum[i,:] = posterior.sum(axis=0)
+        post_mean[i] = posterior[:, i].mean()
+        post_sum[i, :] = posterior.sum(axis=0)
 
     totals = {}
     for i, u in enumerate(units):
         fp = 1.0 - post_mean[i]
         ind = range(len(units))
         ind.remove(i)
-        fn = post_sum[ind,i].sum() / float(spike_arrays[u].shape[1])
+        fn = post_sum[ind, i].sum() / float(spike_arrays[u].shape[1])
         totals[u] = (fp, fn)
 
     return totals, singles
+
+
+def variance_explained(spikes, means=None, noise=None):
+    """ Returns the fraction of variance in each channel that is explained
+    by the means.
+
+    Values below 0 or above 1 for large data sizes indicate
+    that some assumptions were incorrect (e.g. about channel noise) and
+    the results should not be trusted.
+
+    :param dict spikes: Dictionary, indexed by unit, of
+        :class:`neo.core.SpikeTrain` objects (where the ``waveforms``
+        member includes the spike waveforms) or lists of
+        :class:`neo.core.Spike` objects.
+    :param dict means: Dictionary, indexed by unit, of lists of
+        spike waveforms as :class:`neo.core.Spike` objects or numpy arrays.
+        Means for units that are not in this dictionary will be estimated
+        using the spikes.
+        Default: None - means will be estimated from given spikes.
+    :type noise: Quantity 1D
+    :param noise: The known noise levels (as variance) per channel of the
+        original data. This should be estimated from the signal periods
+        that do not contain spikes, otherwise the explained variance
+        could be overestimated. If None, the estimate of explained variance
+        is done without regard for noise.
+        Default: None
+    :return dict: A dictionary of arrays, both indexed by unit. If ``noise``
+        is ``None``, the  dictionary contains
+        the fraction of explained variance per channel without taking noise
+        into account. If ``noise`` is given, it contains the fraction of
+        variance per channel explained by the means and given noise level
+        together.
+    """
+    ret = {}
+    if means is None:
+        means = {}
+    for u, spks in spikes.iteritems():
+        train = spks
+        if not isinstance(train, neo.SpikeTrain):
+            train = spikes_to_spike_train(spks)
+        if u in means and means[u].waveform.shape[0] == train.waveforms.shape[1]:
+            spike = means[u]
+        else:
+            spike = neo.Spike(0)
+            spike.waveform = sp.mean(train.waveforms, axis=0)
+
+        orig = sp.mean(sp.var(train.waveforms, axis=1), axis=0)
+        waves = train.waveforms - spike.waveform
+        new = sp.mean(sp.var(waves, axis=1), axis=0)
+
+        if noise is not None:
+            ret[u] = sp.asarray(1 - (new - noise) / orig)
+        else:
+            ret[u] = sp.asarray(1 - new / orig)
+
+    return ret

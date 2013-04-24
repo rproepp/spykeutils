@@ -9,7 +9,8 @@ import gui_data
 
 class HashEntry(tables.IsDescription):
     hash = tables.StringCol(32)
-    filename = tables.StringCol(992) # 1024-32 -> long filenames are possible
+    filename = tables.StringCol(992)  # 1024-32 -> long filenames are possible
+
 
 class AnalysisPlugin(gui_data.DataSet):
     """ Base class for Analysis plugins. Inherit this class to create a
@@ -21,21 +22,20 @@ class AnalysisPlugin(gui_data.DataSet):
     results.
 
     The GUI configuration uses :mod:`guidata`. Because `AnalysisPlugin`
-    inherits from `DataSet`,
-    configuration options can easily be added directly to the class
-    definition. For example, the following code creates an analysis that
-    has two configuration options which are used in the start() method
-    to print to the console::
+    inherits from `DataSet`, configuration options can easily be added
+    directly to the class definition. For example, the following code
+    creates an analysis that has two configuration options which are
+    used in the start() method to print to the console::
 
-        from spykeutils.plugin.analysis_plugin import AnalysisPlugin
+        from spykeutils.plugin import analysis_plugin, gui_data
 
-        class ExampleAnalysis(AnalysisPlugin):
-            some_time = di.FloatItem('Some time', default=2.0, unit='ms')
-            print_more = di.BoolItem('Print additional info', default=True)
+        class SamplePlugin(analysis_plugin.AnalysisPlugin):
+            some_time = gui_data.FloatItem('Some time', default=2.0, unit='ms')
+            print_more = gui_data.BoolItem('Print additional info', default=True)
 
             def start(self, current, selections):
-                print 'The selected time is', some_time, 'milliseconds.'
-                if print_more:
+                print 'The selected time is', self.some_time, 'milliseconds.'
+                if self.print_more:
                     print 'This is important additional information!'
 
 
@@ -50,8 +50,6 @@ class AnalysisPlugin(gui_data.DataSet):
 
     def __init__(self):
         super(AnalysisPlugin, self).__init__()
-        self.__current = None
-        self.__selections = None
 
     def get_name(self):
         """ Return the name of an analysis. Override to specify analysis
@@ -60,9 +58,9 @@ class AnalysisPlugin(gui_data.DataSet):
         :returns: The name of the plugin.
         :rtype: str
         """
-        return 'Prototype Analysis'
+        return 'Prototype Plugin'
 
-    def get_title(self): # Override guidata.DataSet.get_title()
+    def get_title(self):  # Override guidata.DataSet.get_title()
         return self.get_name()
 
     def start(self, current, selections):
@@ -82,7 +80,7 @@ class AnalysisPlugin(gui_data.DataSet):
         configuration apart from guidata is needed.
         """
         if self._items:
-            self.edit()
+            return self.edit()
 
     def get_parameters(self):
         """ Return a dictionary of the configuration that can
@@ -108,17 +106,16 @@ class AnalysisPlugin(gui_data.DataSet):
 
     def set_parameters(self, parameters):
         """ Load configuration from a dictionary that has been
-        created by :func:`serialize_parameters`. Override both if
-        non-guidata attributes need to be serialized or if some guidata
-        parameterss hould not be serialized (e.g. they only affect the
-        visual presentation).
+        created by :func:`serialize_parameters`. Parameters that are not
+        part of the guidata attributes of the plugin are ignored. Override if
+        non-guidata attributes need to be serialized.
 
         :param dict parameters: A dictionary of all configuration
             parameters.
         """
-        for n,v in parameters.iteritems():
-            setattr(self, '_' + n, v)
-
+        for n, v in parameters.iteritems():
+            if hasattr(self, '_' + n):
+                setattr(self, '_' + n, v)
 
     def _get_hash(self, selections, params, use_guiparams):
         """ Return hash and the three strings used for it
@@ -139,8 +136,7 @@ class AnalysisPlugin(gui_data.DataSet):
         hash_string = guidata_string + selection_string + param_string
         md5.update(hash_string)
 
-        return md5.hexdigest(), guidata_string, selection_string, \
-               param_string
+        return md5.hexdigest(), guidata_string, selection_string, param_string
 
     def save(self, name, selections, params=None, save_guiparams=True):
         """ Return a HDF5 file object with parameters already stored.
@@ -177,8 +173,8 @@ class AnalysisPlugin(gui_data.DataSet):
                 params[n] = unicode(v)
 
         # Create parameter hash
-        hash_, guidata_string, selection_string, param_string =\
-        self._get_hash(selections, params, save_guiparams)
+        hash_, guidata_string, selection_string, param_string = \
+            self._get_hash(selections, params, save_guiparams)
 
         # File name is current time stamp
         time_stamp = time.strftime("%Y%m%d-%H%M%S")
@@ -198,20 +194,21 @@ class AnalysisPlugin(gui_data.DataSet):
 
         # Save guidata parameters
         paramgroup = h5.createGroup('/', 'guiparams')
-        guiparams = self.get_parameters()
-        for p,v in guiparams.iteritems():
-            t = type(v)
-            if t == int or t == float:
-                h5.setNodeAttr(paramgroup, p, v)
-            else:
-                h5.setNodeAttr(paramgroup, p, json.dumps(v))
+        if save_guiparams:
+            guiparams = self.get_parameters()
+            for p, v in guiparams.iteritems():
+                t = type(v)
+                if t == int or t == float:
+                    h5.setNodeAttr(paramgroup, p, v)
+                else:
+                    h5.setNodeAttr(paramgroup, p, json.dumps(v))
 
         # Save selections the provided by plugin
         h5.setNodeAttr('/', 'selections', selection_string)
 
         # Save additional parameters provided by plugin
         paramgroup = h5.createGroup('/', 'userparams')
-        for p,v in params.iteritems():
+        for p, v in params.iteritems():
             t = type(v)
             if t == int or t == float:
                 h5.setNodeAttr(paramgroup, p, v)
@@ -337,10 +334,10 @@ class AnalysisPlugin(gui_data.DataSet):
         hashfile_name = os.path.join(name, 'hash.h5')
         hash_file = tables.openFile(hashfile_name, mode='w')
         table = hash_file.createTable('/', 'lookup_table', HashEntry,
-            title='Hash lookup')
+                                      title='Hash lookup')
 
         # Loop through files and write hashes
-        file_names = [os.path.join(name,f) for f in os.listdir(name)]
+        file_names = [os.path.join(name, f) for f in os.listdir(name)]
         entry = table.row
         for fn in file_names:
             if not fn.endswith('.h5') or fn == 'hash.h5':
@@ -352,8 +349,8 @@ class AnalysisPlugin(gui_data.DataSet):
                     entry['hash'] = file_hash
                     entry['filename'] = fn
                     entry.append()
-            except Exception:
-                pass # Not a valid data file, no problem
+            except:
+                pass  # Not a valid data file, no problem
 
         hash_file.close()
 
@@ -396,8 +393,8 @@ class AnalysisPlugin(gui_data.DataSet):
         if not os.path.exists(hashfile_name):
             try:
                 cls._create_hash_lookup_file(name)
-            except Exception:
-                return [os.path.join(name,f) for f in os.listdir(name)
+            except:
+                return [os.path.join(name, f) for f in os.listdir(name)
                         if f.endswith('.h5') and not f == 'hash.h5']
 
         hash_file = tables.openFile(hashfile_name, mode='r')
@@ -414,8 +411,8 @@ class AnalysisPlugin(gui_data.DataSet):
                 hash_file.close()
                 try:
                     cls._create_hash_lookup_file(name)
-                except Exception:
-                    return [os.path.join(name,f) for f in os.listdir(name)
+                except:
+                    return [os.path.join(name, f) for f in os.listdir(name)
                             if f.endswith('.h5') and not f == 'hash.h5']
                 return cls._get_hash_file_names(dataname, hash_, True)
 

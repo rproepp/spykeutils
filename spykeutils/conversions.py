@@ -4,7 +4,7 @@ import neo
 from . import SpykeException
 
 
-def spike_train_to_spikes(spike_train, include_waveforms = True):
+def spike_train_to_spikes(spike_train, include_waveforms=True):
     """ Return a list of spikes for a spike train.
 
     Note that while the created spikes have references to the same segment and
@@ -30,9 +30,9 @@ def spike_train_to_spikes(spike_train, include_waveforms = True):
     spikes = []
     for i, t in enumerate(spike_train):
         s = neo.Spike(t, sampling_rate=spike_train.sampling_rate,
-            left_sweep=spike_train.left_sweep)
+                      left_sweep=spike_train.left_sweep)
         if waves is not None:
-            s.waveform=waves[i, :, :]
+            s.waveform = waves[i, :, :]
         s.unit = spike_train.unit
         s.segment = spike_train.segment
         spikes.append(s)
@@ -81,7 +81,7 @@ def spikes_to_spike_train(spikes, include_waveforms=True):
 
     for i, spike in enumerate(spikes):
         if (u != spike.unit or s != spike.segment or
-            ls != spike.left_sweep):
+                ls != spike.left_sweep):
             raise SpykeException('Cannot create spike train from spikes with '
                                  'nonuniform properties!')
 
@@ -97,10 +97,10 @@ def spikes_to_spike_train(spikes, include_waveforms=True):
                 raise SpykeException('Cannot create spike train from spikes '
                                      'with nonuniform waveform shapes!')
             if waves is not None:
-                waves[i,:,:] = spike.waveform
+                waves[i, :, :] = spike.waveform
 
     ret = neo.SpikeTrain(times, t_start=times.min(), t_stop=times.max(),
-        waveforms=waves, left_sweep=ls)
+                         waveforms=waves, left_sweep=ls)
     ret.unit = u
     ret.segment = s
     ret.left_sweep = ls
@@ -134,8 +134,8 @@ def analog_signal_array_to_analog_signals(signal_array):
     rcg = signal_array.recordingchannelgroup
 
     for i in xrange(signal_array.shape[1]):
-        s = neo.AnalogSignal(signal_array[:,i],
-            t_start = signal_array.t_start,
+        s = neo.AnalogSignal(
+            signal_array[:, i], t_start=signal_array.t_start,
             sampling_rate=signal_array.sampling_rate)
         if len(rcg.recordingchannels) == 1:
             s.recordingchannel = rcg.recordingchannels[0]
@@ -163,7 +163,8 @@ def event_array_to_events(event_array):
     """
     events = []
     for i, t in enumerate(event_array.times):
-        e = neo.Event(t, event_array.labels[i])
+        e = neo.Event(
+            t, event_array.labels[i] if i < len(event_array.labels) else '')
         e.segment = event_array.segment
         events.append(e)
     return events
@@ -185,7 +186,9 @@ def epoch_array_to_epochs(epoch_array):
     """
     periods = []
     for i, t in enumerate(epoch_array.times):
-        p = neo.Epoch(t, epoch_array.durations[i], epoch_array.labels[i])
+        p = neo.Epoch(
+            t, epoch_array.durations[i],
+            epoch_array.labels[i] if i < len(epoch_array.labels) else '')
         p.segment = epoch_array.segment
         periods.append(p)
     return periods

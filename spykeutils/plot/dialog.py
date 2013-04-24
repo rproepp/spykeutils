@@ -11,7 +11,7 @@ try:
 except AttributeError:
     _fromUtf8 = lambda s: s
 
-from PyQt4.QtGui import QColor
+from PyQt4.QtGui import QColor, QScrollArea, QWidget, QFrame
 from guiqwt.baseplot import BasePlot
 from guiqwt.curve import CurvePlot
 from guiqwt.image import ImagePlot
@@ -31,6 +31,7 @@ from guidata.configtools import get_icon
 
 import icons_rc
 import guiqwt_tools
+
 
 # Monkeypatch curve and image plot so synchronizing axes works with all tools
 def fixed_do_zoom_rect_view(self, *args, **kwargs):
@@ -62,23 +63,35 @@ class PlotDialog(QDialog, PlotManager):
     """ Implements a dialog to which an arbitrary number of plots can be
     added.
 
-    This class implements a `QDialog` with a number of plots on it. The plot's
-    axes can be arbitrarily synchronized and option checkboxes can be added
-    which provide callbacks when the checkbox state changes.
+    This class implements a `QDialog` with a number of plots on it. The
+    axes of the plots can be arbitrarily synchronized and option checkboxes
+    can be added which provide callbacks when the checkbox state changes.
+
+    :param str wintitle: Title of the window.
+    :param bool major_grid: Show major grid in plots.
+    :param bool minor_grid: Show minor grid in plots.
+    :param bool toolbar: Show toolbar.
+    :param parent: Parent window.
+    :param panels: A list of guiqwt panels to be added to the window.
+    :param int min_plot_width: Default minimum width for plots.
+    :param int min_plot_height: Default minimum height for plots.
     """
 
     def __init__(self, wintitle='Plot window', major_grid=True,
-                 minor_grid=False, toolbar=False,  parent=None, panels=None):
+                 minor_grid=False, toolbar=False,  parent=None,
+                 panels=None, min_plot_width=100, min_plot_height=75):
         QDialog.__init__(self, parent)
         self.setWindowFlags(Qt.Window)
 
         icon = QtGui.QIcon()
         icon.addPixmap(QtGui.QPixmap(_fromUtf8(':/Application/Main')),
-            QtGui.QIcon.Normal, QtGui.QIcon.Off)
+                       QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.setWindowIcon(icon)
 
         self.major_grid = major_grid
         self.minor_grid = minor_grid
+        self.min_plot_width = min_plot_width
+        self.min_plot_height = min_plot_height
 
         # WidgetMixin copy
         PlotManager.__init__(self, main=self)
@@ -86,6 +99,11 @@ class PlotDialog(QDialog, PlotManager):
         self.main_layout = QVBoxLayout(self)
         self.color_layout = QHBoxLayout()
         self.plot_layout = QGridLayout()
+        self.plot_layout.setMargin(0)
+        self.plot_scroll_widget = QWidget()
+        self.plot_scroll_area = QScrollArea()
+        self.plot_scroll_area.setFrameShape(QFrame.NoFrame)
+        self.plot_scroll_area.setWidgetResizable(True)
         self.option_layout = QHBoxLayout()
 
         self.plot_widget = None
@@ -118,7 +136,9 @@ class PlotDialog(QDialog, PlotManager):
     def _setup_widget_layout(self):
         self.main_layout.addWidget(self.toolbar)
         self.main_layout.addLayout(self.color_layout)
-        self.main_layout.addLayout(self.plot_layout)
+        self.main_layout.addWidget(self.plot_scroll_area)
+        self.plot_scroll_area.setWidget(self.plot_scroll_widget)
+        self.plot_scroll_widget.setLayout(self.plot_layout)
         self.main_layout.addLayout(self.option_layout)
         self.setLayout(self.main_layout)
         
@@ -141,7 +161,7 @@ class PlotDialog(QDialog, PlotManager):
             self.set_default_tool(t)
         self.add_tool(BasePlotMenuTool, "item")
         self.add_tool(ExportItemDataTool)
-        try: # Old versions of guiqwt and spyderlib do not support this
+        try:  # Old versions of guiqwt and spyderlib do not support this
             import spyderlib.widgets.objecteditor
             from guiqwt.tools import EditItemDataTool
             self.add_tool(EditItemDataTool)
@@ -189,7 +209,7 @@ class PlotDialog(QDialog, PlotManager):
             self.set_default_tool(t)
         self.add_tool(BasePlotMenuTool, "item")
         self.add_tool(ExportItemDataTool)
-        try: # Old versions of guiqwt and spyderlib do not support this
+        try:  # Old versions of guiqwt and spyderlib do not support this
             import spyderlib.widgets.objecteditor
             from guiqwt.tools import EditItemDataTool
             self.add_tool(EditItemDataTool)
@@ -232,7 +252,7 @@ class PlotDialog(QDialog, PlotManager):
         self.add_separator_tool()
         self.get_default_tool().activate()
     
-    def add_option(self, name, change_callback, active = False):
+    def add_option(self, name, change_callback, active=False):
         """ Add an option (using a checkbox) to the window.
 
         :param str name: The name of the option.
@@ -248,7 +268,7 @@ class PlotDialog(QDialog, PlotManager):
         self.option_callbacks[checkBox] = change_callback
         self.option_layout.addWidget(checkBox)
 
-    def add_x_synchronization_option(self, active, ids = None):
+    def add_x_synchronization_option(self, active, ids=None):
         """ Offer an option for X axes synchronization. This method should
         be called after show(), so that a proper initial synchronization
         can be performed.
@@ -261,9 +281,9 @@ class PlotDialog(QDialog, PlotManager):
         if active and ids:
             self.synchronize_axis(BasePlot.X_BOTTOM)
         self.add_option('Synchronize X Axes',
-            PlotDialog._synchronization_option_x, active)
+                        PlotDialog._synchronization_option_x, active)
 
-    def add_y_synchronization_option(self, active, ids = None):
+    def add_y_synchronization_option(self, active, ids=None):
         """ Offer an option for Y axes synchronization. This method should
         be called after show(), so that a proper initial synchronization
         can be performed.
@@ -276,7 +296,7 @@ class PlotDialog(QDialog, PlotManager):
         if active and ids:
             self.synchronize_axis(BasePlot.Y_LEFT)
         self.add_option('Synchronize Y Axes',
-            PlotDialog._synchronization_option_y, active)
+                        PlotDialog._synchronization_option_y, active)
 
     def _synchronization_option_x(self, state):
         """ Callback for x-axis synchronization
@@ -325,7 +345,6 @@ class PlotDialog(QDialog, PlotManager):
                     i.setLinePen(pen)
             plot.replot()
 
-
     def set_background_color(self, color):
         """ Set the background color for all plots.
 
@@ -334,7 +353,6 @@ class PlotDialog(QDialog, PlotManager):
         for p in self.plots.itervalues():
             p.setCanvasBackground(QColor(color))
             p.replot()
-
         
     def add_unit_color(self, color, name='Unit color:'):
         """ Create a small legend on top of the window with only one entry.
@@ -361,8 +379,8 @@ class PlotDialog(QDialog, PlotManager):
         """
         label = QtGui.QLabel(self)
         label.setText(legend_string)
-        self.plot_layout.addWidget(label, 0, self.plot_layout.columnCount(),
-            -1, 1)
+        self.plot_layout.addWidget(
+            label, 0, self.plot_layout.columnCount(), -1, 1)
 
     def add_color_legend(self, legend, show_option=None):
         """ Create a legend on the right of the plots with colors and names.
@@ -386,14 +404,14 @@ class PlotDialog(QDialog, PlotManager):
             layout.addWidget(label, layout.rowCount(), 0, 1, 1)
             label = QtGui.QLabel(self)
             label.setText(l[1])
-            layout.addWidget(label, layout.rowCount()-1, 1, 1, 1)
+            layout.addWidget(label, layout.rowCount() - 1, 1, 1, 1)
 
-        self.plot_layout.addWidget(widget, 0, self.plot_layout.columnCount(),
-            -1, 1)
+        self.plot_layout.addWidget(
+            widget, 0, self.plot_layout.columnCount(), -1, 1)
         if show_option is not None:
             widget.setVisible(show_option)
-            self.add_option('Show Legend Sidebar',
-                lambda w,s : widget.setVisible(s),
+            self.add_option(
+                'Show Legend Sidebar', lambda w, s: widget.setVisible(s),
                 show_option)
     
     def add_legend_option(self, legends, active):
@@ -421,7 +439,8 @@ class PlotDialog(QDialog, PlotManager):
             for l in self.legends:
                 p.set_item_visible(l, visible)
 
-    def add_plot_widget(self, plot_widget, plot_id, row=-1, column=0):
+    def add_plot_widget(self, plot_widget, plot_id, row=-1, column=0,
+                        min_plot_width=None, min_plot_height=None):
         """ Adds a guiqwt plot to the window.
 
         :param plot_widget: The plot to add.
@@ -431,17 +450,30 @@ class PlotDialog(QDialog, PlotManager):
             will be added in a new row (if `column` is 0) or
             in the last row.
         :param int column: The column of the new plot.
+        :param int min_plot_width: The minimum width of this plot. If
+            ``None``, the default minimum width for this dialog
+            is used.
+        :param int max_plot_height: The minimum height of this plot. If
+            ``None``, the default minimum height for this dialog
+            is used.
         """
-        if row==-1:
-            if column==0:
+        if row == -1:
+            if column == 0:
                 row = self.plot_layout.rowCount()
             else:
                 row = self.plot_layout.rowCount() - 1
-        self.plot_layout.addWidget(plot_widget,row,column)
+        pw = min_plot_width
+        if pw is None:
+            pw = self.min_plot_width
+        ph = min_plot_height
+        if ph is None:
+            ph = self.min_plot_height
+        plot_widget.setMinimumSize(pw, ph)
+        self.plot_layout.addWidget(plot_widget, row, column)
         new_plot = plot_widget.plot
         self.add_plot(new_plot, plot_id)
         
-    def synchronize_axis(self, axis, plots = None):
+    def synchronize_axis(self, axis, plots=None):
         if plots is None:
             if axis in self.axis_syncplots:
                 plots = self.axis_syncplots[axis]
@@ -461,8 +493,7 @@ class PlotDialog(QDialog, PlotManager):
             p.setAxisScale(axis, lb, ub)
             p.replot()
 
-        
-    def unsynchronize_axis(self, axis, plots = None):
+    def unsynchronize_axis(self, axis, plots=None):
         if plots is None:
             if axis in self.axis_syncplots:
                 plots = self.axis_syncplots[axis]
@@ -473,9 +504,9 @@ class PlotDialog(QDialog, PlotManager):
                 continue
             synclist = self.synchronized_plots[plot_id]
             for plot2_id in plots:
-                if plot_id==plot2_id:
+                if plot_id == plot2_id:
                     continue
-                item = (axis,plot2_id)
+                item = (axis, plot2_id)
                 if item in synclist:
                     synclist.remove(item)
         

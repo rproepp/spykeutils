@@ -1,6 +1,3 @@
-"""
-.. autofunction:: sde(trains, events=None, start=0 ms, stop=None, kernel_size=100 ms, optimize_steps=0, minimum_kernel=10 ms, maximum_kernel=500 ms, kernel_function=None, unit=ms, progress=None)
-"""
 import scipy as sp
 
 from guiqwt.builder import make
@@ -17,10 +14,10 @@ import helper
 
 
 @helper.needs_qt
-def sde(trains, events=None, start=0*pq.ms, stop=None,
-        kernel_size=100*pq.ms, optimize_steps=0,
-        minimum_kernel=10*pq.ms, maximum_kernel=500*pq.ms,
-        kernel_function=None, unit=pq.ms, progress=None):
+def sde(trains, events=None, start=0 * pq.ms, stop=None,
+        kernel_size=100 * pq.ms, optimize_steps=0,
+        minimum_kernel=10 * pq.ms, maximum_kernel=500 * pq.ms,
+        kernel_function=None, time_unit=pq.ms, progress=None):
     """ Create a spike density estimation plot.
 
     The spike density estimations give an estimate of the instantaneous
@@ -58,27 +55,19 @@ def sde(trains, events=None, start=0*pq.ms, stop=None,
         a Gaussian kernel is used. Automatic optimization assumes a
         Gaussian kernel and will likely not produce optimal results for
         different kernels.
-    :param Quantity unit: Unit of X-Axis.
+    :param Quantity time_unit: Unit of X-Axis.
     :param progress: Set this parameter to report progress.
     :type progress: :class:`spykeutils.progress_indicator.ProgressIndicator`
     """
     if not progress:
         progress = ProgressIndicator()
 
-        # Catch old API call to remain compatible and make Debian happy.
-        # Can be removed in 0.3.0
-        if isinstance(kernel_function, pq.Quantity):
-            if isinstance(unit, ProgressIndicator):
-                progress = unit
-            unit = kernel_function
-            kernel_function = None
-
-    start.units = unit
+    start.units = time_unit
     if stop:
-        stop.units = unit
-    kernel_size.units = unit
-    minimum_kernel.units = unit
-    maximum_kernel.units = unit
+        stop.units = time_unit
+    kernel_size.units = time_unit
+    minimum_kernel.units = time_unit
+    maximum_kernel.units = time_unit
 
     if kernel_function is None:
         kernel_function = rate_estimation.gauss_kernel
@@ -92,17 +81,19 @@ def sde(trains, events=None, start=0*pq.ms, stop=None,
     # Calculate spike density estimation
     if optimize_steps:
         steps = sp.logspace(sp.log10(minimum_kernel),
-            sp.log10(maximum_kernel),
-            optimize_steps) * unit
+                            sp.log10(maximum_kernel),
+                            optimize_steps) * time_unit
         sde, kernel_size, eval_points = \
-            rate_estimation.spike_density_estimation(trains, start, stop,
+            rate_estimation.spike_density_estimation(
+                trains, start, stop,
                 optimize_steps=steps, kernel=kernel_function,
                 progress=progress)
     else:
         sde, kernel_size, eval_points = \
-        rate_estimation.spike_density_estimation(trains, start, stop,
-            kernel_size=kernel_size, kernel=kernel_function,
-            progress=progress)
+            rate_estimation.spike_density_estimation(
+                trains, start, stop,
+                kernel_size=kernel_size, kernel=kernel_function,
+                progress=progress)
     progress.done()
 
     if not sde:
@@ -121,9 +112,10 @@ def sde(trains, events=None, start=0*pq.ms, stop=None,
         else:
             name = 'Unknown'
 
-        curve = make.curve(eval_points, sde[u],
-            title='%s, Kernel width %.2f %s' % (name, kernel_size[u],
-                unit.dimensionality.string),
+        curve = make.curve(
+            eval_points, sde[u],
+            title='%s, Kernel width %.2f %s' %
+                  (name, kernel_size[u], time_unit.dimensionality.string),
             color=helper.get_object_color(u))
         plot.add_item(curve)
 

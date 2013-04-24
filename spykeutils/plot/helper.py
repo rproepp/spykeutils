@@ -13,6 +13,7 @@ from guiqwt.builder import make
 class _MarkerName:
     """ Helper class to create marker name functions for different strings.
     """
+
     def __init__(self, name):
         self.name = name
 
@@ -24,14 +25,17 @@ class _MarkerName:
 def _needs_qt(function):
     @functools.wraps(function)
     def inner(*args, **kwargs):
-        app = None
         if not QApplication.instance():
-            app = QApplication([])
+            _needs_qt.app = QApplication([])
         ret = function(*args, **kwargs)
-        if app:
-            app.exec_()
+        if _needs_qt.app:
+            _needs_qt.app.exec_()
         return ret
+
     return inner
+
+
+_needs_qt.app = None
 
 # Make need_qt decorator preserve signature if decorator package is available
 try:
@@ -52,22 +56,24 @@ except ImportError:
 
 # Optimum contrast color palette (without white and black), see
 # http://web.media.mit.edu/~wad/color/palette.html
-__default_colors = ['#575757', # Dark Gray
-    '#ad2323', # Red
-   '#2a4bd7', # Blue
-   '#296914', # Green
-   '#614a19', # Brown (lower R to better distinguish from purple)
-   '#8126c0', # Purple
-   '#a0a0a0', # Light Gray
-   '#81c57a', # Light Green
-   '#9dafff', # Light Blue
-   '#29d0d0', # Cyan
-   '#ff9233', # Orange
-   '#ffee33', # Yellow
-   '#b6ab88', # Tan (darkened for better visibility on white background)
-   '#ff89d1'] # Pink (darkened for better visibility on white background)
+__default_colors = [
+    '#575757',  # Dark Gray
+    '#ad2323',  # Red
+    '#2a4bd7',  # Blue
+    '#296914',  # Green
+    '#614a19',  # Brown (lower R to better distinguish from purple)
+    '#8126c0',  # Purple
+    '#a0a0a0',  # Light Gray
+    '#81c57a',  # Light Green
+    '#9dafff',  # Light Blue
+    '#29d0d0',  # Cyan
+    '#ff9233',  # Orange
+    '#ffee33',  # Yellow
+    '#b6ab88',  # Tan (darkened for better visibility on white background)
+    '#ff89d1']  # Pink (darkened for better visibility on white background)
 
 __colors = __default_colors
+
 
 def get_color(entity_id):
     """ Return a color for an int.
@@ -118,13 +124,15 @@ def add_events(plot, events, units=None):
             time = m.time.rescale(units)
         else:
             time = m.time
-        plot.add_item(make.marker((time, 0), nameObject.get_name,
-            movable=False, markerstyle='|', color='k', linestyle=':',
-            linewidth=1))
+        plot.add_item(
+            make.marker(
+                (time, 0), nameObject.get_name,
+                movable=False, markerstyle='|', color='k', linestyle=':',
+                linewidth=1))
 
 
 def add_spikes(plot, train, color='k', spike_width=1, spike_height=20000,
-               y_offset = 0, name='', units=None):
+               y_offset=0, name='', units=None):
     """ Add all spikes from a spike train to a guiqwt plot as vertical lines.
 
     :param plot: The plot object.
@@ -143,12 +151,13 @@ def add_spikes(plot, train, color='k', spike_width=1, spike_height=20000,
     if units:
         train = train.rescale(units)
 
-    spikes = make.curve(train, sp.zeros(len(train)) + y_offset,
+    spikes = make.curve(
+        train, sp.zeros(len(train)) + y_offset,
         name, 'k', 'NoPen', linewidth=0, marker='Rect',
         markerfacecolor=color, markeredgecolor=color)
 
     s = spikes.symbol()
-    s.setSize(spike_width-1, spike_height)
+    s.setSize(spike_width - 1, spike_height)
     spikes.setSymbol(s)
     plot.add_item(spikes)
 
@@ -183,7 +192,8 @@ def add_epochs(plot, epochs, units=None):
         plot.add_item(o)
 
         nameObject = _MarkerName(e.label)
-        plot.add_item(make.marker((time, 0), nameObject.get_name,
+        plot.add_item(make.marker(
+            (time, 0), nameObject.get_name,
             movable=False, markerstyle='|', color='k', linestyle='NoPen',
             linewidth=1))
 

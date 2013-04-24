@@ -1,3 +1,16 @@
+Version 0.3.0
+-------------
+
+* Added implementations for various spike train metrics.
+* Added generation functions for poisson spike trains
+* Added tools module with various utility functions, e.g. binning
+  spike trains or removing objects from Neo hierarchies.
+* Added explained variance function to spike sorting quality assessment.
+* Improved legends for plots involving colored lines.
+* Plots now have a minimum size and scroll bars appear if the plots would
+  become too small.
+* Renamed plot.ISI to plot.isi for consistency
+
 Version 0.2.1
 -------------
 * Added "Home" and "Pan" tools for plots (useful when no middle mouse button

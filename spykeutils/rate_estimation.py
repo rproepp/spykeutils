@@ -1,37 +1,21 @@
-"""
-.. autofunction:: binned_spike_trains(trains, bin_size, start=0 ms, stop=None)
-.. autofunction:: psth(trains, bin_size, rate_correction=True, start=0 ms, stop=None)
-.. autofunction:: spike_density_estimation(trains, start=0 ms, stop=None, evaluation_points=None, kernel=gauss_kernel, kernel_size=100 ms, optimize_steps=None, progress=None)
-"""
 from __future__ import division
 
 import scipy as sp
 import quantities as pq
 import neo
 from progress_indicator import ProgressIndicator
+import signal_processing as sigproc
+import tools
 from . import SpykeException
 
 
-def _binned_spike_trains(trains, bins):
-    """ Return a binned representation of spike trains.
-
-    :param sequencs trains: A sequence of :class:`neo.core.SpikeTrain`
-        objects.
-    :param bins: The bin edges, including the rightmost edge.
-    :type bins: Quantity 1D
-    :returns: List of one-dimensional arrays of spike counts.
-    :rtype: list
-    """
-    counts = []
-    for t in trains:
-        counts.append(sp.histogram(t.rescale(bins.units), bins)[0])
-
-    return counts
-
-
-def binned_spike_trains(trains, bin_size, start=0*pq.ms, stop=None):
+def binned_spike_trains(trains, bin_size, start=0 * pq.ms, stop=None):
     """ Return dictionary of binned rates for a dictionary of
     spike train lists.
+
+    .. deprecated:: 0.3.0
+
+    Use :func:`.tools.bin_spike_trains` instead.
 
     :param dict trains: A dictionary of :class:`neo.core.SpikeTrain` lists.
     :param bin_size: The desired bin size (as a time quantity).
@@ -48,31 +32,17 @@ def binned_spike_trains(trains, bin_size, start=0*pq.ms, stop=None):
         of spike train counts and the bin borders.
     :rtype: dict, Quantity 1D
     """
-    # Do not create bins that do not include all spike trains
-    max_start, max_stop = minimum_spike_train_interval(trains)
+    if stop is None:
+        stop = sp.inf * pq.ms
 
-    start = max(start, max_start)
-    start.units = bin_size.units
-    if stop is not None:
-        stop = min(stop, max_stop)
-    else:
-        stop = max_stop
-    stop.units = bin_size.units
-
-    # Calculate bin size
-    bins = sp.arange(start, stop, bin_size)*bin_size.units
-
-    # Create dictionary for all SpikeTrain lists
-    binned = {}
-    for s in trains:
-        b = _binned_spike_trains(trains[s], bins)
-        if b:
-            binned[s] = b
-
-    return binned, bins
+    start, stop = tools.minimum_spike_train_interval(trains, start, stop)
+    hist, bins = tools.bin_spike_trains(trains, 1.0 / bin_size, start, stop)
+    return tools.apply_to_dict(lambda st: st[:-1], hist), bins[:-1]
 
 
-def psth(trains, bin_size, rate_correction=True, start=0*pq.ms, stop=None):
+def psth(
+        trains, bin_size, rate_correction=True, start=0 * pq.ms,
+        stop=sp.inf * pq.s):
     """ Return dictionary of peri stimulus time histograms for a dictionary
     of spike train lists.
 
@@ -98,7 +68,8 @@ def psth(trains, bin_size, rate_correction=True, start=0*pq.ms, stop=None):
     if not trains:
         raise SpykeException('No spike trains for PSTH!')
 
-    binned, bins = binned_spike_trains(trains, bin_size, start, stop)
+    start, stop = tools.minimum_spike_train_interval(trains, start, stop)
+    binned, bins = tools.bin_spike_trains(trains, 1.0 / bin_size, start, stop)
 
     cumulative = {}
     time_multiplier = 1.0 / float(bin_size.rescale(pq.s))
@@ -116,7 +87,7 @@ def aligned_spike_trains(trains, events, copy=True):
     """ Return a list of spike trains aligned to an event (the event will
     be time 0 on the returned trains).
 
-    :param dict trains: A list of :class:`neo.core.SpikeTrain` objects.
+    :param list trains: A list of :class:`neo.core.SpikeTrain` objects.
     :param dict events: A dictionary of Event objects, indexed by segment.
         These events (in case of lists, always the first element in the list)
         will be used to align the spike trains and will be at time 0 for
@@ -151,48 +122,47 @@ def aligned_spike_trains(trains, events, copy=True):
 
 
 def minimum_spike_train_interval(trains):
-    """ Computes the minimum starting time and maximum end time that all
-    given spike trains share.
+    """ Computes the maximum starting time and minimum end time that all
+    given spike trains share. This yields the shortest interval shared by all
+    spike trains.
+
+    .. deprecated:: 0.3.0
+
+    Use :func:`.tools.minimum_spike_train_interval` instead.
 
     :param dict trains: A dictionary of sequences of
         :class:`neo.core.SpikeTrain` objects.
     :returns: Maximum shared start time and minimum shared stop time.
     :rtype: Quantity scalar, Quantity scalar
     """
-    start = -sp.inf * pq.s
-    stop = sp.inf * pq.s
+    t_start = -sp.inf * pq.s
+    t_stop = sp.inf * pq.s
 
     # Load data and find shortest spike train
     for st in trains.itervalues():
-        # Minimum length of spike of all spike trains for this unit
-        start = max(start, max((t.t_start for t in st)))
-        stop = min(stop, min((t.t_stop for t in st)))
+        if len(st) > 0:
+            # Minimum length of spike of all spike trains for this unit
+            t_start = max(t_start, max((t.t_start for t in st)))
+            t_stop = min(t_stop, min((t.t_stop for t in st)))
 
-    return start, stop
+    return t_start, t_stop
 
 
 def gauss_kernel(x, kernel_size):
-    return 1.0 / (sp.sqrt(2*sp.pi) * kernel_size) * \
-           sp.exp(-0.5 *  (x / kernel_size)**2)
+    """
+    .. deprecated:: 0.3.0
+
+        Use :class:`.signal_processing.GaussianKernel` instead.
+    """
+
+    return 1.0 / (sp.sqrt(2.0 * sp.pi) * kernel_size) * \
+        sigproc.GaussianKernel.evaluate(x, kernel_size)
 
 
-def _hist_density(hist, kernel, ksize, start, stop):
-    time_factor = (2048.0 * start.units / (stop - start)).simplified
-    kern = kernel(sp.arange(-1024,1024), ksize * time_factor)
-    kern *= time_factor / sp.sum(kern)
-    kde = sp.signal.convolve(hist, kern, 'same')
-    return kde
-
-
-def _train_density(train, kernel, ksize):
-    bins = sp.linspace(train.t_start, train.t_stop, 1025)
-    hist = sp.histogram(train, bins)[0]
-    return _hist_density(hist, kernel, ksize, train.t_start, train.t_stop)
-
-
-def spike_density_estimation(trains, start=0*pq.ms, stop=None,
-                             kernel=gauss_kernel, kernel_size=100*pq.ms,
-                             optimize_steps=None, progress=None):
+def spike_density_estimation(trains, start=0 * pq.ms, stop=None,
+                             kernel=sigproc.GaussianKernel(100 * pq.ms),
+                             kernel_size=100 * pq.ms, optimize_steps=None,
+                             progress=None):
     """ Create a spike density estimation from a dictionary of
     lists of spike trains.
 
@@ -212,10 +182,11 @@ def spike_density_estimation(trains, start=0*pq.ms, stop=None,
         be recalculated if there are spike trains which end earlier
         than this time.
     :type stop: Quantity scalar
-    :param func kernel: The kernel function to use, should accept
+    :param kernel: The kernel function or instance to use, should accept
         two parameters: A ndarray of distances and a kernel size.
-        The total area under the kernel function sould be 1.
+        The total area under the kernel function should be 1.
         Default: Gaussian kernel
+    :type kernel: func or :class:`.signal_processing.Kernel`
     :param kernel_size: A uniform kernel size for all spike trains.
             Only used if optimization of kernel sizes is not used.
     :type kernel_size: Quantity scalar
@@ -246,7 +217,7 @@ def spike_density_estimation(trains, start=0*pq.ms, stop=None,
         units = optimize_steps.units
 
     # Prepare evaluation points
-    max_start, max_stop = minimum_spike_train_interval(trains)
+    max_start, max_stop = tools.minimum_spike_train_interval(trains)
 
     start = max(start, max_start)
     start.units = units
@@ -259,30 +230,34 @@ def spike_density_estimation(trains, start=0*pq.ms, stop=None,
     eval_points = bins[:-1] + (bins[1] - bins[0]) / 2
 
     if optimize_steps is None or len(optimize_steps) < 1:
-        kernel_size = {u:kernel_size for u in trains}
+        kernel_size = {u: kernel_size for u in trains}
     else:
         # Find optimal kernel size for all spike train sets
-        progress.set_ticks(len(optimize_steps)*len(trains))
+        progress.set_ticks(len(optimize_steps) * len(trains))
         progress.set_status('Calculating optimal kernel size')
         kernel_size = {}
-        for u,t in trains.iteritems():
+        for u, t in trains.iteritems():
             c = collapsed_spike_trains(t)
             kernel_size[u] = optimal_gauss_kernel_size(
-                c.time_slice(start,stop), optimize_steps, progress)
+                c.time_slice(start, stop), optimize_steps, progress)
 
     progress.set_ticks(len(trains))
     progress.set_status('Creating spike density plot')
 
     # Calculate KDEs
     kde = {}
-    for u,t in trains.iteritems():
+    for u, t in trains.iteritems():
         # Collapse spike trains
         collapsed = collapsed_spike_trains(t).rescale(units)
-        ksize = float(kernel_size[u])
+        scaled_kernel = sigproc.as_kernel_of_size(kernel, kernel_size[u])
 
         # Create density estimation using convolution
-        kde[u] = _train_density(collapsed.time_slice(start, stop),
-            kernel, ksize) / len(trains[u]) / units
+        sliced = collapsed.time_slice(start, stop)
+        sampling_rate = 1024.0 / (sliced.t_stop - sliced.t_start)
+        kde[u] = sigproc.st_convolve(
+            sliced, scaled_kernel, sampling_rate,
+            kernel_discretization_params={
+                'num_bins': 2048, 'ensure_unit_area': True})[0] / len(trains[u])
         kde[u].units = pq.Hz
     return kde, kernel_size, eval_points
 
@@ -305,7 +280,7 @@ def collapsed_spike_trains(trains):
     for t in trains:
         collapsed.extend(sp.asarray(t.rescale(stop.units)))
 
-    return neo.SpikeTrain(collapsed*stop.units, t_stop=stop, t_start=start)
+    return neo.SpikeTrain(collapsed * stop.units, t_stop=stop, t_start=start)
 
 
 def optimal_gauss_kernel_size(train, optimize_steps, progress=None):
@@ -334,25 +309,26 @@ def optimal_gauss_kernel_size(train, optimize_steps, progress=None):
         progress = ProgressIndicator()
 
     x = train.rescale(optimize_steps.units)
-    steps = sp.asarray(optimize_steps)
 
     N = len(train)
     C = {}
 
-    bins = sp.linspace(x.t_start, x.t_stop, 1025)
-    dt = float(bins[1] - bins[0])
-    y_hist = sp.histogram(x, bins)[0] / N / dt
-    for step in steps:
+    sampling_rate = 1024.0 / (x.t_stop - x.t_start)
+    dt = float(1.0 / sampling_rate)
+    y_hist = tools.bin_spike_trains({0: [x]}, sampling_rate)[0][0][0]
+    y_hist = sp.asfarray(y_hist) / N / dt
+    for step in optimize_steps:
         s = float(step)
-        yh = _hist_density(y_hist, gauss_kernel, step,
-            train.t_start, train.t_stop)
+        yh = sigproc.smooth(
+            y_hist, sigproc.GaussianKernel(2 * step), sampling_rate, num_bins=2048,
+            ensure_unit_area=True) * optimize_steps.units
 
         # Equation from Matlab code, 7/2012
-        c = (sp.sum(yh**2) * dt -
+        c = (sp.sum(yh ** 2) * dt -
              2 * sp.sum(yh * y_hist) * dt +
              2 * 1 / sp.sqrt(2 * sp.pi) / s / N)
         C[s] = c * N * N
         progress.step()
 
     # Return kernel size with smallest cost
-    return min(C, key=C.get)*train.units
+    return min(C, key=C.get) * optimize_steps.units

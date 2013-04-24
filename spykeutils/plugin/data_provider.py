@@ -241,17 +241,6 @@ class DataProvider(object):
         """
         return {}
 
-    def num_analog_signals(self, conversion_mode=1):
-        """ Return the number of :class:`neo.core.AnalogSignal` objects.
-
-        :param int conversion_mode: Determines what signals are included:
-
-            1. AnalogSignal objects only
-            2. AnalogSignal objects extracted from AnalogSignalArrays only
-            3. Both AnalogSignal objects and extracted AnalogSignalArrays
-        """
-        return 0
-
     def analog_signals(self, conversion_mode=1):
         """ Return a list of :class:`neo.core.AnalogSignal` objects.
 
@@ -329,11 +318,6 @@ class DataProvider(object):
         """
         return self._invert_indices(
             self.analog_signals_by_channel_and_segment(conversion_mode))
-
-    def num_analog_signal_arrays(self):
-        """ Return the number of :class:`neo.core.AnalogSignalArray` objects.
-        """
-        return 0
 
     def analog_signal_arrays(self):
         """ Return a list of :class:`neo.core.AnalogSignalArray` objects.

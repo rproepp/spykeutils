@@ -3,20 +3,28 @@ The plots are created using :mod:`guiqwt` - if it is not installed,
 this package can not be used.
 
 .. automodule:: spykeutils.plot.rasterplot
+    :members:
 
 .. automodule:: spykeutils.plot.correlogram
+    :members:
 
 .. automodule:: spykeutils.plot.interspike_intervals
+    :members:
 
 .. automodule:: spykeutils.plot.peri_stimulus_histogram
+    :members:
 
 .. automodule:: spykeutils.plot.sde
+    :members:
 
 .. automodule:: spykeutils.plot.analog_signals
+    :members:
 
 .. automodule:: spykeutils.plot.spike_amp_hist
+    :members:
 
 .. automodule:: spykeutils.plot.spike_waveforms
+    :members:
 
 :mod:`dialog` Module
 --------------------
@@ -39,7 +47,7 @@ this package can not be used.
     :show-inheritance:
 """
 
-from interspike_intervals import ISI
+from interspike_intervals import isi
 from dialog import PlotDialog
 from rasterplot import raster
 from correlogram import cross_correlogram
