@@ -424,5 +424,42 @@ class TestRemoveFromHierarchy(ut.TestCase):
         self.assertFalse(st in unit.spiketrains)
         self.assertFalse(st in segment.spiketrains)
 
+    def test_extract_spikes(self):
+        s1 = sp.zeros(10000)
+        s2 = sp.ones(10000)
+        t = sp.arange(0.0, 10.1, 1.0)
+
+        sig1 = neo.AnalogSignal(s1 * pq.uV, sampling_rate=pq.kHz)
+        sig2 = neo.AnalogSignal(s2 * pq.uV, sampling_rate=pq.kHz)
+        train = neo.SpikeTrain(t * pq.s, 10 * pq.s)
+
+        spikes = tools.extract_spikes(
+            train, [sig1, sig2], 100 * pq.ms, 10 * pq.ms)
+
+        self.assertEqual(len(spikes), 9)
+        for s in spikes:
+            self.assertAlmostEqual(s.waveform[:, 0].mean(), 0.0)
+            self.assertAlmostEqual(s.waveform[:, 1].mean(), 1.0)
+
+    def test_extract_different_spikes(self):
+        s1 = sp.ones(10500)
+        s2 = -sp.ones(10500)
+        for i in xrange(10):
+            s1[i * 1000 + 500:i * 1000 + 1500] *= i
+            s2[i * 1000 + 500:i * 1000 + 1500] *= i
+        t = sp.arange(0.0, 10.1, 1.0)
+
+        sig1 = neo.AnalogSignal(s1 * pq.uV, sampling_rate=pq.kHz)
+        sig2 = neo.AnalogSignal(s2 * pq.uV, sampling_rate=pq.kHz)
+        train = neo.SpikeTrain(t * pq.s, 10 * pq.s)
+
+        spikes = tools.extract_spikes(
+            train, [sig1, sig2], 100 * pq.ms, 10 * pq.ms)
+
+        self.assertEqual(len(spikes), 10)
+        for i, s in enumerate(spikes):
+            self.assertAlmostEqual(s.waveform[:, 0].mean(), i)
+            self.assertAlmostEqual(s.waveform[:, 1].mean(), -i)
+
 if __name__ == '__main__':
     ut.main()

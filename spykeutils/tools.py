@@ -238,3 +238,61 @@ def remove_from_hierarchy(obj, remove_half_orphans=True):
                 pass
 
     _handle_orphans(obj, remove_half_orphans)
+
+
+def extract_spikes(train, signals, length, align_time):
+    """ Extract spikes with waveforms from analog signals using a spike train. 
+    Spikes that are too close to the beginning or end of the shortest signal
+    to be fully extracted are ignored.
+
+    :type train: :class:`neo.core.SpikeTrain`
+    :param train: The spike times.
+    :param sequence signals: A sequence of :class:`neo.core.AnalogSignal`
+        objects from which the spikes are extracted. The waveforms of
+        the returned spikes are extracted from these signals in the
+        same order they are given.
+    :type length: Quantity scalar
+    :param length: The length of the waveform to extract as time scalar.
+    :type align_time: Quantity scalar
+    :param align_time: The alignment time of the spike times as time scalar.
+        This is the time delta from the start of the extracted waveform
+        to the exact time of the spike.
+    :returns: A list of :class:`neo.core.Spike` objects, one for each
+        time point in ``train``. All returned spikes include their
+        ``waveform`` property.
+    :rtype: list
+    """
+    if len(set(s.sampling_rate for s in signals)) > 1:
+        raise ValueError(
+            'All signals for spike extraction need the same sampling rate')
+
+    wave_unit = signals[0].units
+    srate = signals[0].sampling_rate
+    end = min(s.shape[0] for s in signals)
+
+    aligned_train = train - align_time
+    cut_samples = int((length * srate).simplified)
+
+    st = sp.asarray((aligned_train * srate).simplified)
+
+    # Find extraction epochs
+    st_ok = (st >= 0) * (st < end - cut_samples)
+    epochs = sp.vstack((st[st_ok], st[st_ok] + cut_samples)).T
+
+    nspikes = epochs.shape[0]
+    if not nspikes:
+        return []
+
+    # Create data
+    data = sp.vstack([sp.asarray(s.rescale(wave_unit)) for s in signals])
+    nc = len(signals)
+
+    spikes = []
+    for s in xrange(nspikes):
+        waveform = sp.zeros((cut_samples, nc))
+        for c in xrange(nc):
+            waveform[:, c] = \
+                data[c, epochs[s, 0]:epochs[s, 1]]
+        spikes.append(neo.Spike(train[st_ok][s], waveform=waveform * wave_unit))
+
+    return spikes
