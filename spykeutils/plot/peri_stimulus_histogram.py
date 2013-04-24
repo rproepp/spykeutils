@@ -66,7 +66,8 @@ def psth(trains, events=None, start=0 * pq.ms, stop=None,
 
     win_title = 'PSTH | Bin size %.2f %s' % (bin_size,
                                              time_unit.dimensionality.string)
-    win = PlotDialog(toolbar=True, wintitle=win_title)
+    win = PlotDialog(toolbar=True, wintitle=win_title, min_plot_width=150,
+                     min_plot_height=100)
 
     legends = []
     if bar_plot:

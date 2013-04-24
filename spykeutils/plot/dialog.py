@@ -11,7 +11,7 @@ try:
 except AttributeError:
     _fromUtf8 = lambda s: s
 
-from PyQt4.QtGui import QColor
+from PyQt4.QtGui import QColor, QScrollArea, QWidget, QFrame
 from guiqwt.baseplot import BasePlot
 from guiqwt.curve import CurvePlot
 from guiqwt.image import ImagePlot
@@ -63,13 +63,23 @@ class PlotDialog(QDialog, PlotManager):
     """ Implements a dialog to which an arbitrary number of plots can be
     added.
 
-    This class implements a `QDialog` with a number of plots on it. The plot's
-    axes can be arbitrarily synchronized and option checkboxes can be added
-    which provide callbacks when the checkbox state changes.
+    This class implements a `QDialog` with a number of plots on it. The
+    axes of the plots can be arbitrarily synchronized and option checkboxes
+    can be added which provide callbacks when the checkbox state changes.
+
+    :param str wintitle: Title of the window.
+    :param bool major_grid: Show major grid in plots.
+    :param bool minor_grid: Show minor grid in plots.
+    :param bool toolbar: Show toolbar.
+    :param parent: Parent window.
+    :param panels: A list of guiqwt panels to be added to the window.
+    :param int min_plot_width: Default minimum width for plots.
+    :param int min_plot_height: Default minimum height for plots.
     """
 
     def __init__(self, wintitle='Plot window', major_grid=True,
-                 minor_grid=False, toolbar=False,  parent=None, panels=None):
+                 minor_grid=False, toolbar=False,  parent=None,
+                 panels=None, min_plot_width=100, min_plot_height=75):
         QDialog.__init__(self, parent)
         self.setWindowFlags(Qt.Window)
 
@@ -80,6 +90,8 @@ class PlotDialog(QDialog, PlotManager):
 
         self.major_grid = major_grid
         self.minor_grid = minor_grid
+        self.min_plot_width = min_plot_width
+        self.min_plot_height = min_plot_height
 
         # WidgetMixin copy
         PlotManager.__init__(self, main=self)
@@ -87,6 +99,11 @@ class PlotDialog(QDialog, PlotManager):
         self.main_layout = QVBoxLayout(self)
         self.color_layout = QHBoxLayout()
         self.plot_layout = QGridLayout()
+        self.plot_layout.setMargin(0)
+        self.plot_scroll_widget = QWidget()
+        self.plot_scroll_area = QScrollArea()
+        self.plot_scroll_area.setFrameShape(QFrame.NoFrame)
+        self.plot_scroll_area.setWidgetResizable(True)
         self.option_layout = QHBoxLayout()
 
         self.plot_widget = None
@@ -119,7 +136,9 @@ class PlotDialog(QDialog, PlotManager):
     def _setup_widget_layout(self):
         self.main_layout.addWidget(self.toolbar)
         self.main_layout.addLayout(self.color_layout)
-        self.main_layout.addLayout(self.plot_layout)
+        self.main_layout.addWidget(self.plot_scroll_area)
+        self.plot_scroll_area.setWidget(self.plot_scroll_widget)
+        self.plot_scroll_widget.setLayout(self.plot_layout)
         self.main_layout.addLayout(self.option_layout)
         self.setLayout(self.main_layout)
         
@@ -142,7 +161,7 @@ class PlotDialog(QDialog, PlotManager):
             self.set_default_tool(t)
         self.add_tool(BasePlotMenuTool, "item")
         self.add_tool(ExportItemDataTool)
-        try: # Old versions of guiqwt and spyderlib do not support this
+        try:  # Old versions of guiqwt and spyderlib do not support this
             import spyderlib.widgets.objecteditor
             from guiqwt.tools import EditItemDataTool
             self.add_tool(EditItemDataTool)
@@ -190,7 +209,7 @@ class PlotDialog(QDialog, PlotManager):
             self.set_default_tool(t)
         self.add_tool(BasePlotMenuTool, "item")
         self.add_tool(ExportItemDataTool)
-        try: # Old versions of guiqwt and spyderlib do not support this
+        try:  # Old versions of guiqwt and spyderlib do not support this
             import spyderlib.widgets.objecteditor
             from guiqwt.tools import EditItemDataTool
             self.add_tool(EditItemDataTool)
@@ -420,7 +439,8 @@ class PlotDialog(QDialog, PlotManager):
             for l in self.legends:
                 p.set_item_visible(l, visible)
 
-    def add_plot_widget(self, plot_widget, plot_id, row=-1, column=0):
+    def add_plot_widget(self, plot_widget, plot_id, row=-1, column=0,
+                        min_plot_width=None, min_plot_height=None):
         """ Adds a guiqwt plot to the window.
 
         :param plot_widget: The plot to add.
@@ -430,12 +450,25 @@ class PlotDialog(QDialog, PlotManager):
             will be added in a new row (if `column` is 0) or
             in the last row.
         :param int column: The column of the new plot.
+        :param int min_plot_width: The minimum width of this plot. If
+            ``None``, the default minimum width for this dialog
+            is used.
+        :param int max_plot_height: The minimum height of this plot. If
+            ``None``, the default minimum height for this dialog
+            is used.
         """
         if row == -1:
             if column == 0:
                 row = self.plot_layout.rowCount()
             else:
                 row = self.plot_layout.rowCount() - 1
+        pw = min_plot_width
+        if pw is None:
+            pw = self.min_plot_width
+        ph = min_plot_height
+        if ph is None:
+            ph = self.min_plot_height
+        plot_widget.setMinimumSize(pw, ph)
         self.plot_layout.addWidget(plot_widget, row, column)
         new_plot = plot_widget.plot
         self.add_plot(new_plot, plot_id)

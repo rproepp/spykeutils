@@ -19,15 +19,14 @@ def spikes(spikes, axes_style, anti_alias=False, time_unit=pq.ms,
     :param dict spikes: A dictionary of spike lists.
     :param int axes_style: Plotting mode. The following values are possible:
 
-       1 Show each channel in a seperate plot, split vertically.
-       2 Show each channel in a separate plot, split horizontally.
-       3 Show each key of ``spikes`` in a separate plot,
-         channels are split vertically.
-       4 Show each key of ``spikes`` in a separate plot,
-         channels are split horizontally.
-       5 Show all channels in the same plot, split vertically.
-       6 Show all channels in the same plot, split horizontally.
-
+        - 1: Show each channel in a seperate plot, split vertically.
+        - 2: Show each channel in a separate plot, split horizontally.
+        - 3: Show each key of ``spikes`` in a separate plot,
+          channels are split vertically.
+        - 4: Show each key of ``spikes`` in a separate plot,
+          channels are split horizontally.
+        - 5: Show all channels in the same plot, split vertically.
+        - 6: Show all channels in the same plot, split horizontally.
 
     :param bool anti_alias: Determines whether an antialiased plot is created.
     :param Quantity time_unit: Unit of X-Axis.

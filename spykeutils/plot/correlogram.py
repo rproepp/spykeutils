@@ -2,6 +2,7 @@ from guiqwt.builder import make
 from guiqwt.baseplot import BasePlot
 from guiqwt.plot import BaseCurveWidget
 import quantities as pq
+import scipy as sp
 
 from .. import SpykeException
 from ..progress_indicator import ProgressIndicator
@@ -37,7 +38,8 @@ def cross_correlogram(trains, bin_size, max_lag=500 * pq.ms,
     win_title = 'Correlogram | Bin size ' + str(bin_size)
     progress.begin('Creating correlogram')
     progress.set_status('Calculating...')
-    win = PlotDialog(toolbar=True, wintitle=win_title)
+    win = PlotDialog(toolbar=True, wintitle=win_title, min_plot_width=150,
+                     min_plot_height=100)
 
     correlograms, bins = correlogram(
         trains, bin_size, max_lag,
@@ -46,13 +48,14 @@ def cross_correlogram(trains, bin_size, max_lag=500 * pq.ms,
 
     crlgs = []
     indices = correlograms.keys()
-    columns = max(2, len(indices) - 3)
 
     for i1 in xrange(len(indices)):
         for i2 in xrange(i1, len(indices)):
             crlgs.append(
                 (correlograms[indices[i1]][indices[i2]],
                  indices[i1], indices[i2]))
+
+    columns = int(sp.sqrt(len(crlgs)))
 
     legends = []
     for i, c in enumerate(crlgs):

@@ -29,7 +29,8 @@ def isi(trains, bin_size, cut_off, bar_plot=False, time_unit=pq.ms):
         raise SpykeException('No spike trains for ISI histogram')
 
     win_title = 'ISI Histogram | Bin size: ' + str(bin_size)
-    win = PlotDialog(toolbar=True, wintitle=win_title)
+    win = PlotDialog(toolbar=True, wintitle=win_title, min_plot_width=150,
+                     min_plot_height=100)
     bin_size = bin_size.rescale(time_unit)
     cut_off = cut_off.rescale(time_unit)
     bins = sp.arange(0 * time_unit, cut_off, bin_size) * time_unit
