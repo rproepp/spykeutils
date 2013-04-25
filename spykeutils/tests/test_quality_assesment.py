@@ -138,8 +138,8 @@ class TestClusterOverlap(ut.TestCase):
         self.assertAlmostEqual(pair[2][1][1], 1.0 / 3.0)
 
     def test_far_apart_clusters_estimate_all(self):
-        cluster1 = sp.randn(40, 1000)
-        cluster2 = sp.randn(40, 1000) * 2
+        cluster1 = sp.randn(40, 10000)
+        cluster2 = sp.randn(40, 10000) * 2
         cluster2[0, :] += 10
         clusterList1 = [cluster1[:, i]
                         for i in xrange(sp.size(cluster1, 1))]
