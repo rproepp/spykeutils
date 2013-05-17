@@ -6,6 +6,7 @@ import neo
 from progress_indicator import ProgressIndicator
 import signal_processing as sigproc
 import tools
+import copy as cp
 from . import SpykeException
 
 
@@ -107,12 +108,18 @@ def aligned_spike_trains(trains, events, copy=True):
                     'not have an align event.')
             continue
 
+        e = events[s]
+
         if copy:
-            st = t.rescale(t.units)
+            st = neo.SpikeTrain(
+                t, t.t_stop, units=t.units,
+                sampling_rate=t.sampling_rate, t_start=t.t_start,
+                waveforms=t.waveforms, left_sweep=t.left_sweep,
+                name=t.name, file_origin=t.file_origin,
+                description=t.description, **t.annotations)
         else:
             st = t
 
-        e = events[s]
         st -= e.time
         st.t_stop -= e.time
         st.t_start -= e.time

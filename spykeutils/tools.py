@@ -25,7 +25,7 @@ def apply_to_dict(fn, dictionary, *args):
 
 
 def bin_spike_trains(trains, sampling_rate, t_start=None, t_stop=None):
-    """ Creates binned representations of a spike trains.
+    """ Creates binned representations of spike trains.
 
     :param dict trains: A dictionary of sequences of
         :class:`neo.core.SpikeTrain` objects.
@@ -97,12 +97,17 @@ def minimum_spike_train_interval(
 
     :param dict trains: A dictionary of sequences of
         :class:`neo.core.SpikeTrain` objects.
-    :param t_start: Minimal starting time to return as time scalar.
-    :param t_stop: Maximum end time to return as time scalar.
+    :param t_start: Minimal starting time to return.
+    :type t_start: Quantity scalar
+    :param t_stop: Maximum end time to return. If ``None``, infinity is used.
+    :type t_stop: Quantity scalar
     :returns: Maximum shared t_start time and minimum shared t_stop time as
         time scalars.
     :rtype: Quantity scalar, Quantity scalar
     """
+    if t_stop is None:
+        t_stop = sp.inf * pq.s
+
     # Load data and find shortest spike train
     for st in trains.itervalues():
         if len(st) > 0:
@@ -123,11 +128,14 @@ def maximum_spike_train_interval(
         :class:`neo.core.SpikeTrain` objects.
     :param t_start: Maximum starting time to return.
     :type t_start: Quantity scalar
-    :param t_stop: Minimum end time to return.
+    :param t_stop: Minimum end time to return. If ``None``, infinity is used.
     :type t_stop: Quantity scalar
     :returns: Minimum t_start time and maximum t_stop time as time scalars.
     :rtype: Quantity scalar, Quantity scalar
     """
+    if t_stop is None:
+        t_stop = sp.inf * pq.s
+
     for st in trains.itervalues():
         if len(st) > 0:
             t_start = min(t_start, min((t.t_start for t in st)))

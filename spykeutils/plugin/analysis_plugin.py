@@ -63,6 +63,23 @@ class AnalysisPlugin(gui_data.DataSet):
     def get_title(self):  # Override guidata.DataSet.get_title()
         return self.get_name()
 
+    def get_comment(self):  # Override guidata.DataSet.get_comment()
+        ret = None
+        if self.__doc__:
+            string = self.__doc__
+            if not isinstance(string, basestring):
+                string = unicode(string)
+            if not isinstance(string, unicode):
+                string = unicode(string, 'utf-8')
+
+            doc_lines = string.splitlines()
+            # Remove empty lines at the begining of comment
+            while doc_lines and not doc_lines[0].strip():
+                del doc_lines[0]
+            if doc_lines:
+                ret = "\n".join([x.strip() for x in doc_lines])
+        return ret
+
     def start(self, current, selections):
         """ Entry point for processing. Override with analysis code.
 
