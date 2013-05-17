@@ -112,7 +112,7 @@ def aligned_spike_trains(trains, events, copy=True):
 
         if copy:
             st = neo.SpikeTrain(
-                t - e.time, t.t_stop, units=t.units,
+                t, t.t_stop, units=t.units,
                 sampling_rate=t.sampling_rate, t_start=t.t_start,
                 waveforms=t.waveforms, left_sweep=t.left_sweep,
                 name=t.name, file_origin=t.file_origin,
