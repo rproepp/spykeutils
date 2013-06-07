@@ -278,7 +278,7 @@ def collapsed_spike_trains(trains):
     :rtype: :class:`neo.core.SpikeTrain`
     """
     if not trains:
-        return neo.SpikeTrain([], 0)
+        return neo.SpikeTrain([], 0 * pq.s)
 
     start = min((t.t_start for t in trains))
     stop = max((t.t_stop for t in trains))
