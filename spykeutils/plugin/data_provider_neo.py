@@ -19,6 +19,8 @@ class NeoDataProvider(DataProvider):
     block_indices = {}
     # Dictionary of io, indexed by block object
     block_ios = {}
+    # Mode for lazy loading: 0 - Full load, 1 - Lazy load
+    lazy_mode = 0
 
     def __init__(self, name, progress):
         super(NeoDataProvider, self).__init__(name, progress)
@@ -40,10 +42,11 @@ class NeoDataProvider(DataProvider):
         cls.block_ios.clear()
 
     @classmethod
-    def get_block(cls, filename, index, lazy=False):
+    def get_block(cls, filename, index, lazy=None):
         """ Return the block at the given index in the specified file
         """
-        lazy = True
+        if lazy is None:
+            lazy = cls.lazy_mode > 0
 
         if filename in cls.loaded_blocks:
             return cls.loaded_blocks[filename][index]
@@ -58,10 +61,11 @@ class NeoDataProvider(DataProvider):
         return blocks[index]
 
     @classmethod
-    def get_blocks(cls, filename, lazy=False):
+    def get_blocks(cls, filename, lazy=None):
         """ Return a list of blocks loaded from the specified file
         """
-        lazy = True
+        if lazy is None:
+            lazy = cls.lazy_mode > 0
 
         if filename in cls.loaded_blocks:
             return cls.loaded_blocks[filename]
