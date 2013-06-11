@@ -3,6 +3,7 @@ import sys
 from copy import copy
 from collections import OrderedDict
 import traceback
+import atexit
 
 import neo
 
@@ -856,3 +857,6 @@ class NeoDataProvider(DataProvider):
             signals[self.no_channelgroup] = nonesignals
 
         return self._load_object_dict(signals)
+
+
+atexit.register(NeoDataProvider.clear)
