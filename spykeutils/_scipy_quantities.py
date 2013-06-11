@@ -34,9 +34,9 @@ maximum = _fix_binary_scipy_function_with_out_param(sp.maximum)
 def _fix_scipy_meshgrid(f):
     def _fixed(x, y):
         rx, ry = f(x, y)
-        if isinstance(x, pq.Quantity):
+        if isinstance(x, pq.Quantity) and not isinstance(rx, pq.Quantity):
             rx = rx * x.units
-        if isinstance(y, pq.Quantity):
+        if isinstance(y, pq.Quantity) and not isinstance(ry, pq.Quantity):
             ry = ry * y.units
         return rx, ry
     return _fixed
