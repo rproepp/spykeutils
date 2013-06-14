@@ -3,6 +3,7 @@ import sys
 from copy import copy
 from collections import OrderedDict
 import traceback
+import atexit
 
 import neo
 
@@ -17,6 +18,10 @@ class NeoDataProvider(DataProvider):
     loaded_blocks = {}
     # Dictionary of index in file, indexed by block object
     block_indices = {}
+    # Dictionary of io, indexed by block object
+    block_ios = {}
+    # Mode for lazy loading: 0 - Full load, 1 - Lazy load
+    lazy_mode = 0
 
     def __init__(self, name, progress):
         super(NeoDataProvider, self).__init__(name, progress)
@@ -28,27 +33,48 @@ class NeoDataProvider(DataProvider):
         cls.loaded_blocks.clear()
         cls.block_indices.clear()
 
+        ios = set()
+        for io in cls.block_ios.itervalues():
+            if io in ios:
+                continue
+            if hasattr(io, 'close'):
+                io.close()
+                ios.add(io)
+        cls.block_ios.clear()
+
     @classmethod
-    def get_block(cls, filename, index, lazy=False):
+    def get_block(cls, filename, index, lazy=None):
         """ Return the block at the given index in the specified file
         """
+        if lazy is None:
+            lazy = cls.lazy_mode > 0
+
         if filename in cls.loaded_blocks:
             return cls.loaded_blocks[filename][index]
         io, blocks = cls._load_neo_file(filename, lazy)
-        if io and hasattr(io, 'close'):
+        if lazy:
+            if isinstance(io, neo.NeoHdf5IO):
+                io.objects_by_ref = {}
+        elif io and hasattr(io, 'close'):
             io.close()
         if blocks is None:
             return None
         return blocks[index]
 
     @classmethod
-    def get_blocks(cls, filename, lazy=False):
+    def get_blocks(cls, filename, lazy=None):
         """ Return a list of blocks loaded from the specified file
         """
+        if lazy is None:
+            lazy = cls.lazy_mode > 0
+
         if filename in cls.loaded_blocks:
             return cls.loaded_blocks[filename]
         io, blocks = cls._load_neo_file(filename, lazy)
-        if io and hasattr(io, 'close'):
+        if lazy:
+            if isinstance(io, neo.NeoHdf5IO):
+                io.objects_by_ref = {}
+        elif io and hasattr(io, 'close'):
             io.close()
         return blocks
 
@@ -74,6 +100,8 @@ class NeoDataProvider(DataProvider):
 
                         cls.block_indices[block] = 0
                         cls.loaded_blocks[filename] = [block]
+                        if lazy:
+                            cls.block_ios[block] = n_io
                         return n_io, [block]
                     except Exception, e:
                         sys.stderr.write(
@@ -105,11 +133,17 @@ class NeoDataProvider(DataProvider):
                             if isinstance(content, neo.Block):  # Neo 0.2.1
                                 cls.block_indices[content] = 0
                                 cls.loaded_blocks[filename] = [content]
+                                if lazy:
+                                    cls.block_ios[content] = n_io
                                 return n_io, [content]
                             blocks = content
+
                         # Neo >= 0.3.0, read() returns a list of blocks
                         for i, b in enumerate(blocks):
                             cls.block_indices[b] = i
+                            if lazy:
+                                cls.block_ios[b] = n_io
+
                         cls.loaded_blocks[filename] = blocks
                         return n_io, blocks
                     except Exception, e:
@@ -178,7 +212,7 @@ class NeoDataProvider(DataProvider):
             segment_list.append([idx, block_indices[s.block]])
         data['segments'] = segment_list
 
-        # Unit entry: (Index of uinit in rcg, index of rcg)
+        # Unit entry: (Index of unit in rcg, index of rcg)
         unit_list = []
         selected_units = viewer.neo_units()
         for u in selected_units:
@@ -265,6 +299,65 @@ class NeoDataProvider(DataProvider):
 
         return block
 
+    def _get_object_io(self, object):
+        """ Find the IO for an object. Return ``None`` if no IO exists.
+        """
+        if object.segment:
+            return self.block_ios.get(object.segment.block, None)
+        if hasattr(object, 'recordingchannelgroups'):
+            if object.recordingchannelgroups:
+                return self.block_ios.get(
+                    object.recordingchannelgroups[0].block, None)
+        if hasattr(object, 'recordingchannel'):
+            c = object.recordingchannel
+            if c.recordingchannelgroups:
+                return self.block_ios.get(
+                    c.recordingchannelgroups[0].block, None)
+        return None
+
+    def _load_lazy_object(self, o):
+        if not hasattr(o, 'lazy_shape'):
+            return o
+        if not hasattr(o, 'hdf5_path'):
+            return o
+
+        io = self._get_object_io(o)
+        if io:
+            ret = io.get(o.hdf5_path, cascade=False, lazy=False)
+            ret.segment = o.segment
+            if hasattr(o, 'recordingchannelgroups'):
+                ret.recordingchannelgroup = o.recordingchannelgroup
+            elif hasattr(o, 'recordingchannel'):
+                ret.recordingchannel = o.recordingchannel
+            elif hasattr(o, 'unit'):
+                ret.unit = o.unit
+            return ret
+        return o
+
+    def _load_object_list(self, objects):
+        """ Return a list of loaded objects for a list of (potentially)
+        lazily loaded objects.
+        """
+        ret = []
+        for o in objects:
+            ret.append(self._load_lazy_object(o))
+        return ret
+
+    def _load_object_dict(self, objects):
+        """ Return a dictionary (without changing indices) of loaded
+        objects for a dictionary of (potentially) lazily loaded objects.
+        """
+        for k, v in objects.items():
+            if isinstance(v, list):
+                objects[k] = self._load_object_list(v)
+            elif isinstance(v, dict):
+                for ik, iv in v.items():
+                    v[ik] = self._load_lazy_object(iv)
+            else:
+                raise ValueError(
+                    'Only dicts or lists are supported as dictionary values!')
+        return objects
+
     def selection_blocks(self):
         """ Return a list of selected blocks.
         """
@@ -281,7 +374,7 @@ class NeoDataProvider(DataProvider):
         for u in self.units():
             trains.extend([t for t in u.spiketrains if t.segment is None])
 
-        return trains
+        return self._load_object_list(trains)
 
     def spike_trains_by_unit(self):
         """ Return a dictionary (indexed by Unit) of lists of
@@ -301,7 +394,7 @@ class NeoDataProvider(DataProvider):
         if nonetrains:
             trains[self.no_unit] = nonetrains
 
-        return trains
+        return self._load_object_dict(trains)
 
     def spike_trains_by_segment(self):
         """ Return a dictionary (indexed by Segment) of lists of
@@ -321,7 +414,7 @@ class NeoDataProvider(DataProvider):
         if nonetrains:
             trains[self.no_segment] = nonetrains
 
-        return trains
+        return self._load_object_dict(trains)
 
     def spike_trains_by_unit_and_segment(self):
         """ Return a dictionary (indexed by Unit) of dictionaries
@@ -350,7 +443,7 @@ class NeoDataProvider(DataProvider):
         if nonetrains:
             trains[self.no_unit] = nonetrains
 
-        return trains
+        return self._load_object_dict(trains)
 
     def spikes(self):
         """ Return a list of :class:`neo.core.Spike` objects.
@@ -363,7 +456,7 @@ class NeoDataProvider(DataProvider):
         for u in self.units():
             spikes.extend([t for t in u.spikes if t.segment is None])
 
-        return spikes
+        return self._load_object_list(spikes)
 
     def spikes_by_unit(self):
         """ Return a dictionary (indexed by Unit) of lists of
@@ -383,7 +476,7 @@ class NeoDataProvider(DataProvider):
         if nonespikes:
             spikes[self.no_unit] = nonespikes
 
-        return spikes
+        return self._load_object_dict(spikes)
 
     def spikes_by_segment(self):
         """ Return a dictionary (indexed by Segment) of lists of
@@ -403,7 +496,7 @@ class NeoDataProvider(DataProvider):
         if nonespikes:
             spikes[self.no_segment] = nonespikes
 
-        return spikes
+        return self._load_object_dict(spikes)
 
     def spikes_by_unit_and_segment(self):
         """ Return a dictionary (indexed by Unit) of dictionaries
@@ -432,7 +525,7 @@ class NeoDataProvider(DataProvider):
         if nonespikes:
             spikes[self.no_unit] = nonespikes
 
-        return spikes
+        return self._load_object_dict(spikes)
 
     def events(self, include_array_events=True):
         """ Return a dictionary (indexed by Segment) of lists of
@@ -474,7 +567,7 @@ class NeoDataProvider(DataProvider):
         for s in self.segments():
             if s.eventarrays:
                 ret[s] = s.eventarrays
-        return ret
+        return self._load_object_dict(ret)
 
     def epochs(self, include_array_epochs=True):
         """ Return a dictionary (indexed by Segment) of lists of
@@ -516,7 +609,7 @@ class NeoDataProvider(DataProvider):
         for s in self.segments():
             if s.epocharrays:
                 ret[s] = s.epocharrays
-        return ret
+        return self._load_object_dict(ret)
 
     def analog_signals(self, conversion_mode=1):
         """ Return a list of :class:`neo.core.AnalogSignal` objects.
@@ -539,7 +632,7 @@ class NeoDataProvider(DataProvider):
                             sig.recordingchannel in channels):
                         signals.append(sig)
 
-        return signals
+        return self._load_object_list(signals)
 
     def analog_signals_by_segment(self, conversion_mode=1):
         """ Return a dictionary (indexed by Segment) of lists of
@@ -578,7 +671,7 @@ class NeoDataProvider(DataProvider):
                                 signals[o] = []
                             signals[o].append(sig)
 
-        return signals
+        return self._load_object_dict(signals)
 
     def analog_signals_by_channel(self, conversion_mode=1):
         """ Return a dictionary (indexed by RecordingChannel) of lists
@@ -620,7 +713,7 @@ class NeoDataProvider(DataProvider):
                             else:
                                 signals[sig.recordingchannel].append(sig)
 
-        return signals
+        return self._load_object_dict(signals)
 
     def analog_signals_by_channel_and_segment(self, conversion_mode=1):
         """ Return a dictionary (indexed by RecordingChannel) of
@@ -669,7 +762,7 @@ class NeoDataProvider(DataProvider):
                                 signals[chan][seg] = []
                             signals[chan][seg].append(sig)
 
-        return signals
+        return self._load_object_dict(signals)
 
     def analog_signal_arrays(self):
         """ Return a list of :class:`neo.core.AnalogSignalArray` objects.
@@ -684,7 +777,7 @@ class NeoDataProvider(DataProvider):
             signals.extend([t for t in u.analogsignalarrays
                             if t.segment is None])
 
-        return signals
+        return self._load_object_list(signals)
 
     def analog_signal_arrays_by_segment(self):
         """ Return a dictionary (indexed by Segment) of lists of
@@ -709,7 +802,7 @@ class NeoDataProvider(DataProvider):
         if nonesignals:
             signals[self.no_segment] = nonesignals
 
-        return signals
+        return self._load_object_dict(signals)
 
     def analog_signal_arrays_by_channelgroup(self):
         """ Return a dictionary (indexed by RecordingChannelGroup) of
@@ -730,7 +823,7 @@ class NeoDataProvider(DataProvider):
         if nonesignals:
             signals[self.no_channelgroup] = nonesignals
 
-        return signals
+        return self._load_object_dict(signals)
 
     def analog_signal_arrays_by_channelgroup_and_segment(self):
         """ Return a dictionary (indexed by RecordingChannelGroup) of
@@ -763,4 +856,7 @@ class NeoDataProvider(DataProvider):
         if nonesignals:
             signals[self.no_channelgroup] = nonesignals
 
-        return signals
+        return self._load_object_dict(signals)
+
+
+atexit.register(NeoDataProvider.clear)
