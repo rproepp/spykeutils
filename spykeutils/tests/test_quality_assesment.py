@@ -147,8 +147,7 @@ class TestClusterOverlap(ut.TestCase):
         cluster1 = self.rand.randn(40, 10000)
         cluster2 = self.rand.randn(40, 10000) * 2
         cluster2[0, :] += 10
-        print >> sys.stderr, cluster1[0, :10]
-        print >> sys.stderr, cluster2[0, :10]
+
         clusterList1 = [cluster1[:, i]
                         for i in xrange(sp.size(cluster1, 1))]
         clusterList2 = [cluster2[:, i]
