@@ -1,6 +1,8 @@
 Overview
 ========
 
+.. image:: https://secure.travis-ci.org/rproepp/spykeutils.png?branch=develop
+
 Based on the `Neo <http://packages.python.org/neo/>`_ framework, spykeutils
 is a Python library for analyzing and plotting data from neurophysiological
 recordings. It can be used by itself or in conjunction with Spyke Viewer,
