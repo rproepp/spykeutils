@@ -5,7 +5,8 @@ virtualenv:
   system_site_packages: true
 before_install:
   - sudo apt-get update -qq
-  - sudo apt-get install -qq python-numpy python-scipy python-sklearn
+  - sudo apt-get install -qq python-numpy python-scipy
+  - pip install scikit-learn
 install:
   - python setup.py develop
-script: nosetests
+script: nosetests spykeutils/tests/ spykeutils/monkeypatch/test/
