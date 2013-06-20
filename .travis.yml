@@ -4,7 +4,8 @@ python:
 virtualenv:
   system_site_packages: true
 before_install:
- - sudo apt-get install -qq python-numpy python-scipy python-sklearn
+  - sudo apt-get update -qq
+  - sudo apt-get install -qq python-numpy python-scipy python-sklearn
 install:
   - python setup.py develop
 script: nosetests
