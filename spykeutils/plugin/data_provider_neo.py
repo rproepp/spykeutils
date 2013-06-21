@@ -22,6 +22,8 @@ class NeoDataProvider(DataProvider):
     block_ios = {}
     # Mode for lazy loading: 0 - Full load, 1 - Lazy load
     lazy_mode = 0
+    # Forced IO class for all files. If None, determine by file extension.
+    forced_io = None
 
     def __init__(self, name, progress):
         super(NeoDataProvider, self).__init__(name, progress)
@@ -43,15 +45,25 @@ class NeoDataProvider(DataProvider):
         cls.block_ios.clear()
 
     @classmethod
-    def get_block(cls, filename, index, lazy=None):
-        """ Return the block at the given index in the specified file
+    def get_block(cls, filename, index, lazy=None, force_io=None):
+        """ Return the block at the given index in the specified file.
+
+        :param str filename: Path to the file from which to load the block.
+        :param int index: The index of the block in the file.
+        :param int lazy: Override global lazy setting if not ``None``:
+            0 is regular load, 1 is lazy load.
+        :param force_io: Override global forced_io for the Neo IO class
+            to use when loading the file. If ``None``, the global
+            forced_io is used.
         """
         if lazy is None:
             lazy = cls.lazy_mode > 0
+        if force_io is None:
+            force_io = cls.forced_io
 
         if filename in cls.loaded_blocks:
             return cls.loaded_blocks[filename][index]
-        io, blocks = cls._load_neo_file(filename, lazy)
+        io, blocks = cls._load_neo_file(filename, lazy, force_io)
         if lazy:
             if isinstance(io, neo.NeoHdf5IO):
                 io.objects_by_ref = {}
@@ -62,15 +74,24 @@ class NeoDataProvider(DataProvider):
         return blocks[index]
 
     @classmethod
-    def get_blocks(cls, filename, lazy=None):
+    def get_blocks(cls, filename, lazy=None, force_io=None):
         """ Return a list of blocks loaded from the specified file
+
+        :param str filename: Path to the file from which to load the blocks.
+        :param int lazy: Override global lazy setting if not ``None``:
+            0 is regular load, 1 is lazy load.
+        :param force_io: Override global forced_io for the Neo IO class
+            to use when loading the file. If ``None``, the global
+            forced_io is used.
         """
         if lazy is None:
             lazy = cls.lazy_mode > 0
+        if force_io is None:
+            force_io = cls.forced_io
 
         if filename in cls.loaded_blocks:
             return cls.loaded_blocks[filename]
-        io, blocks = cls._load_neo_file(filename, lazy)
+        io, blocks = cls._load_neo_file(filename, lazy, force_io)
         if lazy:
             if isinstance(io, neo.NeoHdf5IO):
                 io.objects_by_ref = {}
@@ -79,7 +100,7 @@ class NeoDataProvider(DataProvider):
         return blocks
 
     @classmethod
-    def _load_neo_file(cls, filename, lazy):
+    def _load_neo_file(cls, filename, lazy, force_io):
         """ Returns a NEO io object and a list of contained blocks for a
         file name. This function also caches all loaded blocks
 
@@ -89,6 +110,32 @@ class NeoDataProvider(DataProvider):
             Determines if lazy mode is used for NEO io.
         """
         if os.path.isdir(filename):
+            if force_io:
+                try:
+                    n_io = force_io(filename)
+                    block = n_io.read(lazy=lazy)
+                    if force_io == neo.TdtIO and not block.segments:
+                        sys.stderr.write(
+                            'Could not load any blocks from "%s"' % filename)
+                        return None, None
+
+                    cls.block_indices[block] = 0
+                    cls.loaded_blocks[filename] = [block]
+                    if lazy:
+                        cls.block_ios[block] = n_io
+                    return n_io, [block]
+                except Exception, e:
+                    sys.stderr.write(
+                        'Load error for directory "%s":\n' % filename)
+                    tb = sys.exc_info()[2]
+                    while not ('self' in tb.tb_frame.f_locals and
+                               tb.tb_frame.f_locals['self'] == n_io):
+                        if tb.tb_next is not None:
+                            tb = tb.tb_next
+                        else:
+                            break
+                    traceback.print_exception(type(e), e, tb)
+
             for io in neo.io.iolist:
                 if io.mode == 'dir':
                     try:
@@ -115,48 +162,57 @@ class NeoDataProvider(DataProvider):
                                 break
                         traceback.print_exception(type(e), e, tb)
         else:
+            if force_io:
+                return cls._load_file_with_io(filename, force_io, lazy)
+
             extension = filename.split('.')[-1]
             for io in neo.io.iolist:
                 if extension in io.extensions:
-                    if io == neo.NeoHdf5IO:
-                        # Fix unicode problem with pyinstaller
-                        if hasattr(sys, 'frozen'):
-                            filename = filename.encode('UTF-8')
+                    return cls._load_file_with_io(filename, io, lazy)
 
-                    n_io = io(filename=filename)
+        return None, None
 
-                    try:
-                        if hasattr(io, 'read_all_blocks'):  # Neo 0.2.1
-                            blocks = n_io.read_all_blocks(lazy=lazy)
-                        else:
-                            content = n_io.read(lazy=lazy)
-                            if isinstance(content, neo.Block):  # Neo 0.2.1
-                                cls.block_indices[content] = 0
-                                cls.loaded_blocks[filename] = [content]
-                                if lazy:
-                                    cls.block_ios[content] = n_io
-                                return n_io, [content]
-                            blocks = content
+    @classmethod
+    def _load_file_with_io(cls, filename, io, lazy):
+        if io == neo.NeoHdf5IO:
+            # Fix unicode problem with pyinstaller
+            if hasattr(sys, 'frozen'):
+                filename = filename.encode('UTF-8')
 
-                        # Neo >= 0.3.0, read() returns a list of blocks
-                        for i, b in enumerate(blocks):
-                            cls.block_indices[b] = i
-                            if lazy:
-                                cls.block_ios[b] = n_io
+        n_io = io(filename=filename)
 
-                        cls.loaded_blocks[filename] = blocks
-                        return n_io, blocks
-                    except Exception, e:
-                        sys.stderr.write(
-                            'Load error for file "%s":\n' % filename)
-                        tb = sys.exc_info()[2]
-                        while not ('self' in tb.tb_frame.f_locals and
-                                   tb.tb_frame.f_locals['self'] == n_io):
-                            if tb.tb_next is not None:
-                                tb = tb.tb_next
-                            else:
-                                break
-                        traceback.print_exception(type(e), e, tb)
+        try:
+            if hasattr(io, 'read_all_blocks'):  # Neo 0.2.1
+                blocks = n_io.read_all_blocks(lazy=lazy)
+            else:
+                content = n_io.read(lazy=lazy)
+                if isinstance(content, neo.Block):  # Neo 0.2.1
+                    cls.block_indices[content] = 0
+                    cls.loaded_blocks[filename] = [content]
+                    if lazy:
+                        cls.block_ios[content] = n_io
+                    return n_io, [content]
+                blocks = content
+
+            # Neo >= 0.3.0, read() returns a list of blocks
+            for i, b in enumerate(blocks):
+                cls.block_indices[b] = i
+                if lazy:
+                    cls.block_ios[b] = n_io
+
+            cls.loaded_blocks[filename] = blocks
+            return n_io, blocks
+        except Exception, e:
+            sys.stderr.write(
+                'Load error for file "%s":\n' % filename)
+            tb = sys.exc_info()[2]
+            while not ('self' in tb.tb_frame.f_locals and
+                               tb.tb_frame.f_locals['self'] == n_io):
+                if tb.tb_next is not None:
+                    tb = tb.tb_next
+                else:
+                    break
+            traceback.print_exception(type(e), e, tb)
 
         return None, None
 
