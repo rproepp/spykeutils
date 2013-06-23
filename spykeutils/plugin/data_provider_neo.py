@@ -91,8 +91,8 @@ class NeoDataProvider(DataProvider):
         if os.path.isdir(filename):
             for io in neo.io.iolist:
                 if io.mode == 'dir':
+                    n_io = io(filename)
                     try:
-                        n_io = io(filename)
                         block = n_io.read(lazy=lazy)
                         if io == neo.TdtIO and not block.segments:
                             # TdtIO can produce empty blocks for invalid dirs
@@ -314,17 +314,17 @@ class NeoDataProvider(DataProvider):
 
         return block
 
-    def _get_object_io(self, object):
+    def _get_object_io(self, o):
         """ Find the IO for an object. Return ``None`` if no IO exists.
         """
-        if object.segment:
-            return self.block_ios.get(object.segment.block, None)
+        if o.segment:
+            return self.block_ios.get(o.segment.block, None)
         if hasattr(object, 'recordingchannelgroups'):
-            if object.recordingchannelgroups:
+            if o.recordingchannelgroups:
                 return self.block_ios.get(
-                    object.recordingchannelgroups[0].block, None)
+                    o.recordingchannelgroups[0].block, None)
         if hasattr(object, 'recordingchannel'):
-            c = object.recordingchannel
+            c = o.recordingchannel
             if c.recordingchannelgroups:
                 return self.block_ios.get(
                     c.recordingchannelgroups[0].block, None)
@@ -346,15 +346,15 @@ class NeoDataProvider(DataProvider):
         if io:
             ret = io.get(o.hdf5_path, cascade=False, lazy=False)
             ret.segment = o.segment
-            if hasattr(o, 'recordingchannelgroups'):
+            if hasattr(o, 'recordingchannelgroup'):
                 ret.recordingchannelgroup = o.recordingchannelgroup
             elif hasattr(o, 'recordingchannel'):
                 ret.recordingchannel = o.recordingchannel
             elif hasattr(o, 'unit'):
                 ret.unit = o.unit
 
-            name = type(o).__name__.lower() + 's'
             if change_links:
+                name = type(o).__name__.lower() + 's'
                 l = getattr(o.segment, name)
                 if o in l:
                     l.insert(l.index(o), ret)
@@ -362,19 +362,19 @@ class NeoDataProvider(DataProvider):
                 else:
                     l.append(ret)
 
-            l = None
-            if hasattr(o, 'recordingchannelgroups'):
-                l = getattr(o.recordingchannelgroup, name)
-            elif hasattr(o, 'recordingchannel'):
-                l = getattr(o.recordingchannel, name)
-            elif hasattr(o, 'unit'):
-                l = getattr(o.unit, name)
-            if l is not None:
-                if o in l:
-                    l.insert(l.index(o), ret)
-                    l.remove(o)
-                else:
-                    l.append(ret)
+                l = None
+                if hasattr(o, 'recordingchannelgroup'):
+                    l = getattr(o.recordingchannelgroup, name)
+                elif hasattr(o, 'recordingchannel'):
+                    l = getattr(o.recordingchannel, name)
+                elif hasattr(o, 'unit'):
+                    l = getattr(o.unit, name)
+                if l is not None:
+                    if o in l:
+                        l.insert(l.index(o), ret)
+                        l.remove(o)
+                    else:
+                        l.append(ret)
 
             return ret
         return o
