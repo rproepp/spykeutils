@@ -135,32 +135,32 @@ class NeoDataProvider(DataProvider):
                         else:
                             break
                     traceback.print_exception(type(e), e, tb)
+            else:
+                for io in neo.io.iolist:
+                    if io.mode == 'dir':
+                        try:
+                            n_io = io(filename)
+                            block = n_io.read(lazy=lazy)
+                            if io == neo.TdtIO and not block.segments:
+                                # TdtIO can produce empty blocks for invalid dirs
+                                continue
 
-            for io in neo.io.iolist:
-                if io.mode == 'dir':
-                    try:
-                        n_io = io(filename)
-                        block = n_io.read(lazy=lazy)
-                        if io == neo.TdtIO and not block.segments:
-                            # TdtIO can produce empty blocks for invalid dirs
-                            continue
-
-                        cls.block_indices[block] = 0
-                        cls.loaded_blocks[filename] = [block]
-                        if lazy:
-                            cls.block_ios[block] = n_io
-                        return n_io, [block]
-                    except Exception, e:
-                        sys.stderr.write(
-                            'Load error for directory "%s":\n' % filename)
-                        tb = sys.exc_info()[2]
-                        while not ('self' in tb.tb_frame.f_locals and
-                                   tb.tb_frame.f_locals['self'] == n_io):
-                            if tb.tb_next is not None:
-                                tb = tb.tb_next
-                            else:
-                                break
-                        traceback.print_exception(type(e), e, tb)
+                            cls.block_indices[block] = 0
+                            cls.loaded_blocks[filename] = [block]
+                            if lazy:
+                                cls.block_ios[block] = n_io
+                            return n_io, [block]
+                        except Exception, e:
+                            sys.stderr.write(
+                                'Load error for directory "%s":\n' % filename)
+                            tb = sys.exc_info()[2]
+                            while not ('self' in tb.tb_frame.f_locals and
+                                       tb.tb_frame.f_locals['self'] == n_io):
+                                if tb.tb_next is not None:
+                                    tb = tb.tb_next
+                                else:
+                                    break
+                            traceback.print_exception(type(e), e, tb)
         else:
             if force_io:
                 return cls._load_file_with_io(filename, force_io, lazy)
