@@ -20,7 +20,7 @@ class NeoDataProvider(DataProvider):
     block_indices = {}
     # Dictionary of io, indexed by block object
     block_ios = {}
-    # Mode for lazy loading: 0 - Full load, 1 - Lazy load
+    # Mode for lazy loading: 0 - Full load, 1 - Lazy load, 2 - Caching lazy load
     lazy_mode = 0
 
     def __init__(self, name, progress):
@@ -227,30 +227,40 @@ class NeoDataProvider(DataProvider):
         return data
 
     def _active_block(self, old):
-        """ Return a copy of all selected elements in the given block
+        """ Return a copy of all selected elements in the given block.
+        Only container objects are copied, data objects are linked.
+
+        Needs to load all lazily loaded objects and will cache them
+        regardless of current lazy_mode,
         """
         block = copy(old)
 
         block.segments = []
-        selected_segments = self.segments()
-        selected_rcgs = self.recording_channel_groups()
-        selected_channels = self.recording_channels()
-        selected_units = self.units()
+        selected_segments = set(self.segments() + [None])
+        selected_rcgs = set(self.recording_channel_groups() + [None])
+        selected_channels = set(self.recording_channels() + [None])
+        selected_units = set(self.units() + [None])
+
         for s in old.segments:
             if s in selected_segments:
                 segment = copy(s)
-                segment.analogsignals = [sig for sig in s.analogsignals
+                segment.analogsignals = [self._load_lazy_object(sig, True)
+                                         for sig in s.analogsignals
                                          if sig.recordingchannel
                                          in selected_channels]
-                segment.analogsignalarrays = \
-                    [asa for asa in s.analogsignalarrays
-                     if asa.recordingchannelgroup in selected_rcgs]
-                segment.irregularlysampledsignals = \
-                    [iss for iss in s.irregularlysampledsignals
-                     if iss.recordingchannel in selected_channels]
-                segment.spikes = [sp for sp in s.spikes
+                segment.analogsignalarrays = [
+                    self._load_lazy_object(asa, True)
+                    for asa in s.analogsignalarrays
+                    if asa.recordingchannelgroup in selected_rcgs]
+                segment.irregularlysampledsignals = [
+                    self._load_lazy_object(iss, True)
+                    for iss in s.irregularlysampledsignals
+                    if iss.recordingchannel in selected_channels]
+                segment.spikes = [self._load_lazy_object(sp, True)
+                                  for sp in s.spikes
                                   if sp.unit in selected_units]
-                segment.spiketrains = [st for st in s.spiketrains
+                segment.spiketrains = [self._load_lazy_object(st, True)
+                                       for st in s.spiketrains
                                        if st.unit in selected_units]
                 segment.block = block
                 block.segments.append(segment)
@@ -259,21 +269,24 @@ class NeoDataProvider(DataProvider):
         for old_rcg in old.recordingchannelgroups:
             if old_rcg in selected_rcgs:
                 rcg = copy(old_rcg)
-                rcg.analogsignalarrays = \
-                    [asa for asa in old_rcg.analogsignalarrays
-                     if asa.segment in selected_segments]
+                rcg.analogsignalarrays = [
+                    self._load_lazy_object(asa, True)
+                    for asa in old_rcg.analogsignalarrays
+                    if asa.segment in selected_segments]
 
                 rcg.recordingchannels = []
                 for c in old_rcg.recordingchannels:
                     if not c in selected_channels:
                         continue
                     channel = copy(c)
-                    channel.analogsignals = [sig for sig in c.analogsignals
-                                             if sig.segment
-                                             in selected_segments]
-                    channel.irregularlysampledsignals = \
-                        [iss for iss in c.irregularlysampledsignals
-                         if iss.segment in selected_segments]
+                    channel.analogsignals = [
+                        self._load_lazy_object(sig, True)
+                        for sig in c.analogsignals
+                        if sig.segment in selected_segments]
+                    channel.irregularlysampledsignals = [
+                        self._load_lazy_object(iss, True)
+                        for iss in c.irregularlysampledsignals
+                        if iss.segment in selected_segments]
                     channel.recordingchannelgroups = copy(
                         c.recordingchannelgroups)
                     channel.recordingchannelgroups.insert(
@@ -287,9 +300,11 @@ class NeoDataProvider(DataProvider):
                         continue
 
                     unit = copy(u)
-                    unit.spikes = [sp for sp in u.spikes
+                    unit.spikes = [self._load_lazy_object(sp, True)
+                                   for sp in u.spikes
                                    if sp.segment in selected_segments]
-                    unit.spiketrains = [st for st in u.spiketrains
+                    unit.spiketrains = [self._load_lazy_object(st, True)
+                                        for st in u.spiketrains
                                         if st.segment in selected_segments]
                     unit.recordingchannelgroup = rcg
                     rcg.units.append(unit)
@@ -315,7 +330,13 @@ class NeoDataProvider(DataProvider):
                     c.recordingchannelgroups[0].block, None)
         return None
 
-    def _load_lazy_object(self, o):
+    def _load_lazy_object(self, o, change_links=False):
+        """ Return a loaded version of a lazily loaded object. Currently only
+        works with Hdf5IO.
+
+        :param o: The object to load.
+        :param bool change_links: If ``True``, replace the old object in the hierarchy.
+        """
         if not hasattr(o, 'lazy_shape'):
             return o
         if not hasattr(o, 'hdf5_path'):
@@ -331,6 +352,30 @@ class NeoDataProvider(DataProvider):
                 ret.recordingchannel = o.recordingchannel
             elif hasattr(o, 'unit'):
                 ret.unit = o.unit
+
+            name = type(o).__name__.lower() + 's'
+            if change_links:
+                l = getattr(o.segment, name)
+                if o in l:
+                    l.insert(l.index(o), ret)
+                    l.remove(o)
+                else:
+                    l.append(ret)
+
+            l = None
+            if hasattr(o, 'recordingchannelgroups'):
+                l = getattr(o.recordingchannelgroup, name)
+            elif hasattr(o, 'recordingchannel'):
+                l = getattr(o.recordingchannel, name)
+            elif hasattr(o, 'unit'):
+                l = getattr(o.unit, name)
+            if l is not None:
+                if o in l:
+                    l.insert(l.index(o), ret)
+                    l.remove(o)
+                else:
+                    l.append(ret)
+
             return ret
         return o
 
@@ -340,7 +385,7 @@ class NeoDataProvider(DataProvider):
         """
         ret = []
         for o in objects:
-            ret.append(self._load_lazy_object(o))
+            ret.append(self._load_lazy_object(o, self.lazy_mode > 1))
         return ret
 
     def _load_object_dict(self, objects):
@@ -352,7 +397,7 @@ class NeoDataProvider(DataProvider):
                 objects[k] = self._load_object_list(v)
             elif isinstance(v, dict):
                 for ik, iv in v.items():
-                    v[ik] = self._load_lazy_object(iv)
+                    v[ik] = self._load_lazy_object(iv, self.lazy_mode > 1)
             else:
                 raise ValueError(
                     'Only dicts or lists are supported as dictionary values!')
