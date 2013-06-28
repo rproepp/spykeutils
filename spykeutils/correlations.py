@@ -8,7 +8,7 @@ from . import SpykeException
 
 
 def correlogram(trains, bin_size, max_lag=500 * pq.ms, border_correction=True,
-                unit=pq.ms, progress=None):
+                per_second=True, unit=pq.ms, progress=None):
     """ Return (cross-)correlograms from a dictionary of spike train
     lists for different units.
 
@@ -20,6 +20,8 @@ def correlogram(trains, bin_size, max_lag=500 * pq.ms, border_correction=True,
     :param bool border_correction: Apply correction for less data at higher
         timelags. Not perfect for bin_size != 1*``unit``, especially with
         large ``max_lag`` compared to length of spike trains.
+    :param bool per_second: If ``True``, counts returned are per second.
+        Otherwise, counts per spike train are returned.
     :param Quantity unit: Unit of X-Axis.
     :param progress: A ProgressIndicator object for the operation.
     :type progress: :class:`spykeutils.progress_indicator.ProgressIndicator`
@@ -89,15 +91,23 @@ def correlogram(trains, bin_size, max_lag=500 * pq.ms, border_correction=True,
         for i2 in xrange(i1, len(indices)):
             histogram = sp.zeros(len(bins) - 1)
             for t in xrange(num_trains):
+                train1 = trains[indices[i1]][t]
                 train2 = trains[indices[i2]][t].rescale(unit)
-                for s in trains[indices[i1]][t]:
+                for s in train1:
                     histogram += sp.histogram(
                         train2, bins + s.rescale(unit))[0]
                 if i1 == i2:  # Correction for autocorrelogram
                     histogram[middle_bin] -= len(train2)
+            if per_second:
+                l = train1.t_stop - train1.t_start
+                if train2.t_stop - train2.t_start != l:
+                    raise SpykeException(
+                        'A spike train pair does not have equal length,'
+                        'cannot calculate count per second.')
+                histogram /= l.rescale(pq.s)
 
                 progress.step()
-            crg = corrector * histogram/num_trains
+            crg = corrector * histogram / num_trains
             if indices[i1] not in correlograms:
                 correlograms[indices[i1]] = OrderedDict()
             correlograms[indices[i1]][indices[i2]] = crg
