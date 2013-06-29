@@ -24,6 +24,8 @@ class NeoDataProvider(DataProvider):
     lazy_mode = 0
     # Forced IO class for all files. If None, determine by file extension.
     forced_io = None
+    # Active IO read parameters (dictionary indexed by IO class)
+    io_params = {}
 
     def __init__(self, name, progress):
         super(NeoDataProvider, self).__init__(name, progress)
@@ -113,7 +115,7 @@ class NeoDataProvider(DataProvider):
             if force_io:
                 try:
                     n_io = force_io(filename)
-                    block = n_io.read(lazy=lazy)
+                    block = n_io.read(lazy=lazy, **cls.io_params.get(force_io, {}))
                     if force_io == neo.TdtIO and not block.segments:
                         sys.stderr.write(
                             'Could not load any blocks from "%s"' % filename)
@@ -140,7 +142,7 @@ class NeoDataProvider(DataProvider):
                     if io.mode == 'dir':
                         try:
                             n_io = io(filename)
-                            block = n_io.read(lazy=lazy)
+                            block = n_io.read(lazy=lazy, **cls.io_params.get(io, {}))
                             if io == neo.TdtIO and not block.segments:
                                 # TdtIO can produce empty blocks for invalid dirs
                                 continue
@@ -183,9 +185,9 @@ class NeoDataProvider(DataProvider):
 
         try:
             if hasattr(io, 'read_all_blocks'):  # Neo 0.2.1
-                blocks = n_io.read_all_blocks(lazy=lazy)
+                blocks = n_io.read_all_blocks(lazy=lazy, **cls.io_params.get(io, {}))
             else:
-                content = n_io.read(lazy=lazy)
+                content = n_io.read(lazy=lazy, **cls.io_params.get(io, {}))
                 if isinstance(content, neo.Block):  # Neo 0.2.1
                     cls.block_indices[content] = 0
                     cls.loaded_blocks[filename] = [content]
