@@ -2,6 +2,7 @@ Overview
 ========
 
 .. image:: https://secure.travis-ci.org/rproepp/spykeutils.png?branch=develop
+   :target: https://travis-ci.org/rproepp/spykeutils
 
 Based on the `Neo <http://packages.python.org/neo/>`_ framework, spykeutils
 is a Python library for analyzing and plotting data from neurophysiological
