@@ -6,8 +6,9 @@ import quantities as pq
 from progress_indicator import ProgressIndicator
 from . import SpykeException
 
-def correlogram(trains, bin_size, max_lag=500*pq.ms, border_correction=True,
-                unit=pq.ms, progress=None):
+
+def correlogram(trains, bin_size, max_lag=500 * pq.ms, border_correction=True,
+                per_second=True, unit=pq.ms, progress=None):
     """ Return (cross-)correlograms from a dictionary of spike train
     lists for different units.
 
@@ -19,6 +20,8 @@ def correlogram(trains, bin_size, max_lag=500*pq.ms, border_correction=True,
     :param bool border_correction: Apply correction for less data at higher
         timelags. Not perfect for bin_size != 1*``unit``, especially with
         large ``max_lag`` compared to length of spike trains.
+    :param bool per_second: If ``True``, counts returned are per second.
+        Otherwise, counts per spike train are returned.
     :param Quantity unit: Unit of X-Axis.
     :param progress: A ProgressIndicator object for the operation.
     :type progress: :class:`spykeutils.progress_indicator.ProgressIndicator`
@@ -45,7 +48,7 @@ def correlogram(trains, bin_size, max_lag=500*pq.ms, border_correction=True,
     bins = sp.array(all_bins) * unit
     middle_bin = len(bins) / 2 - 1
 
-    indices = sorted(trains.keys(), key=lambda (u):u.name if u else None)
+    indices = trains.keys()
     num_trains = len(trains[indices[0]])
     if not num_trains:
         raise SpykeException('Could not create correlogram: No spike trains!')
@@ -63,9 +66,10 @@ def correlogram(trains, bin_size, max_lag=500*pq.ms, border_correction=True,
             if len(seq) < 1:
                 return 0
             return max(seq)
+
         def safe_min(seq):
             if len(seq) < 1:
-                return 2**20 #Some arbitrary large value
+                return 2 ** 22  # Some arbitrary large value
             return min(seq)
 
         max_w = max([max([safe_max(t) for t in l])
@@ -75,27 +79,35 @@ def correlogram(trains, bin_size, max_lag=500*pq.ms, border_correction=True,
 
         train_length = (max_w - min_w)
         l = int(round(middle_bin)) + 1
-        cE = max(train_length-(l*bin_size)+1*unit, 1*unit)
+        cE = max(train_length - (l * bin_size) + 1 * unit, 1 * unit)
 
         corrector = train_length / sp.concatenate(
-            (sp.linspace(cE, train_length, l-1, False),
+            (sp.linspace(cE, train_length, l - 1, False),
              sp.linspace(train_length, cE, l)))
 
     correlograms = OrderedDict()
-    for i1 in xrange(len(indices)): # For each index
+    for i1 in xrange(len(indices)):  # For each index
         # For all later indices, including itself
         for i2 in xrange(i1, len(indices)):
             histogram = sp.zeros(len(bins) - 1)
             for t in xrange(num_trains):
+                train1 = trains[indices[i1]][t]
                 train2 = trains[indices[i2]][t].rescale(unit)
-                for s in trains[indices[i1]][t]:
-                    histogram += sp.histogram(train2,
-                        bins + s.rescale(unit))[0]
-                if i1 == i2: # Correction for autocorrelogram
+                for s in train1:
+                    histogram += sp.histogram(
+                        train2, bins + s.rescale(unit))[0]
+                if i1 == i2:  # Correction for autocorrelogram
                     histogram[middle_bin] -= len(train2)
+            if per_second:
+                l = train1.t_stop - train1.t_start
+                if train2.t_stop - train2.t_start != l:
+                    raise SpykeException(
+                        'A spike train pair does not have equal length,'
+                        'cannot calculate count per second.')
+                histogram /= l.rescale(pq.s)
 
                 progress.step()
-            crg = corrector*histogram/num_trains
+            crg = corrector * histogram / num_trains
             if indices[i1] not in correlograms:
                 correlograms[indices[i1]] = OrderedDict()
             correlograms[indices[i1]][indices[i2]] = crg

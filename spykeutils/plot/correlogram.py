@@ -13,7 +13,7 @@ import helper
 
 @helper.needs_qt
 def cross_correlogram(trains, bin_size, max_lag=500 * pq.ms,
-                      border_correction=True,
+                      border_correction=True, per_second=True,
                       time_unit=pq.ms, progress=None):
     """ Create (cross-)correlograms from a dictionary of spike train
     lists for different units.
@@ -26,6 +26,8 @@ def cross_correlogram(trains, bin_size, max_lag=500 * pq.ms,
     :type max_lag: Quantity scalar
     :param bool border_correction: Apply correction for less data at higher
         timelags.
+    :param bool per_second: If ``True``, the y-axis is count per second,
+        otherwise it is count per spike train.
     :param Quantity time_unit: Unit of X-Axis.
     :param progress: Set this parameter to report progress.
     :type progress: :class:`spykeutils.progress_indicator.ProgressIndicator`
@@ -42,8 +44,8 @@ def cross_correlogram(trains, bin_size, max_lag=500 * pq.ms,
                      min_plot_height=100)
 
     correlograms, bins = correlogram(
-        trains, bin_size, max_lag,
-        border_correction, time_unit, progress)
+        trains, bin_size, max_lag, border_correction,
+        per_second, time_unit, progress)
     x = bins[:-1] + bin_size / 2
 
     crlgs = []
@@ -89,7 +91,10 @@ def cross_correlogram(trains, bin_size, max_lag=500 * pq.ms,
             plot.set_axis_unit(BasePlot.X_BOTTOM, time_unit.dimensionality.string)
         if i % columns == 0:
             plot.set_axis_title(BasePlot.Y_LEFT, 'Correlation')
-            plot.set_axis_unit(BasePlot.Y_LEFT, 'count/segment')
+            if per_second:
+                plot.set_axis_unit(BasePlot.Y_LEFT, 'count/second')
+            else:
+                plot.set_axis_unit(BasePlot.Y_LEFT, 'count/segment')
 
         win.add_plot_widget(pW, i, column=i % columns)
 
