@@ -20,6 +20,8 @@ class NeoDataProvider(DataProvider):
     block_indices = {}
     # Dictionary of io, indexed by block object
     block_ios = {}
+    # Dictionary of io (IO name, read paramters) tuples for loaded blocks
+    block_read_params = {}
     # Mode for lazy loading: 0 - Full load, 1 - Lazy load, 2 - Caching lazy load
     lazy_mode = 0
     # Forced IO class for all files. If None, determine by file extension.
@@ -36,6 +38,8 @@ class NeoDataProvider(DataProvider):
         """
         cls.loaded_blocks.clear()
         cls.block_indices.clear()
+        cls.block_ios.clear()
+        cls.block_read_params.clear()
 
         ios = set()
         for io in cls.block_ios.itervalues():
@@ -47,16 +51,20 @@ class NeoDataProvider(DataProvider):
         cls.block_ios.clear()
 
     @classmethod
-    def get_block(cls, filename, index, lazy=None, force_io=None):
+    def get_block(cls, filename, index, lazy=None, force_io=None,
+                  read_params=None):
         """ Return the block at the given index in the specified file.
 
         :param str filename: Path to the file from which to load the block.
         :param int index: The index of the block in the file.
         :param int lazy: Override global lazy setting if not ``None``:
-            0 is regular load, 1 is lazy load.
+            0 regular load, 1 lazy load, 2 caching lazy load.
         :param force_io: Override global forced_io for the Neo IO class
             to use when loading the file. If ``None``, the global
             forced_io is used.
+        :param dict read_params: Override read parameters for the IO that
+            will load the block. If ``None``, the global io_params are
+            used.
         """
         if lazy is None:
             lazy = cls.lazy_mode > 0
@@ -65,7 +73,7 @@ class NeoDataProvider(DataProvider):
 
         if filename in cls.loaded_blocks:
             return cls.loaded_blocks[filename][index]
-        io, blocks = cls._load_neo_file(filename, lazy, force_io)
+        io, blocks = cls._load_neo_file(filename, lazy, force_io, read_params)
         if lazy:
             if isinstance(io, neo.NeoHdf5IO):
                 io.objects_by_ref = {}
@@ -76,15 +84,19 @@ class NeoDataProvider(DataProvider):
         return blocks[index]
 
     @classmethod
-    def get_blocks(cls, filename, lazy=None, force_io=None):
+    def get_blocks(cls, filename, lazy=None, force_io=None,
+                   read_params=None):
         """ Return a list of blocks loaded from the specified file
 
         :param str filename: Path to the file from which to load the blocks.
         :param int lazy: Override global lazy setting if not ``None``:
-            0 is regular load, 1 is lazy load.
+            0 regular load, 1 lazy load, 2 caching lazy load.
         :param force_io: Override global forced_io for the Neo IO class
             to use when loading the file. If ``None``, the global
             forced_io is used.
+        :param dict read_params: Override read parameters for the IO that
+            will load the block. If ``None``, the global io_params are
+            used.
         """
         if lazy is None:
             lazy = cls.lazy_mode > 0
@@ -93,7 +105,7 @@ class NeoDataProvider(DataProvider):
 
         if filename in cls.loaded_blocks:
             return cls.loaded_blocks[filename]
-        io, blocks = cls._load_neo_file(filename, lazy, force_io)
+        io, blocks = cls._load_neo_file(filename, lazy, force_io, read_params)
         if lazy:
             if isinstance(io, neo.NeoHdf5IO):
                 io.objects_by_ref = {}
@@ -102,30 +114,37 @@ class NeoDataProvider(DataProvider):
         return blocks
 
     @classmethod
-    def _load_neo_file(cls, filename, lazy, force_io):
+    def _load_neo_file(cls, filename, lazy, force_io, read_params):
         """ Returns a NEO io object and a list of contained blocks for a
         file name. This function also caches all loaded blocks
 
-        :param str filename:
-            The full path of the file (relative or absolute).
-        :param bool lazy:
-            Determines if lazy mode is used for NEO io.
+        :param str filename: The full path of the file (relative or absolute).
+        :param bool lazy: Determines if lazy mode is used for Neo io.
+        :param force_io: IO class to use for loading. If None, determined
+            by file extension or through trial and error for directories.
+        :param dict read_params: Override read parameters for the IO that
+            will load the block. If ``None``, the global io_params are
+            used.
         """
         if os.path.isdir(filename):
             if force_io:
                 try:
                     n_io = force_io(filename)
-                    block = n_io.read(lazy=lazy, **cls.io_params.get(force_io, {}))
-                    if force_io == neo.TdtIO and not block.segments:
+                    if read_params is None:
+                        rp = cls.io_params.get(force_io, {})
+                    else:
+                        rp = read_params
+                    content = n_io.read(lazy=lazy, **rp)
+                    if force_io == neo.TdtIO and \
+                            isinstance(content, neo.Block) and \
+                            not content.segments:
+                        # TdtIO can produce empty blocks for invalid dirs
                         sys.stderr.write(
                             'Could not load any blocks from "%s"' % filename)
                         return None, None
 
-                    cls.block_indices[block] = 0
-                    cls.loaded_blocks[filename] = [block]
-                    if lazy:
-                        cls.block_ios[block] = n_io
-                    return n_io, [block]
+                    return cls._content_loaded(
+                        content, filename, lazy, n_io, rp)
                 except Exception, e:
                     sys.stderr.write(
                         'Load error for directory "%s":\n' % filename)
@@ -142,16 +161,19 @@ class NeoDataProvider(DataProvider):
                     if io.mode == 'dir':
                         try:
                             n_io = io(filename)
-                            block = n_io.read(lazy=lazy, **cls.io_params.get(io, {}))
-                            if io == neo.TdtIO and not block.segments:
+                            if read_params is None:
+                                rp = cls.io_params.get(force_io, {})
+                            else:
+                                rp = read_params
+                            content = n_io.read(lazy=lazy, **rp)
+                            if io == neo.TdtIO and \
+                                    isinstance(content, neo.Block) and \
+                                    not content.segments:
                                 # TdtIO can produce empty blocks for invalid dirs
                                 continue
 
-                            cls.block_indices[block] = 0
-                            cls.loaded_blocks[filename] = [block]
-                            if lazy:
-                                cls.block_ios[block] = n_io
-                            return n_io, [block]
+                            return cls._content_loaded(
+                                content, filename, lazy, n_io, rp)
                         except Exception, e:
                             sys.stderr.write(
                                 'Load error for directory "%s":\n' % filename)
@@ -164,18 +186,48 @@ class NeoDataProvider(DataProvider):
                                     break
                             traceback.print_exception(type(e), e, tb)
         else:
+            print force_io, read_params
             if force_io:
-                return cls._load_file_with_io(filename, force_io, lazy)
+                if read_params is None:
+                    rp = cls.io_params.get(force_io, {})
+                else:
+                    rp = read_params
+                return cls._load_file_with_io(filename, force_io, lazy, rp)
 
             extension = filename.split('.')[-1]
             for io in neo.io.iolist:
                 if extension in io.extensions:
-                    return cls._load_file_with_io(filename, io, lazy)
+                    if read_params is None:
+                        rp = cls.io_params.get(io, {})
+                    else:
+                        rp = read_params
+                    return cls._load_file_with_io(filename, io, lazy, rp)
 
         return None, None
 
     @classmethod
-    def _load_file_with_io(cls, filename, io, lazy):
+    def _content_loaded(cls, content, filename, lazy, n_io, read_params):
+        if isinstance(content, neo.Block):  # Neo 0.2.1
+            cls.block_indices[content] = 0
+            cls.loaded_blocks[filename] = [content]
+            cls.block_read_params[content] = (type(n_io).__name__, read_params)
+            if lazy:
+                cls.block_ios[content] = n_io
+            return n_io, [content]
+
+        # Neo >= 0.3.0, read() returns a list of blocks
+        blocks = content
+        for i, b in enumerate(blocks):
+            cls.block_indices[b] = i
+            cls.block_read_params[b] = (type(n_io).__name__, read_params)
+            if lazy:
+                cls.block_ios[b] = n_io
+
+        cls.loaded_blocks[filename] = blocks
+        return n_io, blocks
+
+    @classmethod
+    def _load_file_with_io(cls, filename, io, lazy, read_params):
         if io == neo.NeoHdf5IO:
             # Fix unicode problem with pyinstaller
             if hasattr(sys, 'frozen'):
@@ -183,27 +235,18 @@ class NeoDataProvider(DataProvider):
 
         n_io = io(filename=filename)
 
+        if read_params is None:
+            rp = cls.io_params.get(io, {})
+        else:
+            rp = read_params
+
         try:
             if hasattr(io, 'read_all_blocks'):  # Neo 0.2.1
-                blocks = n_io.read_all_blocks(lazy=lazy, **cls.io_params.get(io, {}))
+                content = n_io.read_all_blocks(lazy=lazy, **rp)
             else:
-                content = n_io.read(lazy=lazy, **cls.io_params.get(io, {}))
-                if isinstance(content, neo.Block):  # Neo 0.2.1
-                    cls.block_indices[content] = 0
-                    cls.loaded_blocks[filename] = [content]
-                    if lazy:
-                        cls.block_ios[content] = n_io
-                    return n_io, [content]
-                blocks = content
+                content = n_io.read(lazy=lazy, **rp)
 
-            # Neo >= 0.3.0, read() returns a list of blocks
-            for i, b in enumerate(blocks):
-                cls.block_indices[b] = i
-                if lazy:
-                    cls.block_ios[b] = n_io
-
-            cls.loaded_blocks[filename] = blocks
-            return n_io, blocks
+            return cls._content_loaded(content, filename, lazy, n_io, rp)
         except Exception, e:
             sys.stderr.write(
                 'Load error for file "%s":\n' % filename)
@@ -218,15 +261,16 @@ class NeoDataProvider(DataProvider):
 
         return None, None
 
-    @staticmethod
-    def _get_data_from_viewer(viewer):
+    @classmethod
+    def _get_data_from_viewer(cls, viewer):
         """ Return a dictionary with selection information from viewer
         """
         # The links in this data format are based list indices
         data = {}
         data['type'] = 'Neo'
 
-        # Block entry: (Index of block in file, file location of block)
+        # Block entry: (Index of block in file, file location of block,
+        # block IO class name, block IO read parameters)
         block_list = []
         block_indices = {}
         selected_blocks = viewer.neo_blocks()
@@ -234,7 +278,9 @@ class NeoDataProvider(DataProvider):
         for b in selected_blocks:
             block_indices[b] = len(block_list)
             block_list.append([NeoDataProvider.block_indices[b],
-                               block_files[b]])
+                               block_files[b],
+                               cls.block_read_params[b][0],
+                               cls.block_read_params[b][1]])
         data['blocks'] = block_list
 
         # Recording channel group entry:
@@ -283,6 +329,17 @@ class NeoDataProvider(DataProvider):
         data['units'] = unit_list
 
         return data
+
+    @staticmethod
+    def find_io_class(name):
+        """ Return the Neo IO class with a given name.
+
+        :param str name: Class name of the desired IO class.
+        """
+        for io in neo.io.iolist:
+            if io.__name__ == name:
+                return io
+        return None
 
     def _active_block(self, old):
         """ Return a copy of all selected elements in the given block.
