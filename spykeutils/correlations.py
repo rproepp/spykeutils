@@ -114,6 +114,6 @@ def correlogram(trains, bin_size, max_lag=500 * pq.ms, border_correction=True,
             if i1 != i2:
                 if indices[i2] not in correlograms:
                     correlograms[indices[i2]] = OrderedDict()
-                correlograms[indices[i2]][indices[i1]] = crg
+                correlograms[indices[i2]][indices[i1]] = crg[::-1]
 
     return correlograms, bins

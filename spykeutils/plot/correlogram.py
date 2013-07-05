@@ -14,7 +14,7 @@ import helper
 @helper.needs_qt
 def cross_correlogram(trains, bin_size, max_lag=500 * pq.ms,
                       border_correction=True, per_second=True,
-                      time_unit=pq.ms, progress=None):
+                      square=False, time_unit=pq.ms, progress=None):
     """ Create (cross-)correlograms from a dictionary of spike train
     lists for different units.
 
@@ -28,6 +28,10 @@ def cross_correlogram(trains, bin_size, max_lag=500 * pq.ms,
         timelags.
     :param bool per_second: If ``True``, the y-axis is count per second,
         otherwise it is count per spike train.
+    :param bool square: If ``True``, the plot will include all
+        cross-correlograms, even if they are just mirrored versions of each
+        other. The autocorrelograms are displayed as the diagonal of a
+        square plot matrix. If ``False``, mirrored plots are omitted.
     :param Quantity time_unit: Unit of X-Axis.
     :param progress: Set this parameter to report progress.
     :type progress: :class:`spykeutils.progress_indicator.ProgressIndicator`
@@ -52,7 +56,10 @@ def cross_correlogram(trains, bin_size, max_lag=500 * pq.ms,
     indices = correlograms.keys()
 
     for i1 in xrange(len(indices)):
-        for i2 in xrange(i1, len(indices)):
+        start_i = 0
+        if not square:
+            start_i = i1
+        for i2 in xrange(start_i, len(indices)):
             crlgs.append(
                 (correlograms[indices[i1]][indices[i2]],
                  indices[i1], indices[i2]))
