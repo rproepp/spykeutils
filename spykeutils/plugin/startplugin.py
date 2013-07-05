@@ -29,7 +29,11 @@ def main():
         help='Selection represents a filename containing the serialized selection (default: Selection is a string')
     parser.add_argument('-dd', '--datadir', type=str, help='The data directory')
 
-    args = parser.parse_args()
+    parsed = parser.parse_known_args()
+    args = parsed[0]
+    if parsed[1]:
+        print >> sys.stderr, ('Warning: the following command options are '
+                              'invalid and were ignored:'), parsed[1]
 
     exc_globals = {}
 
