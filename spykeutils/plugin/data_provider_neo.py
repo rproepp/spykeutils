@@ -186,7 +186,6 @@ class NeoDataProvider(DataProvider):
                                     break
                             traceback.print_exception(type(e), e, tb)
         else:
-            print force_io, read_params
             if force_io:
                 if read_params is None:
                     rp = cls.io_params.get(force_io, {})
