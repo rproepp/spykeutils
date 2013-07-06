@@ -9,6 +9,7 @@ import pickle
 
 from spykeutils.plugin.analysis_plugin import AnalysisPlugin
 from spykeutils.plugin.data_provider import DataProvider
+from spykeutils.plugin import io_plugin
 
 # Data provider implementations need to be imported so they can be loaded
 import spykeutils.plugin.data_provider_stored
@@ -19,15 +20,23 @@ def main():
     parser.add_argument('Name', type=str, help='Name of analysis class')
     parser.add_argument('Code', type=str, help='Code of the analysis')
     parser.add_argument('Selection', type=str, help='Serialized selection')
-    parser.add_argument('-c', '--config', dest='config', type=str,
+    parser.add_argument(
+        '-c', '--config', dest='config', type=str,
         help='Pickled configuration of analysis')
-    parser.add_argument('-cf', '--codefile', dest='codefile',
+    parser.add_argument(
+        '-cf', '--codefile', dest='codefile', action='store_const',
+        const=True, default=False,
+        help='Code represents a filename containing '
+             'code (default: Code is a string containing code')
+    parser.add_argument(
+        '-sf', '--selectionfile', dest='selectionfile',
         action='store_const', const=True, default=False,
-        help='Code represents a filename containing code (default: Code is a string containing code')
-    parser.add_argument('-sf', '--selectionfile', dest='selectionfile',
-        action='store_const', const=True, default=False,
-        help='Selection represents a filename containing the serialized selection (default: Selection is a string')
-    parser.add_argument('-dd', '--datadir', type=str, help='The data directory')
+        help='Selection represents a filename containing '
+             'the serialized selection (default: Selection is a string')
+    parser.add_argument(
+        '-dd', '--datadir', type=str, help='The data directory')
+    parser.add_argument(
+        '-io', type=str, default=[], nargs='+', help='IO plugin file paths')
 
     parsed = parser.parse_known_args()
     args = parsed[0]
@@ -56,6 +65,10 @@ def main():
 
         plugin = cl()
         break
+
+    # Load IO plugins
+    for io in args.io:
+        io_plugin.load_from_file(io)
 
     if not plugin:
         sys.stderr.write('Could not find plugin class, aborting...\n')
