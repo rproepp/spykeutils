@@ -185,7 +185,7 @@ def signals(signals, events=None, epochs=None, spike_trains=None,
         plot.set_axis_unit(BasePlot.X_BOTTOM, x.dimensionality.string)
         plot.set_axis_unit(BasePlot.Y_LEFT, signals[0].dimensionality.string)
 
-    win.add_custom_curve_tools(False)
+    win.add_custom_curve_tools()
 
     units = set([s.unit for s in spike_trains])
     units = units.union([s.unit for s in spikes])
