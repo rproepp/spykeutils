@@ -270,9 +270,13 @@ def extract_spikes(train, signals, length, align_time):
         ``waveform`` property.
     :rtype: list
     """
-    if len(set(s.sampling_rate for s in signals)) > 1:
-        raise ValueError(
-            'All signals for spike extraction need the same sampling rate')
+    if not signals:
+        raise ValueError('No signals to extract spikes from')
+    ref = signals[0]
+    for s in signals[1:]:
+        if ref.sampling_rate != s.sampling_rate:
+            raise ValueError(
+                'All signals for spike extraction need the same sampling rate')
 
     wave_unit = signals[0].units
     srate = signals[0].sampling_rate
@@ -301,6 +305,7 @@ def extract_spikes(train, signals, length, align_time):
         for c in xrange(nc):
             waveform[:, c] = \
                 data[c, epochs[s, 0]:epochs[s, 1]]
-        spikes.append(neo.Spike(train[st_ok][s], waveform=waveform * wave_unit))
+        spikes.append(neo.Spike(train[st_ok][s], waveform=waveform * wave_unit,
+                                sampling_rate=srate))
 
     return spikes
