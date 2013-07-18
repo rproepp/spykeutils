@@ -58,7 +58,6 @@ def correlogram(trains, bin_size, max_lag=500 * pq.ms, border_correction=True,
                                  'need the same number of spike trains!')
 
     progress.set_ticks(sp.sum(range(len(trains) + 1) * num_trains))
-    print sp.sum(range(len(trains) + 1) * num_trains), 'ticks'
 
     corrector = 1
     if border_correction:
