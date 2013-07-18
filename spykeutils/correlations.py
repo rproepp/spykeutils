@@ -58,6 +58,7 @@ def correlogram(trains, bin_size, max_lag=500 * pq.ms, border_correction=True,
                                  'need the same number of spike trains!')
 
     progress.set_ticks(sp.sum(range(len(trains) + 1) * num_trains))
+    print sp.sum(range(len(trains) + 1) * num_trains), 'ticks'
 
     corrector = 1
     if border_correction:
@@ -98,6 +99,8 @@ def correlogram(trains, bin_size, max_lag=500 * pq.ms, border_correction=True,
                         train2, bins + s.rescale(unit))[0]
                 if i1 == i2:  # Correction for autocorrelogram
                     histogram[middle_bin] -= len(train2)
+                progress.step()
+
             if per_second:
                 l = train1.t_stop - train1.t_start
                 if train2.t_stop - train2.t_start != l:
@@ -106,7 +109,6 @@ def correlogram(trains, bin_size, max_lag=500 * pq.ms, border_correction=True,
                         'cannot calculate count per second.')
                 histogram /= l.rescale(pq.s)
 
-                progress.step()
             crg = corrector * histogram / num_trains
             if indices[i1] not in correlograms:
                 correlograms[indices[i1]] = OrderedDict()
