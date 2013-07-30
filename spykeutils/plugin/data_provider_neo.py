@@ -43,7 +43,6 @@ class NeoDataProvider(DataProvider):
         """
         cls.loaded_blocks.clear()
         cls.block_indices.clear()
-        cls.block_ios.clear()
         cls.block_read_params.clear()
 
         ios = set()
@@ -81,7 +80,7 @@ class NeoDataProvider(DataProvider):
         if filename in cls.loaded_blocks:
             return cls.loaded_blocks[filename][index]
         io, blocks = cls._load_neo_file(filename, lazy, force_io, read_params)
-        if io and not lazy and cls.data_lazy_mode < 2 and hasattr(io, 'close'):
+        if io and not lazy and not cls.cascade_lazy and hasattr(io, 'close'):
             io.close()
         if blocks is None:
             return None
@@ -112,7 +111,7 @@ class NeoDataProvider(DataProvider):
         if filename in cls.loaded_blocks:
             return cls.loaded_blocks[filename]
         io, blocks = cls._load_neo_file(filename, lazy, force_io, read_params)
-        if io and not lazy and cls.data_lazy_mode < 2 and hasattr(io, 'close'):
+        if io and not lazy and not cls.cascade_lazy and hasattr(io, 'close'):
             io.close()
         return blocks
 
@@ -214,7 +213,7 @@ class NeoDataProvider(DataProvider):
             cls.block_indices[content] = 0
             cls.loaded_blocks[filename] = [content]
             cls.block_read_params[content] = (type(n_io).__name__, read_params)
-            if lazy:
+            if lazy or cls.cascade_lazy:
                 cls.block_ios[content] = n_io
             return n_io, [content]
 
@@ -223,7 +222,7 @@ class NeoDataProvider(DataProvider):
         for i, b in enumerate(blocks):
             cls.block_indices[b] = i
             cls.block_read_params[b] = (type(n_io).__name__, read_params)
-            if lazy:
+            if lazy or cls.cascade_lazy:
                 cls.block_ios[b] = n_io
 
         cls.loaded_blocks[filename] = blocks
