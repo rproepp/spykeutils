@@ -253,6 +253,8 @@ class ProgressIndicatorDialog(ProgressIndicator, QProgressDialog):
             self.reset()
             self.open()
 
+        QtCore.QCoreApplication.instance().processEvents()
+
     def step(self, num_steps=1):
         if not self.isVisible():
             return
@@ -267,6 +269,7 @@ class ProgressIndicatorDialog(ProgressIndicator, QProgressDialog):
 
     def set_status(self, status):
         self.setLabelText(status)
+        QtCore.QCoreApplication.instance().processEvents()
 
     def done(self):
         self.reset()
