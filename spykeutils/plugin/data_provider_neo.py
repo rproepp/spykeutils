@@ -22,8 +22,13 @@ class NeoDataProvider(DataProvider):
     block_ios = {}
     # Dictionary of io (IO name, read paramters) tuples for loaded blocks
     block_read_params = {}
-    # Mode for lazy loading: 0 - Full load, 1 - Lazy load, 2 - Caching lazy load
-    lazy_mode = 0
+    # Mode for data lazy loading:
+    # 0 - Full load
+    # 1 - Lazy load
+    # 2 - Caching lazy load
+    data_lazy_mode = 0
+    # Mode for lazy cascade
+    cascade_lazy = False
     # Forced IO class for all files. If None, determine by file extension.
     forced_io = None
     # Active IO read parameters (dictionary indexed by IO class)
@@ -67,17 +72,16 @@ class NeoDataProvider(DataProvider):
             used.
         """
         if lazy is None:
-            lazy = cls.lazy_mode > 0
+            lazy = cls.data_lazy_mode > 0
+        else:
+            lazy = lazy > 0
         if force_io is None:
             force_io = cls.forced_io
 
         if filename in cls.loaded_blocks:
             return cls.loaded_blocks[filename][index]
         io, blocks = cls._load_neo_file(filename, lazy, force_io, read_params)
-        if lazy:
-            if isinstance(io, neo.NeoHdf5IO):
-                io.objects_by_ref = {}
-        elif io and hasattr(io, 'close'):
+        if io and not lazy and cls.data_lazy_mode < 2 and hasattr(io, 'close'):
             io.close()
         if blocks is None:
             return None
@@ -99,17 +103,16 @@ class NeoDataProvider(DataProvider):
             used.
         """
         if lazy is None:
-            lazy = cls.lazy_mode > 0
+            lazy = cls.data_lazy_mode > 0
+        else:
+            lazy = lazy > 0
         if force_io is None:
             force_io = cls.forced_io
 
         if filename in cls.loaded_blocks:
             return cls.loaded_blocks[filename]
         io, blocks = cls._load_neo_file(filename, lazy, force_io, read_params)
-        if lazy:
-            if isinstance(io, neo.NeoHdf5IO):
-                io.objects_by_ref = {}
-        elif io and hasattr(io, 'close'):
+        if io and not lazy and cls.data_lazy_mode < 2 and hasattr(io, 'close'):
             io.close()
         return blocks
 
@@ -126,6 +129,7 @@ class NeoDataProvider(DataProvider):
             will load the block. If ``None``, the global io_params are
             used.
         """
+        cascade = 'lazy' if cls.cascade_lazy else True
         if os.path.isdir(filename):
             if force_io:
                 try:
@@ -134,7 +138,7 @@ class NeoDataProvider(DataProvider):
                         rp = cls.io_params.get(force_io, {})
                     else:
                         rp = read_params
-                    content = n_io.read(lazy=lazy, **rp)
+                    content = n_io.read(lazy=lazy, cascade=cascade, **rp)
                     if force_io == neo.TdtIO and \
                             isinstance(content, neo.Block) and \
                             not content.segments:
@@ -165,7 +169,7 @@ class NeoDataProvider(DataProvider):
                                 rp = cls.io_params.get(force_io, {})
                             else:
                                 rp = read_params
-                            content = n_io.read(lazy=lazy, **rp)
+                            content = n_io.read(lazy=lazy, cascade=cascade, **rp)
                             if io == neo.TdtIO and \
                                     isinstance(content, neo.Block) and \
                                     not content.segments:
@@ -240,10 +244,11 @@ class NeoDataProvider(DataProvider):
             rp = read_params
 
         try:
+            cascade = 'lazy' if cls.cascade_lazy else True
             if hasattr(io, 'read_all_blocks'):  # Neo 0.2.1
-                content = n_io.read_all_blocks(lazy=lazy, **rp)
+                content = n_io.read_all_blocks(lazy=lazy, cascade=cascade, **rp)
             else:
-                content = n_io.read(lazy=lazy, **rp)
+                content = n_io.read(lazy=lazy, cascade=cascade, **rp)
 
             return cls._content_loaded(content, filename, lazy, n_io, rp)
         except Exception, e:
@@ -445,20 +450,27 @@ class NeoDataProvider(DataProvider):
         return None
 
     def _load_lazy_object(self, o, change_links=False):
-        """ Return a loaded version of a lazily loaded object. Currently only
-        works with Hdf5IO.
+        """ Return a loaded version of a lazily loaded object. The IO
+        needs a ``read_lazy_object`` that takes a lazily loaded data object
+        as parameter method for this to work.
 
         :param o: The object to load.
-        :param bool change_links: If ``True``, replace the old object in the hierarchy.
+        :param bool change_links: If ``True``, replace the old object
+            in the hierarchy.
         """
         if not hasattr(o, 'lazy_shape'):
             return o
-        if not hasattr(o, 'hdf5_path'):
-            return o
 
         io = self._get_object_io(o)
+
         if io:
-            ret = io.get(o.hdf5_path, cascade=False, lazy=False)
+            if hasattr(io, 'load_lazy_object'):
+                ret = io.load_lazy_object(o)
+            elif isinstance(io, neo.io.NeoHdf5IO):
+                ret = io.get(o.hdf5_path, cascade=False, lazy=False)
+            else:
+                return o
+
             ret.segment = o.segment
             if hasattr(o, 'recordingchannelgroup'):
                 ret.recordingchannelgroup = o.recordingchannelgroup
@@ -499,7 +511,7 @@ class NeoDataProvider(DataProvider):
         """
         ret = []
         for o in objects:
-            ret.append(self._load_lazy_object(o, self.lazy_mode > 1))
+            ret.append(self._load_lazy_object(o, self.data_lazy_mode > 1))
         return ret
 
     def _load_object_dict(self, objects):
@@ -511,7 +523,7 @@ class NeoDataProvider(DataProvider):
                 objects[k] = self._load_object_list(v)
             elif isinstance(v, dict):
                 for ik, iv in v.items():
-                    v[ik] = self._load_lazy_object(iv, self.lazy_mode > 1)
+                    v[ik] = self._load_lazy_object(iv, self.data_lazy_mode > 1)
             else:
                 raise ValueError(
                     'Only dicts or lists are supported as dictionary values!')
@@ -526,7 +538,7 @@ class NeoDataProvider(DataProvider):
         """ Return a list of :class:`neo.core.SpikeTrain` objects.
         """
         trains = []
-        units = self.units()
+        units = set(self.units())
         for s in self.segments():
             trains.extend([t for t in s.spiketrains if t.unit in units or
                            t.unit is None])
@@ -540,7 +552,7 @@ class NeoDataProvider(DataProvider):
         :class:`neo.core.SpikeTrain` objects.
         """
         trains = OrderedDict()
-        segments = self.segments()
+        segments = set(self.segments())
         for u in self.units():
             st = [t for t in u.spiketrains if t.segment in segments or
                   t.segment is None]
