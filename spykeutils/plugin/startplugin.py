@@ -17,9 +17,12 @@ import spykeutils.plugin.data_provider_stored
 try:
     from spykeutils.plot.helper import _needs_qt, ProgressIndicatorDialog
     from PyQt4.QtGui import QApplication
-    _needs_qt.app = QApplication([])
+    from PyQt4.QtCore import QTimer
+    app = QApplication([])
     progress = ProgressIndicatorDialog(None)
+    has_qt = True
 except ImportError:
+    has_qt = False
     try:  # Use command line progressbar if package is available
         import progressbar
 
@@ -152,5 +155,15 @@ def main():
     selections[0].progress = progress
     plugin.start(selections[0], selections[1:])
 
+    if has_qt:  # Quit event loop if the plugin has not created a Qt Window
+        if app.topLevelWidgets() == [progress]:
+            app.exit(0)
+
+    return 0
+
 if __name__ == '__main__':
-    main()
+    if has_qt:
+        QTimer.singleShot(0, main)
+        app.exec_()
+    else:
+        sys.exit(main())
