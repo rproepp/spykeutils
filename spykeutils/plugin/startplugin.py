@@ -18,6 +18,14 @@ try:
     from spykeutils.plot.helper import _needs_qt, ProgressIndicatorDialog
     from PyQt4.QtGui import QApplication
     from PyQt4.QtCore import QTimer
+
+    # Prepare matplotlib
+    import matplotlib
+    matplotlib.use('Qt4Agg')
+    import matplotlib.pyplot
+    matplotlib.pyplot.ion()
+
+    # Prepare application and progress bar
     app = QApplication([])
     progress = ProgressIndicatorDialog(None)
     has_qt = True
