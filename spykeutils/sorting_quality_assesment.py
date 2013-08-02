@@ -23,7 +23,7 @@ def get_refperiod_violations(spike_trains, refperiod, progress=None):
     :param refperiod: The refractory period (time).
     :type refperiod: Quantity scalar
     :param progress: Set this parameter to report progress.
-    :type progress: :class:`spykeutils.progress_indicator.ProgressIndicator`
+    :type progress: :class:`.progress_indicator.ProgressIndicator`
     :returns: Two values:
 
         * The total number of violations.
@@ -179,71 +179,6 @@ def _fast_overlap_whitened(spike_arrays, means):
             num = spikes[u]
             totals[u] = (fp / num, fn / num)
     return totals, singles
-
-
-def calculate_overlap_fp_fn(means, spikes):
-    """ Return a dict of tuples (False positive rate, false negative rate)
-    indexed by unit.
-
-    .. deprecated:: 0.2.1
-
-    Use :func:`overlap_fp_fn` instead.
-
-    Details for the calculation can be found in
-    (Hill et al. The Journal of Neuroscience. 2011). This function works on
-    prewhitened data, which means it assumes that all clusters have a uniform
-    normal distribution. Data can be prewhitened using the noise covariance
-    matrix.
-
-    The calculation for total false positive and false negative rates does
-    not follow (Hill et al. The Journal of Neuroscience. 2011), where a
-    simple addition of pairwise probabilities is proposed. Instead, the
-    total error probabilities are estimated using all clusters at once.
-
-    :param dict means: Dictionary of prewhitened cluster means
-        (e.g. unit templates) indexed by unit as :class:`neo.core.Spike`
-        objects or numpy arrays for all units.
-    :param dict spikes: Dictionary, indexed by unit, of lists of prewhitened
-        spike waveforms as :class:`neo.core.Spike` objects or numpy arrays
-        for all units.
-    :returns: Two values:
-
-        * A dictionary (indexed by unit) of total
-          (false positives, false negatives) tuples.
-        * A dictionary of dictionaries, both indexed by units,
-          of pairwise (false positives, false negatives) tuples.
-    :rtype: dict, dict
-    """
-    units = means.keys()
-    if not units:
-        return {}, {}
-
-    if len(units) == 1:
-        return {units[0]: (0.0, 0.0)}, {}
-
-    # Convert Spike objects to arrays
-    spike_arrays = {}
-    for u, spks in spikes.iteritems():
-        spikelist = []
-        for s in spks:
-            if isinstance(s, neo.Spike):
-                spikelist.append(
-                    sp.asarray(s.waveform.rescale(pq.uV)).T.flatten())
-            else:
-                spikelist.append(s)
-        spike_arrays[u] = sp.asarray(spikelist).T
-
-    # Convert or calculate means
-    shaped_means = {}
-    for u in units:
-        mean = means[u]
-        if isinstance(mean, neo.Spike):
-            shaped_means[u] = sp.asarray(
-                mean.waveform.rescale(pq.uV)).T.flatten()
-        else:
-            shaped_means[u] = means[u].T.flatten()
-
-    return _fast_overlap_whitened(spike_arrays, shaped_means)
 
 
 def _pair_overlap(waves1, waves2, mean1, mean2, cov1, cov2):

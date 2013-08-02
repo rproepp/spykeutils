@@ -23,7 +23,7 @@ def spike_amplitude_histogram(trains, num_bins, uniform_y_scale=True,
         separately for each channel.
     :param Quantity unit: Unit of Y-Axis.
     :param progress: Set this parameter to report progress.
-    :type progress: :class:`spykeutils.progress_indicator.ProgressIndicator`
+    :type progress: :class:`.progress_indicator.ProgressIndicator`
     :return: A tuple with three values:
 
         * A three-dimensional histogram matrix, where the first dimension

@@ -8,6 +8,7 @@ import quantities as pq
 
 from .. import SpykeException
 from .. import rate_estimation
+from .. import signal_processing
 from ..progress_indicator import ProgressIndicator
 from dialog import PlotDialog
 import helper
@@ -17,7 +18,7 @@ import helper
 def sde(trains, events=None, start=0 * pq.ms, stop=None,
         kernel_size=100 * pq.ms, optimize_steps=0,
         minimum_kernel=10 * pq.ms, maximum_kernel=500 * pq.ms,
-        kernel_function=None, time_unit=pq.ms, progress=None):
+        kernel=None, time_unit=pq.ms, progress=None):
     """ Create a spike density estimation plot.
 
     The spike density estimations give an estimate of the instantaneous
@@ -27,7 +28,7 @@ def sde(trains, events=None, start=0 * pq.ms, stop=None,
     :param dict events: A dictionary (with the same indices as ``trains``)
         of Event objects or lists of Event objects. In case of lists,
         the first event in the list will be used for alignment. The events
-        will be at time 0 on the plot. If None, spike trains will are used
+        will be at time 0 on the plot. If None, spike trains are used
         unmodified.
     :param start: The desired time for the start of the first bin. It
         will be recalculated if there are spike trains which start later
@@ -49,12 +50,13 @@ def sde(trains, events=None, start=0 * pq.ms, stop=None,
     :type minimum_kernel: Quantity scalar
     :param maximum_kernel: The maximum kernel size to try in optimization.
     :type maximum_kernel: Quantity scalar
-    :param kernel_function: The kernel function to use, should accept
+    :param kernel: The kernel function or instance to use, should accept
         two parameters: A ndarray of distances and a kernel size.
-        The total area under the kernel function sould be 1. By default,
-        a Gaussian kernel is used. Automatic optimization assumes a
-        Gaussian kernel and will likely not produce optimal results for
-        different kernels.
+        The total area under the kernel function should be 1.
+        Automatic optimization assumes a Gaussian kernel and will
+        likely not produce optimal results for different kernels.
+        Default: Gaussian kernel
+    :type kernel: func or :class:`spykeutils.signal_processing.Kernel`
     :param Quantity time_unit: Unit of X-Axis.
     :param progress: Set this parameter to report progress.
     :type progress: :class:`spykeutils.progress_indicator.ProgressIndicator`
@@ -69,8 +71,8 @@ def sde(trains, events=None, start=0 * pq.ms, stop=None,
     minimum_kernel.units = time_unit
     maximum_kernel.units = time_unit
 
-    if kernel_function is None:
-        kernel_function = rate_estimation.gauss_kernel
+    if kernel is None:
+        kernel = signal_processing.GaussianKernel(100 * pq.ms)
 
     # Align spike trains
     for u in trains:
@@ -86,13 +88,13 @@ def sde(trains, events=None, start=0 * pq.ms, stop=None,
         sde, kernel_size, eval_points = \
             rate_estimation.spike_density_estimation(
                 trains, start, stop,
-                optimize_steps=steps, kernel=kernel_function,
+                optimize_steps=steps, kernel=kerneln,
                 progress=progress)
     else:
         sde, kernel_size, eval_points = \
             rate_estimation.spike_density_estimation(
                 trains, start, stop,
-                kernel_size=kernel_size, kernel=kernel_function,
+                kernel_size=kernel_size, kernel=kernel,
                 progress=progress)
     progress.done()
 

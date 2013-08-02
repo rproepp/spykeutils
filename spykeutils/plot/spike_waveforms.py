@@ -14,8 +14,7 @@ import helper
 
 @helper.needs_qt
 def spikes(spikes, axes_style, strong=None, anti_alias=False, fade=1.0,
-           subplot_layout = 0,
-           time_unit=pq.ms, progress=None):
+           subplot_layout=0, time_unit=pq.ms, progress=None):
     """ Create a plot dialog with spike waveforms. Assumes that all spikes
     have waveforms with the same number of channels.
 
@@ -41,10 +40,12 @@ def spikes(spikes, axes_style, strong=None, anti_alias=False, fade=1.0,
         last spike. For values < 0, alpha is 1 for the first spike and
         ``fade`` for the last spike. Does not affect spikes from ``strong``.
     :param bool subplot_layout: The way subplots are arranged on the window:
-        - 0: Linear, either horizontally or vertically, depending on
-          ``axis_style``.
+
+        - 0: Linear - horizontally or vertically,
+          depending on ``axis_style``.
         - 1: Square - this layout tries to have the same number of plots per
           row and per column.
+
     :param Quantity time_unit: Unit of X-Axis.
     :param progress: Set this parameter to report progress.
     :type progress: :class:`spykeutils.progress_indicator.ProgressIndicator`

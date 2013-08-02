@@ -10,37 +10,6 @@ import copy as cp
 from . import SpykeException
 
 
-def binned_spike_trains(trains, bin_size, start=0 * pq.ms, stop=None):
-    """ Return dictionary of binned rates for a dictionary of
-    spike train lists.
-
-    .. deprecated:: 0.3.0
-
-    Use :func:`.tools.bin_spike_trains` instead.
-
-    :param dict trains: A dictionary of :class:`neo.core.SpikeTrain` lists.
-    :param bin_size: The desired bin size (as a time quantity).
-    :type bin_size: Quantity scalar
-    :type start: The desired time for the start of the first bin.
-        It will be recalculated if there are spike trains which
-        start later than this time.
-    :type start: Quantity scalar
-    :param stop: The desired time for the end of the last bin. It will
-        be recalculated if there are spike trains which end earlier
-        than this time.
-    :type stop: Quantity scalar
-    :returns: A dictionary (with the same indices as ``trains``) of lists
-        of spike train counts and the bin borders.
-    :rtype: dict, Quantity 1D
-    """
-    if stop is None:
-        stop = sp.inf * pq.ms
-
-    start, stop = tools.minimum_spike_train_interval(trains, start, stop)
-    hist, bins = tools.bin_spike_trains(trains, 1.0 / bin_size, start, stop)
-    return tools.apply_to_dict(lambda st: st[:-1], hist), bins[:-1]
-
-
 def psth(
         trains, bin_size, rate_correction=True, start=0 * pq.ms,
         stop=sp.inf * pq.s):
@@ -128,48 +97,9 @@ def aligned_spike_trains(trains, events, copy=True):
     return ret
 
 
-def minimum_spike_train_interval(trains):
-    """ Computes the maximum starting time and minimum end time that all
-    given spike trains share. This yields the shortest interval shared by all
-    spike trains.
-
-    .. deprecated:: 0.3.0
-
-    Use :func:`.tools.minimum_spike_train_interval` instead.
-
-    :param dict trains: A dictionary of sequences of
-        :class:`neo.core.SpikeTrain` objects.
-    :returns: Maximum shared start time and minimum shared stop time.
-    :rtype: Quantity scalar, Quantity scalar
-    """
-    t_start = -sp.inf * pq.s
-    t_stop = sp.inf * pq.s
-
-    # Load data and find shortest spike train
-    for st in trains.itervalues():
-        if len(st) > 0:
-            # Minimum length of spike of all spike trains for this unit
-            t_start = max(t_start, max((t.t_start for t in st)))
-            t_stop = min(t_stop, min((t.t_stop for t in st)))
-
-    return t_start, t_stop
-
-
-def gauss_kernel(x, kernel_size):
-    """
-    .. deprecated:: 0.3.0
-
-        Use :class:`.signal_processing.GaussianKernel` instead.
-    """
-
-    return 1.0 / (sp.sqrt(2.0 * sp.pi) * kernel_size) * \
-        sigproc.GaussianKernel.evaluate(x, kernel_size)
-
-
 def spike_density_estimation(trains, start=0 * pq.ms, stop=None,
-                             kernel=sigproc.GaussianKernel(100 * pq.ms),
-                             kernel_size=100 * pq.ms, optimize_steps=None,
-                             progress=None):
+                             kernel=None, kernel_size=100 * pq.ms,
+                             optimize_steps=None, progress=None):
     """ Create a spike density estimation from a dictionary of
     lists of spike trains.
 
@@ -192,6 +122,8 @@ def spike_density_estimation(trains, start=0 * pq.ms, stop=None,
     :param kernel: The kernel function or instance to use, should accept
         two parameters: A ndarray of distances and a kernel size.
         The total area under the kernel function should be 1.
+        Automatic optimization assumes a Gaussian kernel and will
+        likely not produce optimal results for different kernels.
         Default: Gaussian kernel
     :type kernel: func or :class:`.signal_processing.Kernel`
     :param kernel_size: A uniform kernel size for all spike trains.
@@ -204,7 +136,7 @@ def spike_density_estimation(trains, start=0 * pq.ms, stop=None,
         If None, ``kernel_size`` will be used.
     :type optimize_steps: Quantity 1D
     :param progress: Set this parameter to report progress.
-    :type progress: :class:`spykeutils.progress_indicator.ProgressIndicator`
+    :type progress: :class:`.progress_indicator.ProgressIndicator`
 
     :returns: Three values:
 
@@ -222,6 +154,9 @@ def spike_density_estimation(trains, start=0 * pq.ms, stop=None,
         units = kernel_size.units
     else:
         units = optimize_steps.units
+
+    if kernel is None:
+        kernel = sigproc.GaussianKernel(100 * pq.ms)
 
     # Prepare evaluation points
     max_start, max_stop = tools.minimum_spike_train_interval(trains)
@@ -308,7 +243,7 @@ def optimal_gauss_kernel_size(train, optimize_steps, progress=None):
     :type optimize_steps: Quantity 1D
     :param progress: Set this parameter to report progress. Will be
         advanced by len(`optimize_steps`) steps.
-    :type progress: :class:`spykeutils.progress_indicator.ProgressIndicator`
+    :type progress: :class:`.progress_indicator.ProgressIndicator`
     :returns: Best of the given kernel sizes
     :rtype: Quantity scalar
     """

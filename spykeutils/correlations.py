@@ -24,7 +24,7 @@ def correlogram(trains, bin_size, max_lag=500 * pq.ms, border_correction=True,
         Otherwise, counts per spike train are returned.
     :param Quantity unit: Unit of X-Axis.
     :param progress: A ProgressIndicator object for the operation.
-    :type progress: :class:`spykeutils.progress_indicator.ProgressIndicator`
+    :type progress: :class:`.progress_indicator.ProgressIndicator`
     :returns: Two values:
 
         * An ordered dictionary indexed with the indices of ``trains`` of
