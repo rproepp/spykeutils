@@ -147,13 +147,15 @@ def main():
 
     selections = []
     for s in sels:
-        selections.append(DataProvider.from_data(s))
+        selection = DataProvider.from_data(s)
+        selection.progress = progress
+        selections.append(selection)
 
     if args.datadir and os.path.isdir(args.datadir):
         AnalysisPlugin.data_dir = args.datadir
 
-    selections[0].progress = progress
     plugin.start(selections[0], selections[1:])
+    progress.done()
 
     if has_qt:  # Quit event loop if the plugin has not created a Qt Window
         if app.topLevelWidgets() == [progress]:
