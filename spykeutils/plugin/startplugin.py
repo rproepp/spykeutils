@@ -10,6 +10,7 @@ import pickle
 from spykeutils.plugin.analysis_plugin import AnalysisPlugin
 from spykeutils.plugin.data_provider import DataProvider
 from spykeutils.plugin import io_plugin
+from spykeutils import progress_indicator
 
 # Data provider implementations need to be imported so they can be loaded
 import spykeutils.plugin.data_provider_stored
@@ -34,7 +35,7 @@ except ImportError:
     try:  # Use command line progressbar if package is available
         import progressbar
 
-        class ProgressIndicatorConsole(ProgressIndicator):
+        class ProgressIndicatorConsole(progress_indicator.ProgressIndicator):
             """ Implements a progress indicator for the CLI """
             def __init__(self):
                 widgets = ['', progressbar.Percentage(), ' ',
@@ -75,7 +76,7 @@ except ImportError:
                 self.bar.finish()
         progress = ProgressIndicatorConsole()
     except ImportError:
-        progress = ProgressIndicator()
+        progress = progress_indicator.ProgressIndicator()
 
 def main():
     parser = argparse.ArgumentParser(description='Start an analysis plugin')
@@ -162,7 +163,10 @@ def main():
     if args.datadir and os.path.isdir(args.datadir):
         AnalysisPlugin.data_dir = args.datadir
 
-    plugin.start(selections[0], selections[1:])
+    try:
+        plugin.start(selections[0], selections[1:])
+    except progress_indicator.CancelException:
+        print 'User canceled.'
     progress.done()
 
     if has_qt:  # Quit event loop if the plugin has not created a Qt Window
