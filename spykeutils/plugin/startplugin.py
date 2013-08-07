@@ -78,6 +78,7 @@ except ImportError:
     except ImportError:
         progress = progress_indicator.ProgressIndicator()
 
+
 def main():
     parser = argparse.ArgumentParser(description='Start an analysis plugin')
     parser.add_argument('Name', type=str, help='Name of analysis class')
@@ -167,7 +168,8 @@ def main():
         plugin.start(selections[0], selections[1:])
     except progress_indicator.CancelException:
         print 'User canceled.'
-    progress.done()
+    finally:
+        progress.done()
 
     if has_qt:  # Quit event loop if the plugin has not created a Qt Window
         if app.topLevelWidgets() == [progress]:
