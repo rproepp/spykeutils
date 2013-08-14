@@ -88,7 +88,7 @@ def sde(trains, events=None, start=0 * pq.ms, stop=None,
         sde, kernel_size, eval_points = \
             rate_estimation.spike_density_estimation(
                 trains, start, stop,
-                optimize_steps=steps, kernel=kerneln,
+                optimize_steps=steps, kernel=kernel,
                 progress=progress)
     else:
         sde, kernel_size, eval_points = \

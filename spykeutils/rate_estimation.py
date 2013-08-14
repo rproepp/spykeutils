@@ -59,9 +59,8 @@ def aligned_spike_trains(trains, events, copy=True):
 
     :param list trains: A list of :class:`neo.core.SpikeTrain` objects.
     :param dict events: A dictionary of Event objects, indexed by segment.
-        These events (in case of lists, always the first element in the list)
-        will be used to align the spike trains and will be at time 0 for
-        the aligned spike trains.
+        These events will be used to align the spike trains and will be at 
+        time 0 for the aligned spike trains.
     :param bool copy: Determines if aligned copies of the original
         spike trains  will be returned. If not, every spike train needs
         exactly one corresponding event, otherwise a ``ValueError`` will
