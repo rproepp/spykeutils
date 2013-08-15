@@ -3,6 +3,7 @@ from data_provider import DataProvider
 from data_provider_neo import NeoDataProvider
 from ..progress_indicator import ProgressIndicator
 
+
 class NeoStoredProvider(NeoDataProvider):
     def __init__(self, data, progress=ProgressIndicator()):
         super(NeoStoredProvider, self).__init__(data['name'], progress)
@@ -41,8 +42,16 @@ class NeoStoredProvider(NeoDataProvider):
         """ Return a list of selected Block objects
         """
         if self.block_cache is None:
-            self.block_cache = [NeoDataProvider.get_block(b[1], b[0])
-                           for b in self.data['blocks']]
+            self.block_cache = []
+            for b in self.data['blocks']:
+                cl = None
+                rp = None
+                if len(b) > 2:
+                    cl = self.find_io_class(b[2])
+                if len(b) > 3:
+                    rp = b[3]
+                self.block_cache.append(NeoDataProvider.get_block(
+                    b[1], b[0], force_io=cl, read_params=rp))
         return self.block_cache
 
     def segments(self):

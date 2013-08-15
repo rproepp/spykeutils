@@ -1,3 +1,20 @@
+Version 0.4.0
+-------------
+
+* Correlogram plot supports new square plot matrix mode and count per second
+  in addition to per segment.
+* New options in spike waveform plot.
+* DataProvider objects support transparent lazy loading for compatible IOs
+  (currently only Hdf5IO).
+* DataProvider can be forced to use a certain IO instead of automatically
+  determining it by file extension.
+* Load parameters for IOs can be specified in DataProvider.
+* IO class, IO parameters and IO plugins are saved in selections and properly
+  used in startplugin.py
+* Qt implementation of ProgressBar available in plot.helper (moved from
+  Spyke Viewer).
+* Loading support for IO plugins (moved from Spyke Viewer).
+
 Version 0.3.0
 -------------
 

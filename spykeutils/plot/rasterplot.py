@@ -41,11 +41,11 @@ def raster(trains, time_unit=pq.ms, show_lines=True, events=None, epochs=None):
 
     offset = len(trains)
     legend_items = []
-    for u, t in sorted(trains.iteritems(), key=lambda (u, v): u.name):
+    for u, t in trains.iteritems():
         color = helper.get_object_color(u)
 
-        train = helper.add_spikes(plot, t, color, 2, 21, offset,
-            u.name, time_unit)
+        train = helper.add_spikes(
+            plot, t, color, 2, 21, offset, u.name, time_unit)
 
         if u.name:
             legend_items.append(train)

@@ -78,7 +78,7 @@ class PlotDialog(QDialog, PlotManager):
     """
 
     def __init__(self, wintitle='Plot window', major_grid=True,
-                 minor_grid=False, toolbar=False,  parent=None,
+                 minor_grid=False, toolbar=True,  parent=None,
                  panels=None, min_plot_width=100, min_plot_height=75):
         QDialog.__init__(self, parent)
         self.setWindowFlags(Qt.Window)

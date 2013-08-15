@@ -25,7 +25,7 @@ def apply_to_dict(fn, dictionary, *args):
 
 
 def bin_spike_trains(trains, sampling_rate, t_start=None, t_stop=None):
-    """ Creates binned representations of a spike trains.
+    """ Creates binned representations of spike trains.
 
     :param dict trains: A dictionary of sequences of
         :class:`neo.core.SpikeTrain` objects.
@@ -97,12 +97,17 @@ def minimum_spike_train_interval(
 
     :param dict trains: A dictionary of sequences of
         :class:`neo.core.SpikeTrain` objects.
-    :param t_start: Minimal starting time to return as time scalar.
-    :param t_stop: Maximum end time to return as time scalar.
+    :param t_start: Minimal starting time to return.
+    :type t_start: Quantity scalar
+    :param t_stop: Maximum end time to return. If ``None``, infinity is used.
+    :type t_stop: Quantity scalar
     :returns: Maximum shared t_start time and minimum shared t_stop time as
         time scalars.
     :rtype: Quantity scalar, Quantity scalar
     """
+    if t_stop is None:
+        t_stop = sp.inf * pq.s
+
     # Load data and find shortest spike train
     for st in trains.itervalues():
         if len(st) > 0:
@@ -123,11 +128,14 @@ def maximum_spike_train_interval(
         :class:`neo.core.SpikeTrain` objects.
     :param t_start: Maximum starting time to return.
     :type t_start: Quantity scalar
-    :param t_stop: Minimum end time to return.
+    :param t_stop: Minimum end time to return. If ``None``, infinity is used.
     :type t_stop: Quantity scalar
     :returns: Minimum t_start time and maximum t_stop time as time scalars.
     :rtype: Quantity scalar, Quantity scalar
     """
+    if t_stop is None:
+        t_stop = sp.inf * pq.s
+
     for st in trains.itervalues():
         if len(st) > 0:
             t_start = min(t_start, min((t.t_start for t in st)))
@@ -262,9 +270,13 @@ def extract_spikes(train, signals, length, align_time):
         ``waveform`` property.
     :rtype: list
     """
-    if len(set(s.sampling_rate for s in signals)) > 1:
-        raise ValueError(
-            'All signals for spike extraction need the same sampling rate')
+    if not signals:
+        raise ValueError('No signals to extract spikes from')
+    ref = signals[0]
+    for s in signals[1:]:
+        if ref.sampling_rate != s.sampling_rate:
+            raise ValueError(
+                'All signals for spike extraction need the same sampling rate')
 
     wave_unit = signals[0].units
     srate = signals[0].sampling_rate
@@ -293,6 +305,7 @@ def extract_spikes(train, signals, length, align_time):
         for c in xrange(nc):
             waveform[:, c] = \
                 data[c, epochs[s, 0]:epochs[s, 1]]
-        spikes.append(neo.Spike(train[st_ok][s], waveform=waveform * wave_unit))
+        spikes.append(neo.Spike(train[st_ok][s], waveform=waveform * wave_unit,
+                                sampling_rate=srate))
 
     return spikes

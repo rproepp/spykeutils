@@ -4,12 +4,13 @@ except ImportError:
     import unittest as ut
 
 import scipy as sp
+import numpy as np
 import quantities as pq
 import neo
 from neo.test.tools import assert_arrays_equal
 import spykeutils.sorting_quality_assesment as qa
 
-
+import sys
 class TestRefractoryPeriod(ut.TestCase):
     def test_refperiod_violations_empty(self):
         num, d = qa.get_refperiod_violations({}, 1 * pq.ms)
@@ -48,9 +49,14 @@ class TestRefractoryPeriod(ut.TestCase):
 
 
 class TestClusterOverlap(ut.TestCase):
+    def setUp(self):
+        # Have tests always use the same random seed
+        self.rand = np.random.RandomState()
+        self.rand.seed(1704)
+
     def test_1_cluster(self):
         # One cluster cannot have overlaps...
-        cluster1 = sp.randn(8, 100)
+        cluster1 = self.rand.randn(8, 100)
         clusterList1 = [cluster1[:, i]
                         for i in xrange(sp.size(cluster1, 1))]
         total, pair = qa.overlap_fp_fn({1: clusterList1})
@@ -59,8 +65,8 @@ class TestClusterOverlap(ut.TestCase):
         self.assertEqual(pair, {})
 
     def test_equal_clusters_white(self):
-        cluster1 = sp.randn(40, 1000)
-        cluster2 = sp.randn(40, 1000)
+        cluster1 = self.rand.randn(40, 1000)
+        cluster2 = self.rand.randn(40, 1000)
         clusterList1 = [cluster1[:, i]
                         for i in xrange(sp.size(cluster1, 1))]
         clusterList2 = [cluster2[:, i]
@@ -80,8 +86,8 @@ class TestClusterOverlap(ut.TestCase):
 
     def test_equal_clusters_estimate_mean(self):
         # Smaller dimensionality and more data for reliable estimates
-        cluster1 = sp.randn(8, 100000)
-        cluster2 = sp.randn(8, 100000)
+        cluster1 = self.rand.randn(8, 100000)
+        cluster2 = self.rand.randn(8, 100000)
         clusterList1 = [cluster1[:, i]
                         for i in xrange(sp.size(cluster1, 1))]
         clusterList2 = [cluster2[:, i]
@@ -100,8 +106,8 @@ class TestClusterOverlap(ut.TestCase):
 
     def test_equal_clusters_estimate_all(self):
         # Smaller dimensionality and more data for reliable estimates
-        cluster1 = sp.randn(8, 100000)
-        cluster2 = sp.randn(8, 100000)
+        cluster1 = self.rand.randn(8, 100000)
+        cluster2 = self.rand.randn(8, 100000)
         clusterList1 = [cluster1[:, i]
                         for i in xrange(sp.size(cluster1, 1))]
         clusterList2 = [cluster2[:, i]
@@ -118,8 +124,8 @@ class TestClusterOverlap(ut.TestCase):
         self.assertAlmostEqual(pair[2][1][1], 0.5, 2)
 
     def test_unequal_clusters(self):
-        cluster1 = sp.randn(40, 1000)
-        cluster2 = sp.randn(40, 2000)
+        cluster1 = self.rand.randn(40, 1000)
+        cluster2 = self.rand.randn(40, 2000)
         clusterList1 = [cluster1[:, i]
                         for i in xrange(sp.size(cluster1, 1))]
         clusterList2 = [cluster2[:, i]
@@ -138,9 +144,10 @@ class TestClusterOverlap(ut.TestCase):
         self.assertAlmostEqual(pair[2][1][1], 1.0 / 3.0)
 
     def test_far_apart_clusters_estimate_all(self):
-        cluster1 = sp.randn(40, 10000)
-        cluster2 = sp.randn(40, 10000) * 2
+        cluster1 = self.rand.randn(40, 10000)
+        cluster2 = self.rand.randn(40, 10000) * 2
         cluster2[0, :] += 10
+
         clusterList1 = [cluster1[:, i]
                         for i in xrange(sp.size(cluster1, 1))]
         clusterList2 = [cluster2[:, i]
@@ -165,9 +172,9 @@ class TestClusterOverlap(ut.TestCase):
         self.assertGreater(pair[2][1][1], 0.0)
 
     def test_3_clusters_estimate_means(self):
-        cluster1 = sp.randn(20, 10000)
-        cluster2 = sp.randn(20, 20000)
-        cluster3 = sp.randn(20, 10000)
+        cluster1 = self.rand.randn(20, 10000)
+        cluster2 = self.rand.randn(20, 20000)
+        cluster3 = self.rand.randn(20, 10000)
         cluster3[5, :] += 11
         clusterList1 = [cluster1[:, i]
                         for i in xrange(sp.size(cluster1, 1))]
@@ -212,9 +219,9 @@ class TestClusterOverlap(ut.TestCase):
         dimension = 40
         offset = sp.zeros((dimension, 1))
         offset[0] = 4
-        cluster1 = sp.randn(dimension, 10)
-        cluster2 = sp.randn(dimension, 100) + offset
-        cluster3 = sp.randn(dimension, 500) - offset
+        cluster1 = self.rand.randn(dimension, 10)
+        cluster2 = self.rand.randn(dimension, 100) + offset
+        cluster3 = self.rand.randn(dimension, 500) - offset
         clusterList1 = [cluster1[:, i]
                         for i in xrange(sp.size(cluster1, 1))]
         clusterList2 = [cluster2[:, i]
