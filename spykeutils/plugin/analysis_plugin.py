@@ -185,7 +185,7 @@ class AnalysisPlugin(gui_data.DataSet):
             params = {}
 
         # Use unicode parameters
-        for n, v in params:
+        for n, v in params.iteritems():
             if isinstance(v, str):
                 params[n] = unicode(v)
 
@@ -270,7 +270,7 @@ class AnalysisPlugin(gui_data.DataSet):
             params = {}
 
         # Use unicode parameters
-        for n, v in params:
+        for n, v in params.iteritems():
             if isinstance(v, str):
                 params[n] = unicode(v)
 
