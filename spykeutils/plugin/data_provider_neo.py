@@ -524,7 +524,6 @@ class NeoDataProvider(DataProvider):
             else:
                 raise ValueError(
                     'Only dicts or lists are supported as dictionary values!')
-        print 'done loading'
         return objects
 
     def selection_blocks(self):
