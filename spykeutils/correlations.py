@@ -91,8 +91,8 @@ def correlogram(trains, bin_size, max_lag=500 * pq.ms, border_correction=True,
         for i2 in xrange(i1, len(indices)):
             histogram = sp.zeros(len(bins) - 1)
             for t in xrange(num_trains):
-                train1 = trains[indices[i1]][t].rescale(unit).reshape((-1, 1))
-                train2 = trains[indices[i2]][t].rescale(unit).reshape((1, -1))
+                train1 = trains[indices[i1]][t].rescale(unit).reshape((1, -1))
+                train2 = trains[indices[i2]][t].rescale(unit).reshape((-1, 1))
                 histogram += sp.histogram(
                     sp.subtract(train1, train2), bins=bins)[0]
                 if i1 == i2:  # Correction for autocorrelogram
