@@ -81,9 +81,9 @@ def correlogram(trains, bin_size, max_lag=500 * pq.ms, border_correction=True,
         l = int(round(middle_bin)) + 1
         cE = max(train_length - (l * bin_size) + 1 * unit, 1 * unit)
 
-        corrector = train_length / sp.concatenate(
+        corrector = (train_length / sp.concatenate(
             (sp.linspace(cE, train_length, l - 1, False),
-             sp.linspace(train_length, cE, l)))
+             sp.linspace(train_length, cE, l)))).magnitude
 
     correlograms = OrderedDict()
     for i1 in xrange(len(indices)):  # For each index
