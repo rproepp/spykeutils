@@ -761,7 +761,7 @@ def _victor_purpura_multiunit_dist_for_trial_pair(
     # Do the actual calculations.
     for a_idx in xrange(1, a_num_total_spikes + 1):
         base_costs = cost.flat[flat_neighbor_indices]
-        base_costs[invalid_neighbors, :] = sp.inf
+        base_costs[invalid_neighbors] = sp.inf
         min_base_cost_labels = sp.argmin(base_costs, axis=1)
         cost_all_possible_shifts = k[a_idx - 1, min_base_cost_labels, :] + \
             sp.atleast_2d(base_costs[flat_b_indices, min_base_cost_labels]).T

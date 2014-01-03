@@ -1,6 +1,10 @@
+Version 0.4.1
+-------------
+* Faster caching for Neo lazy loading.
+* Faster correlogram calculation.
+
 Version 0.4.0
 -------------
-
 * Correlogram plot supports new square plot matrix mode and count per second
   in addition to per segment.
 * New options in spike waveform plot.
@@ -17,7 +21,6 @@ Version 0.4.0
 
 Version 0.3.0
 -------------
-
 * Added implementations for various spike train metrics.
 * Added generation functions for poisson spike trains
 * Added tools module with various utility functions, e.g. binning
