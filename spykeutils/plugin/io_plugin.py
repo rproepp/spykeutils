@@ -35,10 +35,10 @@ def load_from_string(code, path='<string>'):
         if not inspect.isclass(cl):
             continue
 
-        # Should be a subclass of AnalysisPlugin...
+        # Should be a subclass of BaseIO...
         if not issubclass(cl, BaseIO):
             continue
-            # but should not be AnalysisPlugin (can happen when directly imported)
+            # but should not be BaseIO (can happen when directly imported)
         if cl == BaseIO:
             continue
 

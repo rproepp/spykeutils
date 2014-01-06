@@ -81,9 +81,9 @@ def correlogram(trains, bin_size, max_lag=500 * pq.ms, border_correction=True,
         l = int(round(middle_bin)) + 1
         cE = max(train_length - (l * bin_size) + 1 * unit, 1 * unit)
 
-        corrector = train_length / sp.concatenate(
+        corrector = (train_length / sp.concatenate(
             (sp.linspace(cE, train_length, l - 1, False),
-             sp.linspace(train_length, cE, l)))
+             sp.linspace(train_length, cE, l)))).magnitude
 
     correlograms = OrderedDict()
     for i1 in xrange(len(indices)):  # For each index
@@ -91,11 +91,10 @@ def correlogram(trains, bin_size, max_lag=500 * pq.ms, border_correction=True,
         for i2 in xrange(i1, len(indices)):
             histogram = sp.zeros(len(bins) - 1)
             for t in xrange(num_trains):
-                train1 = trains[indices[i1]][t]
-                train2 = trains[indices[i2]][t].rescale(unit)
-                for s in train1:
-                    histogram += sp.histogram(
-                        train2, bins + s.rescale(unit))[0]
+                train1 = trains[indices[i1]][t].rescale(unit).reshape((1, -1))
+                train2 = trains[indices[i2]][t].rescale(unit).reshape((-1, 1))
+                histogram += sp.histogram(
+                    sp.subtract(train1, train2), bins=bins)[0]
                 if i1 == i2:  # Correction for autocorrelogram
                     histogram[middle_bin] -= len(train2)
                 progress.step()

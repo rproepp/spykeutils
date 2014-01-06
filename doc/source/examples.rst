@@ -148,7 +148,7 @@ Signal Plot
 -----------
 As a final example, we will again use the :mod:`spykeutils.plot` package to
 create a plot of the signals we created. This plot will also display the
-spike timings one of our spike trains.
+spike times from one of our spike trains.
 
 >>> spykeutils.plot.signals(segments[0].analogsignals, spike_trains=[segments[0].spiketrains[2]], show_waveforms=False) # doctest: +SKIP
 

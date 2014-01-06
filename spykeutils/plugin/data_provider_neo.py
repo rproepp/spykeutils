@@ -481,10 +481,9 @@ class NeoDataProvider(DataProvider):
             if change_links:
                 name = type(o).__name__.lower() + 's'
                 l = getattr(o.segment, name)
-                if o in l:
-                    l.insert(l.index(o), ret)
-                    l.remove(o)
-                else:
+                try:
+                    l[l.index(o)] = ret
+                except ValueError:
                     l.append(ret)
 
                 l = None
@@ -495,10 +494,9 @@ class NeoDataProvider(DataProvider):
                 elif hasattr(o, 'unit'):
                     l = getattr(o.unit, name)
                 if l is not None:
-                    if o in l:
-                        l.insert(l.index(o), ret)
-                        l.remove(o)
-                    else:
+                    try:
+                        l[l.index(o)] = ret
+                    except ValueError:
                         l.append(ret)
 
             return ret
