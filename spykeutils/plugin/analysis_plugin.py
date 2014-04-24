@@ -101,10 +101,8 @@ class AnalysisPlugin(gui_data.DataSet):
 
     def get_parameters(self):
         """ Return a dictionary of the configuration that can
-        be read with :func:`deserialize_parameters`. Override both if
-        non-guidata attributes need to be serialized or if some guidata
-        parameters should not be serialized (e.g. they only affect the
-        visual presentation).
+        be read with :func:`deserialize_parameters`. Override if
+        non-guidata attributes need to be serialized.
 
         :returns: A dictionary of all configuration parameters.
         :rtype: dict
