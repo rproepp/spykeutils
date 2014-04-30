@@ -162,6 +162,10 @@ except ImportError, e:
         def set_global_prop(cls, realm, **kwargs):
             pass
 
+    class DataSetGroup(object):
+        def __init__(self, *args, **kwargs):
+            pass
+
     class ItemProperty(object):
         def __init__(self, callable=None):
             pass
