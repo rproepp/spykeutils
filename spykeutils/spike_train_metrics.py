@@ -520,12 +520,16 @@ def _van_rossum_multiunit_dist_for_trial_pair(a, b, weighting, tau, kernel):
     non_diagonal = sp.logical_not(sp.eye(len(a)))
     summed_population = (
         sp.trace(k_dist) - sp.trace(k_dist, len(a)) - sp.trace(k_dist, -len(a)))
-    labeled_line = (
-        sp.sum(k_dist[:len(a), :len(a)][non_diagonal]) +
-        sp.sum(k_dist[len(a):, len(a):][non_diagonal]) -
-        sp.sum(k_dist[:len(a), len(a):][non_diagonal]) -
-        sp.sum(k_dist[len(a):, :len(a)][non_diagonal]))
-    return sp.sqrt(summed_population + weighting * labeled_line)
+
+    if weighting > 0:
+        labeled_line = (
+            sp.sum(k_dist[:len(a), :len(a)][non_diagonal]) +
+            sp.sum(k_dist[len(a):, len(a):][non_diagonal]) -
+            sp.sum(k_dist[:len(a), len(a):][non_diagonal]) -
+            sp.sum(k_dist[len(a):, :len(a)][non_diagonal]))
+        return sp.sqrt(summed_population + weighting * labeled_line)
+    else:
+        return sp.sqrt(summed_population)
 
 
 def victor_purpura_dist(trains, q=1.0 * pq.Hz, kernel=None, sort=True):
