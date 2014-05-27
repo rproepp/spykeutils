@@ -99,9 +99,7 @@ def cs_dist(
 def event_synchronization(
         trains, tau=None,
         kernel=sigproc.RectangularKernel(1.0, normalize=False), sort=True):
-    """ event_synchronization(trains, tau=None, kernel=signal_processing.RectangularKernel(1.0, normalize=False), sort=True)
-
-    Calculates the event synchronization.
+    """ Calculates the event synchronization.
 
     Let :math:`d(x|y)` be the count of spikes in :math:`y` which occur shortly
     before an event in :math:`x` with a time difference of less than
@@ -398,8 +396,8 @@ def st_norm(
         covered. Higher values can lead to more accurate results (besides the
         sampling rate).
     :returns: The norm of the spike train given the smoothing_filter.
-    :rtype: Quantity scalar with units depending on the smoothing filter (usually
-        temporal frequency units)
+    :rtype: Quantity scalar with units depending on the smoothing filter
+        (usually temporal frequency units)
     """
 
     return st_inner(
