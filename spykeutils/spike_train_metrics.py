@@ -5,6 +5,12 @@ import _scipy_quantities as spq
 import signal_processing as sigproc
 import tools
 
+try:
+    import pymuvr
+    PYMUVR_AVAILABLE = True
+except ImportError:
+    PYMUVR_AVAILABLE = False
+
 assert quantities_patch  # Suppress pyflakes warning, patch applied by loading
 
 
@@ -483,6 +489,9 @@ def van_rossum_multiunit_dist(units, weighting, tau=1.0 * pq.s, kernel=None):
     run-time complexity of this function is :math:`O(N^2 n^2)` and :math:`O(N^2
     + Nn^2)` memory will be needed.
 
+    If `pymuvr` is installed, this function will use the faster C++
+    implementation contained in the package.
+
     :param dict units: Dictionary of sequences with each sequence containing
         the trials of one unit. Each trial should be
         a :class:`neo.core.SpikeTrain` and all units should have the same
@@ -504,6 +513,24 @@ def van_rossum_multiunit_dist(units, weighting, tau=1.0 * pq.s, kernel=None):
 
     if kernel is None and tau != sp.inf:
         kernel = sigproc.LaplacianKernel(tau, normalize=False)
+
+    if PYMUVR_AVAILABLE and tau != sp.inf:
+        rescaled_trains = []
+        n_trials = len(units.itervalues().next())
+
+        for i in xrange(n_trials):
+            trial_trains = []
+            for u, tr in units.iteritems():
+                trial_trains.append(list(tr[i].rescale(pq.s).magnitude))
+            rescaled_trains.append(trial_trains)
+        t = tau.rescale(pq.s).magnitude
+        r = pymuvr.square_distance_matrix(rescaled_trains, weighting, t)
+        print r
+        #print rescaled_trains, weighting, t
+        print _calc_multiunit_dist_matrix_from_single_trials(
+            units, _van_rossum_multiunit_dist_for_trial_pair, weighting=weighting,
+            tau=tau, kernel=kernel)
+        return r
 
     return _calc_multiunit_dist_matrix_from_single_trials(
         units, _van_rossum_multiunit_dist_for_trial_pair, weighting=weighting,
