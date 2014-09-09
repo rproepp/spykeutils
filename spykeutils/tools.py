@@ -115,6 +115,9 @@ def minimum_spike_train_interval(
             t_start = max(t_start, max((t.t_start for t in st)))
             t_stop = min(t_stop, min((t.t_stop for t in st)))
 
+    if t_stop == sp.inf * pq.s:
+        t_stop = t_start
+
     return t_start, t_stop
 
 

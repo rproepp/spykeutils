@@ -44,11 +44,14 @@ def psth(
     cumulative = {}
     time_multiplier = 1.0 / float(bin_size.rescale(pq.s))
     for u in binned:
-        if rate_correction:
-            cumulative[u] = sp.mean(sp.array(binned[u]), 0)
+        if not binned[u]:
+            cumulative[u] = sp.array([])
         else:
-            cumulative[u] = sp.sum(sp.array(binned[u]), 0)
-        cumulative[u] *= time_multiplier
+            if rate_correction:
+                cumulative[u] = sp.mean(sp.array(binned[u]), 0)
+            else:
+                cumulative[u] = sp.sum(sp.array(binned[u]), 0)
+            cumulative[u] *= time_multiplier
 
     return cumulative, bins
 
@@ -212,7 +215,7 @@ def collapsed_spike_trains(trains):
     :rtype: :class:`neo.core.SpikeTrain`
     """
     if not trains:
-        return neo.SpikeTrain([], 0 * pq.s)
+        return neo.SpikeTrain([] * pq.s, 0 * pq.s)
 
     start = min((t.t_start for t in trains))
     stop = max((t.t_stop for t in trains))
