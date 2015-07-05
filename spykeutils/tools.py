@@ -1,5 +1,9 @@
 import neo
-import neo.description
+try:
+    import neo.description
+    HAS_DESCRIPTION = True
+except ImportError:
+    HAS_DESCRIPTION = False
 import quantities as pq
 import scipy as sp
 import _scipy_quantities as spq
@@ -217,8 +221,19 @@ def remove_from_hierarchy(obj, remove_half_orphans=True):
     classname = type(obj).__name__
 
     # Parent for arbitrary object
-    if classname in neo.description.many_to_one_relationship:
-        for n in neo.description.many_to_one_relationship[classname]:
+    if HAS_DESCRIPTION:
+        if classname in neo.description.many_to_one_relationship:
+            for n in neo.description.many_to_one_relationship[classname]:
+                p = getattr(obj, n.lower())
+                if p is None:
+                    continue
+                l = getattr(p, classname.lower() + 's', ())
+                try:
+                    l.remove(obj)
+                except ValueError:
+                    pass
+    else:
+        for n in obj._single_parent_objects:
             p = getattr(obj, n.lower())
             if p is None:
                 continue
