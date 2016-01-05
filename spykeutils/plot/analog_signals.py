@@ -217,9 +217,8 @@ def _add_spike_waveforms(plot, spikes, x_units, channel, offset, progress):
         start = (spike.time - lsweep).rescale(x_units)
         stop = (spike.waveform.shape[0] / spike.sampling_rate +
                 spike.time - lsweep).rescale(x_units)
-        spike_x = sp.arange(
-            start, stop,
-            (1.0 / spike.sampling_rate).rescale(x_units)) * x_units
+        spike_x = sp.linspace(
+            start, stop, spike.waveform.shape[0], endpoint=False) * x_units
 
         plot.add_item(
             make.curve(spike_x, spike.waveform[:, channel] + offset,
