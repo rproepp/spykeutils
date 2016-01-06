@@ -1,3 +1,6 @@
+* Integration of pymuvr (when available) for faster calculation of van Rossum
+  distance.
+
 Version 0.4.1
 -------------
 * Faster caching for Neo lazy loading.

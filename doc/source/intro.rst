@@ -31,7 +31,9 @@ Alternatively, if you have setuptools_::
 $ easy_install spykeutils
 
 Users of NeuroDebian_ or its repositories (available for Debian and Ubuntu)
-can also install spykeutils using the package manager instead of pip_::
+can also install spykeutils using the package manager instead of pip_. The
+package is also available directly in recent Debian and Ubuntu installations,
+but might not be the most recent version. Install with::
 
 $ sudo apt-get install python-spykeutils
 

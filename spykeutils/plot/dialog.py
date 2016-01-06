@@ -26,7 +26,11 @@ from guiqwt.tools import (SelectTool, RectZoomTool, BasePlotMenuTool,
                           ContrastPanelTool, XCSPanelTool, YCSPanelTool,
                           CrossSectionTool, AverageCrossSectionTool,
                           SaveAsTool, PrintTool, CopyToClipboardTool)
-from guiqwt.signals import SIG_PLOT_AXIS_CHANGED
+try:  # guiqwt<3.0
+    from guiqwt.signals import SIG_PLOT_AXIS_CHANGED
+    old_guiqwt = True
+except ImportError:
+    old_guiqwt = False
 from guidata.configtools import get_icon
 
 import icons_rc
@@ -36,7 +40,10 @@ import guiqwt_tools
 # Monkeypatch curve and image plot so synchronizing axes works with all tools
 def fixed_do_zoom_rect_view(self, *args, **kwargs):
     CurvePlot.old_do_zoom_rect_view(self, *args, **kwargs)
-    self.emit(SIG_PLOT_AXIS_CHANGED, self)
+    if old_guiqwt:
+        self.emit(SIG_PLOT_AXIS_CHANGED, self)
+    else:
+        self.SIG_PLOT_AXIS_CHANGED.emit(self)
 
 CurvePlot.old_do_zoom_rect_view = CurvePlot.do_zoom_rect_view
 CurvePlot.do_zoom_rect_view = fixed_do_zoom_rect_view
@@ -45,7 +52,10 @@ CurvePlot.do_zoom_rect_view = fixed_do_zoom_rect_view
 def fixed_do_autoscale(self, *args, **kwargs):
     CurvePlot.old_do_autoscale(self, *args, **kwargs)
     if not isinstance(self, ImagePlot):
-        self.emit(SIG_PLOT_AXIS_CHANGED, self)
+        if old_guiqwt:
+            self.emit(SIG_PLOT_AXIS_CHANGED, self)
+        else:
+            self.SIG_PLOT_AXIS_CHANGED.emit(self)
 
 CurvePlot.old_do_autoscale = CurvePlot.do_autoscale
 CurvePlot.do_autoscale = fixed_do_autoscale
@@ -53,7 +63,10 @@ CurvePlot.do_autoscale = fixed_do_autoscale
 
 def fixed_do_autoscale_image(self, *args, **kwargs):
     ImagePlot.old_do_autoscale(self, *args, **kwargs)
-    self.emit(SIG_PLOT_AXIS_CHANGED, self)
+    if old_guiqwt:
+        self.emit(SIG_PLOT_AXIS_CHANGED, self)
+    else:
+        self.SIG_PLOT_AXIS_CHANGED.emit(self)
 
 ImagePlot.old_do_autoscale = ImagePlot.do_autoscale
 ImagePlot.do_autoscale = fixed_do_autoscale_image

@@ -334,7 +334,7 @@ class RectangularKernel(SymmetricKernel):
 
     @staticmethod
     def evaluate(t, half_width):
-        return (sp.absolute(t) < half_width)
+        return sp.absolute(t) < half_width
 
     def _evaluate(self, t, kernel_size):
         return self.evaluate(t, kernel_size)
@@ -457,8 +457,8 @@ def smooth(
 
 
 def st_convolve(
-        train, kernel, sampling_rate, mode='same', binning_params={},
-        kernel_discretization_params={}):
+        train, kernel, sampling_rate, mode='same', binning_params=None,
+        kernel_discretization_params=None):
     """ Convolves a :class:`neo.core.SpikeTrain` with a kernel.
 
     :param train: Spike train to convolve.
@@ -487,6 +487,10 @@ def st_convolve(
         bins
     :rtype: (Quantity 1D, Quantity 1D with the inverse units of `sampling_rate`)
     """
+    if binning_params is None:
+        binning_params = {}
+    if kernel_discretization_params is None:
+        kernel_discretization_params = {}
 
     binned, bins = tools.bin_spike_trains(
         {0: [train]}, sampling_rate, **binning_params)
@@ -497,9 +501,13 @@ def st_convolve(
 
     assert (result.size - binned.size) % 2 == 0
     num_additional_bins = (result.size - binned.size) // 2
-    bins = sp.linspace(
-        bins[0] - num_additional_bins / sampling_rate,
-        bins[-1] + num_additional_bins / sampling_rate,
-        result.size + 1)
+
+    if len(binned):
+        bins = sp.linspace(
+            bins[0] - num_additional_bins / sampling_rate,
+            bins[-1] + num_additional_bins / sampling_rate,
+            result.size + 1)
+    else:
+        bins = [] * pq.s
 
     return result, bins

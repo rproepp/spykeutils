@@ -180,7 +180,10 @@ class TestRemoveFromHierarchy(ut.TestCase):
 
             b.recordingchannelgroups.append(rcg)
 
-        neo.io.tools.create_many_to_one_relationship(b)
+        try:
+            neo.io.tools.create_many_to_one_relationship(b)
+        except AttributeError:
+            b.create_many_to_one_relationship()
         return b
 
     def test_remove_block(self):
