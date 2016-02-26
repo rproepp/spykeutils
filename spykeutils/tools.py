@@ -307,7 +307,7 @@ def extract_spikes(train, signals, length, align_time):
 
     # Find extraction epochs
     st_ok = (st >= 0) * (st < end - cut_samples)
-    epochs = sp.vstack((st[st_ok], st[st_ok] + cut_samples)).T
+    epochs = sp.vstack((st[st_ok], st[st_ok] + cut_samples)).T.astype(sp.int64)
 
     nspikes = epochs.shape[0]
     if not nspikes:
