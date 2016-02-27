@@ -31,6 +31,7 @@ maximum = _fix_binary_scipy_function_with_out_param(sp.maximum)
 # functions did lose units.
 # This has been reported upstream as issue #47:
 # <https://github.com/python-quantities/python-quantities/issues/47>
+# Fixed with scipy 0.17
 def _fix_scipy_meshgrid(f):
     def _fixed(x, y):
         rx, ry = f(x, y)
@@ -40,7 +41,10 @@ def _fix_scipy_meshgrid(f):
             ry = ry * y.units
         return rx, ry
     return _fixed
-meshgrid = _fix_scipy_meshgrid(sp.meshgrid)
+if sp.__version__ < '0.17':
+    meshgrid = _fix_scipy_meshgrid(sp.meshgrid)
+else:
+    meshgrid = sp.meshgrid
 
 
 def _fix_scipy_concatenate(f):
@@ -78,17 +82,22 @@ def _fix_binary_scipy_function(f):
 inner = _fix_binary_scipy_function(sp.inner)
 
 
+# diag loses units
+# Fixed with scipy 0.17
 def diag(v, k=0):
     if isinstance(v, pq.Quantity):
-        return sp.diag(v, k) * v.units
+        r = sp.diag(v, k)
+        return r if isinstance(r, pq.Quantity) else r * v.units
     else:
         return sp.diag(v, k)
 
 
 # linspace loses unit for only one bin, see bug report
 # <https://github.com/python-quantities/python-quantities/issues/55>
+# Fixed with scipy 0.17
 def linspace(start, stop, num=50, endpoint=True, retstep=False):
     if int(num) == 1 and isinstance(start, pq.Quantity):
-        return sp.linspace(start, stop, num, endpoint, retstep) * start.units
+        r = sp.linspace(start, stop, num, endpoint, retstep)
+        return r if isinstance(r, pq.Quantity) else r * start.units
     else:
         return sp.linspace(start, stop, num, endpoint, retstep)
