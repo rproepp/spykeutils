@@ -26,3 +26,14 @@ def _Quanitity_min(self, axis=None, out=None):
         copy=False
     )
 pq.Quantity.min = _Quanitity_min
+
+
+# Python quantities does not use have additional parameters for astype()
+# which became a problem in linspace in numpy 1.11. This is a dirty, dirty
+# hack to allow the Quantity astype function to accept any arguments and work
+# with numpy >= 1.11. A bug has been filed at
+# <https://github.com/python-quantities/python-quantities/issues/105>
+_original_astype = pq.Quantity.astype
+def _Quantity_astype(self, dtype=None, *args, **kwargs):
+    return _original_astype(self, dtype)
+pq.Quantity.astype = _Quantity_astype
