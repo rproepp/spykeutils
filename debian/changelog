@@ -1,3 +1,9 @@
+spykeutils (0.4.3-1) unstable; urgency=low
+
+  * Package upstream 0.4.3 (Closes: #815399).
+
+ -- Robert Pröpper <robert.proepper@gmail.com>  Sat, 27 Feb 2016 20:40:32 +0100
+
 spykeutils (0.4.2-1) unstable; urgency=low
 
   * Package upstream 0.4.2.
