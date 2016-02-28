@@ -1,3 +1,11 @@
+Version 0.4.3
+-------------
+
+* Fixes to work with numpy 1.11 and scipy 0.17
+
+Version 0.4.2
+-------------
+
 * Integration of pymuvr (when available) for faster calculation of van Rossum
   distance.
 
